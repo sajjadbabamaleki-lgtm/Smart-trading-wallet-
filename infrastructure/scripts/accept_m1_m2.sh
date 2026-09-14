@@ -284,6 +284,23 @@ wait_for_health() {
     done
     fail "services did not become healthy within ${HEALTH_TIMEOUT}s"
     compose ps
+    # The logs of whatever actually failed, here rather than in a file the
+    # reader has to go and find. A health timeout says which service is
+    # unhealthy but never why, and the difference between "the server did not
+    # start" and "the server is fine but the probe cannot reach it" is the
+    # whole diagnosis.
+    local service cid status
+    for service in $services; do
+        cid="$(compose ps -q "$service" 2>/dev/null || true)"
+        [ -n "$cid" ] || continue
+        status="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$cid")"
+        [ "$status" = "healthy" ] && continue
+        step "Last output from $service ($status)"
+        docker logs --tail 20 "$cid" 2>&1 | sed 's/^/    /' >&2
+        info "last healthcheck probe:"
+        docker inspect -f '{{if .State.Health}}{{range .State.Health.Log}}{{.Output}}{{end}}{{end}}' "$cid" \
+            2>/dev/null | tail -5 | sed 's/^/    /' >&2
+    done
     return 1
 }
 

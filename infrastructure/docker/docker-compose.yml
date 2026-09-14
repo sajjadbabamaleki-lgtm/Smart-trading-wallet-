@@ -48,7 +48,14 @@ services:
         soft: 262144
         hard: 262144
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      # 127.0.0.1, not localhost. Inside the container `localhost` resolves to
+      # ::1 first, and ClickHouse listens on IPv4 only here, so the probe is
+      # refused while the server is in fact serving — the port answers `Ok.`
+      # from the host throughout. A healthcheck that can never pass against a
+      # working service is worse than none: it held the whole acceptance run
+      # for its full 240 s timeout and reported a storage failure that had not
+      # happened.
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8123/ping"]
       interval: 5s
       timeout: 5s
       retries: 10

@@ -250,4 +250,63 @@ addressing ::1, a nullable sorting key, `tid` read as a sequence number, and
 detectable without a database and are now covered by tests that were confirmed
 to fail against the original code.
 
-Next: `make accept` on the current commit, to close M1.
+Closed by attempt 3.
+
+---
+
+## Attempt 3 — 2026-09-14, commit `d31da57`
+
+**Result: BOTH ACCEPTED.**
+
+| | |
+|---|---|
+| Run | `local-20260914T221934Z` |
+| Window (UTC) | 2026-09-14T22:19:34 → 22:21:35 (2 min 1 s) |
+| Market data | `MAINNET_PUBLIC`, `api.hyperliquid.xyz` |
+
+| Milestone | State | Decision |
+|-----------|-------|----------|
+| **M1** — storage foundation | `VERIFIED` | **ACCEPTED** |
+| **M2** — BTC recorder | `LIVE_VERIFIED` | **ACCEPTED** |
+
+Two minutes rather than fifteen, deliberately. M2 was already accepted on the
+full-length run at attempt 2 and the latency distribution came from there; what
+attempt 3 was owed was M1, whose evidence is the stack, the migrations and the
+integration suite, none of which get truer with more recording.
+
+The M1 failure at attempt 2 is closed: the object-store health check called
+without credentials, fixed at `2c8c4c0`, with the defect's whole class now
+caught by mypy rather than by a run.
+
+The one M2 warning is unchanged and is not a defect: wallet identity is
+observed, aggressor attribution stays unproven.
+
+### Acceptance states after attempt 3
+
+| Milestone | State | Decision |
+|-----------|-------|----------|
+| **M1** — storage foundation | verified against a real stack | **ACCEPTED** |
+| **M2** — BTC recorder | verified against the live venue | **ACCEPTED** |
+| **M3** — integrity and replay | unblocked; its own acceptance is still owed | pending |
+
+M1 and M2 are the first milestones this project has accepted on evidence rather
+than on code review. M3's code has been in the repository since `2d94c7c` and
+its dependencies are now met.
+
+### Carried forward, unresolved
+
+**The TRADE latency tail is probably the subscription snapshot, not this
+recorder.** Attempt 2 recorded the tail as an open question and guessed at
+backpressure. Attempt 3's logs point elsewhere: on subscribing to `trades` the
+venue sends recent history, and those frames arrive with venue timestamps 30-35
+seconds old, five of them inside one millisecond. The quality engine correctly
+calls them implausible and, just as correctly, does not know they are backfill
+rather than degraded live data.
+
+Two consequences, neither addressed here. Snapshot frames should be
+distinguished from live ones so they are not classified as invalid; and the
+attempt 2 latency distribution may be contaminated by them, which would mean
+its TRADE p99 and max describe subscription behaviour rather than transport.
+The ~300 ms floor at p50 is unaffected — a median is not moved by a burst at
+subscribe time — and the reasoning that it is neither our clock nor our network
+stands.

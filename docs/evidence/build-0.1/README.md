@@ -53,9 +53,9 @@ See **[acceptance-attempts.md](acceptance-attempts.md)** for the attempt log.
 
 | Milestone | State | Decision |
 |-----------|-------|----------|
-| M1 — storage foundation | verification failed on a since-fixed defect; owed one run on the current commit | **NOT ACCEPTED** |
+| M1 — storage foundation | **verified against a real stack**, 2026-09-14 | **ACCEPTED** |
 | M2 — BTC recorder | **verified against the live venue**, 2026-09-14 | **ACCEPTED** |
-| M3 — integrity and replay | implemented, unaccepted (inherits M1) | **NOT ACCEPTED** |
+| M3 — integrity and replay | unblocked; its own acceptance still owed | pending |
 
 Attempt 2 was the first acceptance run this project completed. It established
 that `users` is present on public trades — the question that decided whether
@@ -93,15 +93,15 @@ It is the interval between Hyperliquid stamping an event and publishing it to
 subscribers, and therefore the observation floor for any consumer of this feed.
 TBIE Gate 0's delay ladder starts below that floor and needs re-basing.
 
-## Verification owed
+## Carried forward
 
-**M1** — one further `make accept` on the current commit. Its only blocking
-failure was an object-store health check called without credentials, fixed at
-`2c8c4c0`, after which the same suite passed 16/16 on the same machine.
+**Subscription snapshots are classified as invalid.** On subscribing to
+`trades` the venue replays recent history, and those frames carry venue
+timestamps 30-35 s old. The quality engine calls them implausible, which is
+right, but it cannot tell backfill from degraded live data, which is wrong.
+They should be distinguished.
 
-**An open question, not a defect.** The TRADE latency tail reaches 18968 ms
-while BBO tops out at 903 ms over the same socket. Transport does not
-discriminate by channel and per-frame work does, so part of that tail is
-probably this recorder rather than the venue. Separating socket-read time from
-receipt-stamp time would settle it. Until then the TRADE tail must not be
-quoted as a venue property.
+This also revises the open question recorded at attempt 2. The TRADE latency
+tail is more likely the snapshot burst than this recorder's backpressure, which
+means attempt 2's TRADE p99 and max may describe subscription behaviour rather
+than transport. The ~300 ms floor at p50 is unaffected.

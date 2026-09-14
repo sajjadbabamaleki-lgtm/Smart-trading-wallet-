@@ -53,9 +53,16 @@ See **[acceptance-attempts.md](acceptance-attempts.md)** for the attempt log.
 
 | Milestone | State | Decision |
 |-----------|-------|----------|
-| M1 — storage foundation | implemented, verification **not executed** | **NOT ACCEPTED** |
-| M2 — BTC recorder | implemented, live verification **not executed** | **NOT ACCEPTED** |
-| M3 — integrity and replay | implemented, unaccepted (inherits M1/M2) | **NOT ACCEPTED** |
+| M1 — storage foundation | verification failed on a since-fixed defect; owed one run on the current commit | **NOT ACCEPTED** |
+| M2 — BTC recorder | **verified against the live venue**, 2026-09-14 | **ACCEPTED** |
+| M3 — integrity and replay | implemented, unaccepted (inherits M1) | **NOT ACCEPTED** |
+
+Attempt 2 was the first acceptance run this project completed. It established
+that `users` is present on public trades — the question that decided whether
+trader-level research is possible at all — that no channel deviates from the
+parser's expectations, and that data arrival latency has a floor near 300 ms
+that is neither our clock nor our network. See the attempt log for the numbers
+and for what they mean for TBIE Gate 0.
 
 The verification machinery exists and is tested
 (`infrastructure/scripts/accept_m1_m2.sh`,

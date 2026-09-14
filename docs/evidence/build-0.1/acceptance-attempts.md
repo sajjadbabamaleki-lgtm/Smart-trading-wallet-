@@ -150,3 +150,104 @@ remain NOT ACCEPTED.** Machinery that can run is still not a run.
 
 Next attempt: `make accept` on a machine that passes preflight, then an entry
 above recording what it found.
+
+---
+
+## Attempt 2 — 2026-09-14, commit `61a7595`
+
+**Result: EXECUTED.** The first acceptance run this project has ever completed.
+
+| | |
+|---|---|
+| Run | `local-20260914T213630Z` |
+| Host | Contabo VPS, Europe/Berlin |
+| Window (UTC) | 2026-09-14T21:36:31 → 21:51:35 (15 min 4 s) |
+| Market data | `MAINNET_PUBLIC`, `api.hyperliquid.xyz` |
+| Execution | `DEVELOPMENT`, no credential, order submission disabled |
+
+| Milestone | State | Decision |
+|-----------|-------|----------|
+| **M1** — storage foundation | `VERIFICATION_FAILED` | **NOT ACCEPTED** |
+| **M2** — BTC recorder | `LIVE_VERIFIED` | **ACCEPTED** |
+
+M1's only blocking failure was `integration tests failed` — the object-store
+health check called without credentials, fixed at `2c8c4c0`, after which the
+same suite passed 16/16 on the same machine. M1 is owed one further run on the
+current commit; nothing about its storage behaviour is in doubt.
+
+### What the run established that no fixture could
+
+**`users` is present on public trades.** Identity observed: true. This was the
+open question that decided whether trader-level research is possible at all
+(ADR-006, TBIE). It is.
+
+**No schema deviation.** Every field the parser relies on was present and no
+unknown field appeared, across all four channels. The hand-written fixtures,
+built from the venue's SDK type definitions, were right about shape.
+
+**Aggressor attribution stays unproven**, and correctly so. `users` is ordered
+[buyer, seller] — direction, not aggression — while `side` carries the
+aggressor. Joining them is an inference the public trade frame cannot test:
+proving it needs node data with `startPosition`. Until then no markout may be
+computed from an assumed taker.
+
+### Data arrival latency, and what it is not
+
+`local_receipt - venue_event_timestamp`; one hop, not execution latency.
+
+| Stream | n | p50 | p90 | p95 | p99 | max | negative |
+|--------|---|-----|-----|-----|-----|-----|----------|
+| BBO | 5725 | 322.5 | 401.8 | 452.4 | 551.3 | 903.1 | 0 |
+| L2_SNAPSHOT | 168 | 385.5 | 447.6 | 514.9 | 594.6 | 640.4 | 0 |
+| TRADE | 2347 | 340.1 | 484.5 | 563.1 | 4716.2 | 18968.1 | 0 |
+
+Zero negative observations in 8240 samples suggested a clock offset rather than
+real transit. It is not one, and the run carries the evidence to say so:
+
+- **Network.** TCP connect to the venue 56.95 ms, TLS established at 85.69 ms.
+  One-way transport is therefore ≈ 28 ms.
+- **Clock.** systemd-timesyncd synchronised, stratum 2, root delay 6.546 ms,
+  **root dispersion 274 µs**, jitter 6.324 ms over 166 packets. The host clock
+  is accurate to roughly 10 ms, not 300.
+
+So the ~300 ms floor is neither our clock nor our network. It is the interval
+between the timestamp Hyperliquid puts on an event and the moment that event
+reaches a public WebSocket subscriber — a property of the venue, and therefore
+the observation floor for *any* consumer of this feed.
+
+**This bears directly on TBIE Gate 0.** Its delay ladder begins at 0, 50, 100
+and 250 ms. Every one of those rungs is below the floor measured here, before
+any decoding, feature computation, inference, risk check or order transmission
+is counted. The ladder should be re-based on what is reachable rather than on
+what would be desirable, and Gate 0's question restated accordingly.
+
+### An open question this run raises
+
+The tails differ by channel far more than transport can explain: BBO tops out
+at 903 ms while TRADE reaches 18968 ms over the same socket in the same window.
+Network transport does not discriminate by channel; per-frame work does, and a
+trade is the heaviest frame we handle — one market event plus a trader event
+per party.
+
+The likely explanation is therefore our own backpressure, not the venue, which
+would mean part of the TRADE distribution measures this recorder rather than
+Hyperliquid. It is untested either way. Separating socket-read time from
+receipt-stamp time would answer it, and until it is answered the TRADE tail
+must not be quoted as a venue property.
+
+### Acceptance states after attempt 2
+
+| Milestone | State | Decision |
+|-----------|-------|----------|
+| **M1** — storage foundation | implemented; verification failed on a since-fixed defect | **NOT ACCEPTED** |
+| **M2** — BTC recorder | verified against the live venue | **ACCEPTED** |
+| **M3** — integrity and replay | inherits M1 | **NOT ACCEPTED** |
+
+Five defects were found by running this, none of which any test in the
+repository had caught: the withdrawn MinIO images, the ClickHouse healthcheck
+addressing ::1, a nullable sorting key, `tid` read as a sequence number, and
+`**kwargs: Any` hiding two required credentials from mypy. Two of the five were
+detectable without a database and are now covered by tests that were confirmed
+to fail against the original code.
+
+Next: `make accept` on the current commit, to close M1.

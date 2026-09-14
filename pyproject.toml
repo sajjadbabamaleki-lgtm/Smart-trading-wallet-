@@ -11,6 +11,8 @@ dependencies = [
     "clickhouse-connect>=0.8,<1",
     "redis>=5.1,<7",
     "boto3>=1.35,<2",
+    # M2 recorder. The venue WebSocket client.
+    "websockets>=13,<16",
 ]
 
 # Production dependencies stay deliberately small (Build 0.1 Rev.1 §7).
@@ -73,11 +75,15 @@ ignore = [
 "infrastructure/scripts/**" = [
     "T201",      # these are CLIs; printing is the output
 ]
+"services/*/cli.py" = [
+    "T201",      # likewise — a CLI's report goes to stdout
+]
 "tests/**" = [
     "S101",      # assert is the point of a test
     "PLR2004",   # literal comparisons are clearer than named constants in assertions
     "ARG001",    # fixtures are injected by name
     "DTZ001",    # naive datetimes are constructed deliberately, to prove they are rejected
+    "PLR0913",   # keyword-only builders for test fixtures read better than nested config objects
 ]
 
 [tool.mypy]

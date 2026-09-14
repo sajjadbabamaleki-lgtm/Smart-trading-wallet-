@@ -1,0 +1,10 @@
+not json at all
+{"channel":"trades","data":[{"coin":"BTC","side":"X","px":"60000","sz":"0.01","time":1789387199900}]}
+{"channel":"trades","data":[{"coin":"BTC","side":"B","px":"not-a-number","sz":"0.01","time":1789387199900}]}
+{"channel":"trades","data":[{"coin":"BTC","side":"B","px":"60000","sz":"0.01"}]}
+{"data":[{"coin":"BTC"}]}
+{"channel":"l2Book","data":{"coin":"BTC","time":1789387199900,"levels":[[{"px":"59999.5","sz":"1.2"}]]}}
+{"channel":"bbo","data":{"coin":"BTC","time":1789387199900,"bbo":[null,null]}}
+{"channel":"trades","data":[{"coin":"BTC","side":"B","px":"60000","sz":"0.01","time":0}]}
+{"channel":"trades","data":[{"coin":"BTC","side":"B","px":60000.5,"sz":"0.01","time":1789387199900}]}
+{"channel":"trades","data":[{"coin":"BTC","side":"B","px":"60000","sz":"0.01","time":1789387199900,"tid":9001,"users":["0xok"],"unexpectedNewField":"tolerated"}]}

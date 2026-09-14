@@ -1,0 +1,8 @@
+{"channel":"subscriptionResponse","data":{"method":"subscribe","subscription":{"type":"trades","coin":"BTC"}}}
+{"channel":"trades","data":[{"coin":"BTC","side":"B","px":"60000.5","sz":"0.01","time":1789387199900,"hash":"0xaa01","tid":1001,"users":["0xwallet_a","0xwallet_b"]}]}
+{"channel":"bbo","data":{"coin":"BTC","time":1789387199950,"bbo":[{"px":"59999.5","sz":"1.2","n":3},{"px":"60001.0","sz":"0.8","n":2}]}}
+{"channel":"l2Book","data":{"coin":"BTC","time":1789387199960,"levels":[[{"px":"59999.5","sz":"1.2","n":3},{"px":"59998.0","sz":"4.5","n":7}],[{"px":"60001.0","sz":"0.8","n":2},{"px":"60002.5","sz":"3.1","n":5}]]}}
+{"channel":"activeAssetCtx","data":{"coin":"BTC","ctx":{"funding":"0.0000125","openInterest":"12345.678","prevDayPx":"59000.0","dayNtlVlm":"1234567890.12","premium":"0.0001","oraclePx":"60000.0","markPx":"60000.25","midPx":"60000.25","impactPxs":["59999.0","60001.5"],"dayBaseVlm":"20567.89"}}}
+{"channel":"trades","data":[{"coin":"BTC","side":"A","px":"59999.5","sz":"0.005","time":1789387199970,"hash":"0xaa02","tid":1002,"users":["0xwallet_c","0xwallet_a"]},{"coin":"BTC","side":"A","px":"59999.0","sz":"0.25","time":1789387199980,"hash":"0xaa03","tid":1003,"users":["0xwallet_d","0xwallet_b"]}]}
+{"channel":"bbo","data":{"coin":"BTC","time":1789387199990,"bbo":[{"px":"59999.0","sz":"2.0","n":4},null]}}
+{"channel":"pong"}

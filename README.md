@@ -134,6 +134,12 @@ make stack-verify      # check every store is reachable and correctly configured
 make migrate           # verify, then apply pending migrations
 make test-integration  # run integration tests against the running stack
 make help              # all targets
+
+# Record from the live testnet feed without writing anything
+python -m services.market_data.cli --dry-run --minutes 5
+
+# Replay a recorded session deterministically
+python -m services.market_data.cli --replay tests/fixtures/hyperliquid/btc_session.jsonl
 ```
 
 `make stack-verify` is how the storage claim is checked rather than asserted: it
@@ -167,7 +173,7 @@ asset allowlist defaults to BTC only.
 | Specifications, phases 1–10 | Approved, in this repository |
 | Implementation program | Build 0.1 Rev.2 approved; Rev.1 superseded, retained |
 | Research candidates | TBIE v1.1 accepted as experimental feature family; predictive information supported, executable alpha unproven; no production authority |
-| Implementation code | **M0 Rev.2 and M1 complete** — foundation, safety configuration, clocks, schemas, venue contract, CI; storage stack, migrations and verification. Next: M2 BTC Hyperliquid recorder |
+| Implementation code | **M0 Rev.2, M1, M2 implemented** — foundation and safety configuration; storage, migrations, verification; BTC recorder with parsing, normalization, quality, dedup and gap detection. M1 and M2 await verification against a live stack and the live venue |
 | Production | **Not approved.** Architecture approval is not production approval (Phase 10 §114) |
 | Provider contracts, coverage, licensing, pricing | Unverified — required before procurement (Phase 3 §36) |
 | Venue validation, security audit, penetration test, legal review | Outstanding (Phases 9, 10) |

@@ -109,12 +109,24 @@ and mainnet execution is hard-blocked throughout; profitability is not a Build
 0.1 acceptance criterion. `NO_EDGE_FOUND` is a valid outcome of this program and
 may legitimately end the trading research rather than trigger weaker standards.
 
+## Research candidates
+
+Experimental component research lives in [`docs/research/`](docs/research/README.md) —
+off the critical path, with no production authority, each carrying its own
+promotion gate and its own valid negative outcome. Currently:
+**[Trader Behavior Intelligence Engine](docs/research/trader-behavior-intelligence-engine.md)**,
+which asks whether the point-in-time estimated skill of pseudonymous Hyperliquid
+wallets carries predictive information beyond anonymous market data — and which
+affects M2 recorder design, since trader-identity-linked events discarded now may
+be impossible to reconstruct later.
+
 ## Status
 
 | Area | State |
 |------|-------|
 | Specifications, phases 1–10 | Approved, in this repository |
 | Implementation program | Build 0.1 Rev.2 approved; Rev.1 superseded, retained |
+| Research candidates | TBIE accepted as experimental feature family; no production authority |
 | Implementation code | Not started — next target is M0 Rev.2 → M1 → M2 |
 | Production | **Not approved.** Architecture approval is not production approval (Phase 10 §114) |
 | Provider contracts, coverage, licensing, pricing | Unverified — required before procurement (Phase 3 §36) |

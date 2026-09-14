@@ -140,6 +140,9 @@ That program lives in [`docs/build/`](build/README.md). The active plan is
 **Build 0.1 Rev.2 — Lean BTC Quant MVP**, which narrows the first implementation
 to BTC only without changing the architecture defined here.
 
+Component research candidates — experimental, off the critical path, each with
+its own promotion gate — live in [`docs/research/`](research/README.md).
+
 Interface quality is explicitly not a substitute for validated trading
 performance, and the architecture phase is closed — the next program is not
 "Phase 11".

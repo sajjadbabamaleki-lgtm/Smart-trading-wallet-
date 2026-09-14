@@ -42,11 +42,12 @@ M0 Rev.2 Foundation → M1 Storage Foundation → M2 BTC Hyperliquid Live Record
 ```
 
 Immediate engineering target: **M0 Rev.2 → M1 → M2** (§41).
-**M0 Rev.2, M1 and M2 are implemented** — see the repository root for what they
-produced and `docs/ADR/` for the decisions recorded (ADR-001 to ADR-008). M1 and
-M2 are not yet *accepted*: neither has been verified against a running stack or
+**M0 Rev.2 through M3 are implemented** — see the repository root for what they
+produced and `docs/ADR/` for the decisions recorded (ADR-001 to ADR-008). None
+of M1–M3 is yet *accepted*: nothing has been verified against a running stack or
 the live venue, and `docs/evidence/build-0.1/README.md` records exactly what is
-owed. Next is M3, data integrity and replay against recorded sessions. Rev.1 §76 remains the
+owed. Next is M4, the first formal BTC research dataset — which Rev.2 §23 gates
+on recorder integrity passing first. Rev.1 §76 remains the
 fuller milestone breakdown for the foundation work those milestones cover, and
 Rev.1 §§45–78 still hold for detail Rev.2 does not restate (execution state
 machine, audit events, correlation IDs, replay clock, evidence pack, CI and

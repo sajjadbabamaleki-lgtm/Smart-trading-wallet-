@@ -138,8 +138,14 @@ make help              # all targets
 # Record from the live testnet feed without writing anything
 python -m services.market_data.cli --dry-run --minutes 5
 
-# Replay a recorded session deterministically
-python -m services.market_data.cli --replay tests/fixtures/hyperliquid/btc_session.jsonl
+# Record from the live feed and capture it as a replayable fixture
+python -m services.market_data.cli --dry-run --minutes 5 --capture session.jsonl
+
+# Replay a session on its own clock and verify determinism
+python -m services.market_data.cli --replay session.jsonl --determinism
+
+# Produce the replay, data-quality and gap-detection evidence artifacts
+python infrastructure/scripts/verify_replay.py session.jsonl --out docs/evidence/build-0.1
 ```
 
 `make stack-verify` is how the storage claim is checked rather than asserted: it
@@ -173,7 +179,7 @@ asset allowlist defaults to BTC only.
 | Specifications, phases 1–10 | Approved, in this repository |
 | Implementation program | Build 0.1 Rev.2 approved; Rev.1 superseded, retained |
 | Research candidates | TBIE v1.1 accepted as experimental feature family; predictive information supported, executable alpha unproven; no production authority |
-| Implementation code | **M0 Rev.2, M1, M2 implemented** — foundation and safety configuration; storage, migrations, verification; BTC recorder with parsing, normalization, quality, dedup and gap detection. M1 and M2 await verification against a live stack and the live venue |
+| Implementation code | **M0 Rev.2, M1, M2, M3 implemented** — foundation and safety configuration; storage, migrations, verification; BTC recorder; session capture, deterministic replay, monitor loop and gap registry. M1–M3 await verification against a live stack and the live venue |
 | Production | **Not approved.** Architecture approval is not production approval (Phase 10 §114) |
 | Provider contracts, coverage, licensing, pricing | Unverified — required before procurement (Phase 3 §36) |
 | Venue validation, security audit, penetration test, legal review | Outstanding (Phases 9, 10) |

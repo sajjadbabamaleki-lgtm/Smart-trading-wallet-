@@ -29,7 +29,10 @@ artifacts are git-ignored here; the acceptance matrix will be committed.
 | Data | Recorder pipeline, raw retained, normalization, quality classification | **M2 code done**, unverified against the live venue |
 | Data | Reconnect, gap detection, duplicates, freshness | **M2 implemented and tested against fixtures**; live behaviour is M3 |
 | Data | Dataset manifests | M4 |
-| Replay | Deterministic, independent of wall-clock time | **M2 proven against fixtures** (28 replay tests); recorded-session replay is M3 |
+| Replay | Deterministic, independent of wall-clock time | **M3 done** — `verify_replay.py` replays each capture twice and compares; 53 replay tests |
+| Replay | Capture format, sessions reloadable as fixtures | **M3 done** |
+| Data | Freshness measured, silence detected on a timer | **M3 done** — the monitor loop drives what M2 could only detect on arrival |
+| Data | Gap registry: register, attempt, close, summarise | **M3 done** (in-memory; PostgreSQL writer exists from M2's store sink) |
 | Audit | Append-only audit table, correlation ids, gap registry, dataset manifests | **M1 schemas done**, writers in M2-M8 |
 | Testnet | Account, order, cancel, fill, position, restart recovery | M6, M8 |
 | Risk | Asset allowlist rejects unsupported assets | **M0 enforced in config**, M7 in engine |
@@ -66,13 +69,19 @@ definitions and the wire format are already known (`Trade` omits `tid` and
 which is reason enough to distrust the rest until tested. Owed:
 
 ```bash
-python -m services.market_data.cli --dry-run --minutes 5
+python -m services.market_data.cli --dry-run --minutes 5 --capture session.jsonl
+python infrastructure/scripts/verify_replay.py session.jsonl --out docs/evidence/build-0.1
 ```
 
 That run answers three questions no fixture can: whether the frames parse,
 whether `users` is present on trades (which decides whether trader-level
 research is possible at all), and what the real source-to-receipt delay
-distribution looks like. Its captured frames then replace the hand-written
-fixtures.
+distribution looks like. `--capture` turns it into a permanent fixture, and
+`verify_replay.py` then produces the determinism, data-quality and
+gap-detection artifacts from it.
+
+Until a real capture exists, every fixture in the repository is hand-written
+from the venue's SDK type definitions, and `synthetic_receipts` is true for all
+but one of them — so no latency figure produced from them means anything.
 
 Until both are done, M1 and M2 are **implemented but not accepted**.

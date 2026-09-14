@@ -11,9 +11,21 @@ CONNECT → SUBSCRIBE → CAPTURE RAW → TIMESTAMP → VALIDATE
 ## Running it
 
 ```bash
-python -m services.market_data.cli --replay tests/fixtures/hyperliquid/btc_session.jsonl
-python -m services.market_data.cli --dry-run --minutes 5   # live feed, nothing written
+# Live feed, nothing written to a store
+python -m services.market_data.cli --dry-run --minutes 5
+
+# Live feed, also captured to a replayable file
+python -m services.market_data.cli --dry-run --minutes 5 --capture session.jsonl
+
+# Replay a capture on its own clock
+python -m services.market_data.cli --replay session.jsonl --determinism
+
+# Verify determinism and write the evidence artifacts
+python infrastructure/scripts/verify_replay.py session.jsonl --out docs/evidence/build-0.1
 ```
+
+Logs go to stderr and the report to stdout, so `--json` output pipes into a JSON
+reader.
 
 `--dry-run` is the cheapest way to answer the question this milestone exists to
 answer: *does the venue send what we think it sends?* It needs no stores, and it
@@ -31,6 +43,10 @@ important failure to surface rather than hide.
 | `dedup.py` | Duplicate detection |
 | `gaps.py` | Sequence, silence and disconnect gaps; heartbeat |
 | `sinks.py` | `Sink` protocol; in-memory and deliberately failing sinks |
+| `capture.py` | Writing and reloading sessions; the capture format |
+| `replay.py` | Deterministic replay and determinism verification |
+| `monitor.py` | The periodic loop: silence, heartbeat, freshness |
+| `registry.py` | Gap registry — register, attempt, close, summarise |
 | `store_sinks.py` | Object storage + ClickHouse + PostgreSQL |
 | `cli.py` | Entrypoint |
 
@@ -75,6 +91,27 @@ is for.
 an inverted aggressor attribution would flip the sign of every markout computed
 from it, so the question is left to the research layer where it can be answered
 against the book (ADR-006).
+
+**Replay runs on the session's clock, not this machine's.** `--replay` takes a
+different path from `--dry-run` on purpose. Driving the monitor from a
+`SystemClock` during a replay produced *negative* staleness — "how old is this
+data" measured against the wrong present. A fabricated freshness figure in a
+report is precisely the plausible-looking wrongness this codebase keeps guarding
+against.
+
+**A synthetic receipt time is flagged as such.** A bare venue frame carries the
+venue's timestamp but not ours, so replaying one requires inventing a receipt
+time. That is fine for testing parsing and normalization and useless for
+anything timing-related: the source-to-receipt delay of such a session is an
+artifact of a constant. `CapturedSession.synthetic_receipts` marks it so a
+latency analysis refuses the session rather than reporting a fabricated number
+(ADR-007, TBIE v1.1 §18).
+
+**A gap is closed explicitly, or stays visible.** `RECOVERED` requires a known
+extent and real backfilled data. Most venue gaps cannot be recovered at all —
+the API exposes only the 10,000 most recent fills — so `UNRECOVERABLE` is the
+honest outcome and such gaps remain in the registry permanently. `PARTIAL`
+counts as still missing: partially recovered is not recovered.
 
 ## Not verified against the live venue
 

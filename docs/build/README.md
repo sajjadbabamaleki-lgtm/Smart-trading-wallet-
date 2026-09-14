@@ -42,8 +42,9 @@ M0 Rev.2 Foundation → M1 Storage Foundation → M2 BTC Hyperliquid Live Record
 ```
 
 Immediate engineering target: **M0 Rev.2 → M1 → M2** (§41).
-**M0 Rev.2 is complete** — see the repository root for the foundation it
-produced and `docs/ADR/` for the decisions it recorded. Rev.1 §76 remains the
+**M0 Rev.2 and M1 are complete** — see the repository root for what they
+produced and `docs/ADR/` for the decisions recorded (ADR-001 to ADR-008).
+Next is M2, the BTC Hyperliquid live recorder. Rev.1 §76 remains the
 fuller milestone breakdown for the foundation work those milestones cover, and
 Rev.1 §§45–78 still hold for detail Rev.2 does not restate (execution state
 machine, audit events, correlation IDs, replay clock, evidence pack, CI and

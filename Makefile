@@ -4,7 +4,8 @@
 .DEFAULT_GOAL := help
 UV := uv
 
-.PHONY: help setup format lint typecheck test test-unit audit check stack-up stack-down stack-logs clean
+.PHONY: help setup format lint typecheck test test-unit test-integration audit check \
+        stack-up stack-down stack-logs stack-verify migrate clean
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -27,8 +28,11 @@ typecheck: ## Run mypy in strict mode
 test-unit: ## Run unit and security tests only
 	$(UV) run pytest tests/unit tests/security
 
-test: ## Run the full test suite with coverage
-	$(UV) run pytest --cov --cov-report=term-missing
+test: ## Run the full test suite with coverage (skips integration)
+	$(UV) run pytest --cov --cov-report=term-missing -m "not integration"
+
+test-integration: ## Run integration tests against the running stack
+	$(UV) run pytest tests/integration -m integration
 
 audit: ## Check locked dependencies for known vulnerabilities
 	$(UV) export --extra dev --no-emit-project --format requirements.txt > requirements-audit.txt
@@ -45,6 +49,12 @@ stack-down: ## Stop the local storage stack
 
 stack-logs: ## Follow storage stack logs
 	docker compose -f infrastructure/docker/docker-compose.yml logs -f
+
+stack-verify: ## Check every store is reachable and correctly configured
+	$(UV) run python infrastructure/scripts/verify_stack.py
+
+migrate: ## Verify the stack, then apply pending migrations
+	$(UV) run python infrastructure/scripts/verify_stack.py --migrate
 
 clean: ## Remove caches and build artifacts
 	rm -rf .mypy_cache .ruff_cache .pytest_cache htmlcov .coverage coverage.xml requirements-audit.txt

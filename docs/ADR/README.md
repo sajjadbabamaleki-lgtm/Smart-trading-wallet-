@@ -17,6 +17,7 @@ advance.
 | [ADR-005](ADR-005-hyperliquid-testnet-first.md) | Hyperliquid testnet as the first execution integration | Accepted |
 | [ADR-006](ADR-006-trader-behavior-intelligence-experimental.md) | Trader behaviour intelligence as an experimental feature family | Accepted |
 | [ADR-007](ADR-007-clock-abstraction-and-latency-instrumentation.md) | Clock abstraction and receipt-time latency instrumentation | Accepted |
+| [ADR-008](ADR-008-sql-migrations-without-a-framework.md) | SQL migrations without a framework | Accepted |
 
 ## Namespace resolution
 

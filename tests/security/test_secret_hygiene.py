@@ -6,6 +6,7 @@ import io
 import json
 import logging
 import re
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -15,7 +16,7 @@ import pytest
 from libs.config import load_settings
 from libs.observability.logging import configure_logging, get_logger
 from libs.schemas.enums import ExecutionEnvironment
-from libs.security.redaction import redact, redact_mapping
+from libs.security.redaction import redact
 
 TESTNET_KEY = "0x" + "ab" * 32
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -134,8 +135,12 @@ class TestLoggingRedaction:
     def test_exception_details_are_captured(self) -> None:
         stream = io.StringIO()
         configure_logging("INFO", stream=stream)
-        try:
+
+        def fail() -> None:
             raise ValueError("boom")
+
+        try:
+            fail()
         except ValueError:
             get_logger("test").exception("handler_failed")
         record = json.loads(stream.getvalue().strip())
@@ -146,8 +151,10 @@ class TestRepositoryHygiene:
     """Phase 10 §73: no committed secrets, from day one."""
 
     def test_no_dotenv_file_is_committed(self) -> None:
-        tracked = subprocess.run(
-            ["git", "ls-files"], cwd=REPO_ROOT, capture_output=True, text=True, check=True
+        git = shutil.which("git")
+        assert git is not None, "git is required to check what is tracked"
+        tracked = subprocess.run(  # noqa: S603 - resolved absolute path, fixed arguments
+            [git, "ls-files"], cwd=REPO_ROOT, capture_output=True, text=True, check=True
         ).stdout.splitlines()
         offenders = [
             path

@@ -6,11 +6,16 @@ requires-python = "==3.12.*"
 dependencies = [
     "pydantic>=2.9,<3",
     "pydantic-settings>=2.5,<3",
+    # M1 storage clients. One per store, each the store's standard client.
+    "psycopg[binary]>=3.2,<4",
+    "clickhouse-connect>=0.8,<1",
+    "redis>=5.1,<7",
+    "boto3>=1.35,<2",
 ]
 
 # Production dependencies stay deliberately small (Build 0.1 Rev.1 §7).
 # Polars and NumPy are the declared analytical foundation (§8-9) but are not
-# imported by any M0 module, so they are added when M1/M4 need them rather than
+# imported by any module yet, so they are added when M4 needs them rather than
 # carried unused — the same rule complexity is held to everywhere else.
 
 [project.optional-dependencies]
@@ -21,6 +26,7 @@ dev = [
     "ruff>=0.7,<1",
     "mypy>=1.11,<2",
     "pip-audit>=2.7,<3",
+    "boto3-stubs[s3]>=1.35,<2",
 ]
 
 [build-system]
@@ -56,6 +62,7 @@ select = [
     "TRY",       # exception antipatterns
     "RUF",
     "S",         # bandit security rules
+    "BLE",       # blind except — must be justified, never accidental
 ]
 ignore = [
     "TRY003",    # long messages inside raise — a refusal to start must explain why
@@ -63,6 +70,9 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+"infrastructure/scripts/**" = [
+    "T201",      # these are CLIs; printing is the output
+]
 "tests/**" = [
     "S101",      # assert is the point of a test
     "PLR2004",   # literal comparisons are clearer than named constants in assertions
@@ -80,6 +90,11 @@ plugins = ["pydantic.mypy"]
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false
+
+# clickhouse-connect ships no py.typed marker.
+[[tool.mypy.overrides]]
+module = ["clickhouse_connect.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

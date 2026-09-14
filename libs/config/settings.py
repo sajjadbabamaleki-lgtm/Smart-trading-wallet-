@@ -103,11 +103,21 @@ class Settings(BaseSettings):
     testnet_api_wallet_address: str = ""
     testnet_api_wallet_private_key: str = ""
 
+    # Store connection settings. Credentials live here rather than as defaults
+    # in the client modules: Phase 10 §10 prohibits hard-coded secrets, and a
+    # default credential in library code is how a development value ends up
+    # reachable in production. The local Docker Compose values are in
+    # .env.example, which is the right place for them.
     postgres_dsn: str = "postgresql://stw:stw@localhost:5432/stw"
     clickhouse_url: str = "http://localhost:8123"
+    clickhouse_user: str = "stw"
+    clickhouse_password: str = ""
+    clickhouse_database: str = "stw"
     redis_url: str = "redis://localhost:6379/0"
     object_store_endpoint: str = "http://localhost:9000"
     object_store_bucket: str = "stw-raw"
+    object_store_access_key: str = ""
+    object_store_secret_key: str = ""
 
     log_level: str = "INFO"
 

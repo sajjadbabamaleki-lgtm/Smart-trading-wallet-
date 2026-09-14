@@ -127,11 +127,20 @@ receipt timestamps discarded now may be impossible to reconstruct later.
 Requires [uv](https://docs.astral.sh/uv/) and Docker.
 
 ```bash
-make setup        # create the virtualenv, install dependencies
-make check        # lint, typecheck, tests — exactly what CI runs
-make stack-up     # start PostgreSQL, ClickHouse, Redis, MinIO locally
-make help         # all targets
+make setup             # create the virtualenv, install dependencies
+make check             # lint, typecheck, tests — exactly what CI runs
+make stack-up          # start PostgreSQL, ClickHouse, Redis, MinIO locally
+make stack-verify      # check every store is reachable and correctly configured
+make migrate           # verify, then apply pending migrations
+make test-integration  # run integration tests against the running stack
+make help              # all targets
 ```
+
+`make stack-verify` is how the storage claim is checked rather than asserted: it
+reports each store's status, latency and configuration, and exits non-zero if
+any is unusable. It also flags two silent failure modes — Redis with persistence
+enabled (it must stay ephemeral, never capital state) and an unversioned archive
+bucket (a rewritten key would destroy the original raw evidence).
 
 Configuration comes from environment variables prefixed `STW_`; copy
 `.env.example` to `.env` to start. Invalid configuration fails startup rather
@@ -158,7 +167,7 @@ asset allowlist defaults to BTC only.
 | Specifications, phases 1–10 | Approved, in this repository |
 | Implementation program | Build 0.1 Rev.2 approved; Rev.1 superseded, retained |
 | Research candidates | TBIE v1.1 accepted as experimental feature family; predictive information supported, executable alpha unproven; no production authority |
-| Implementation code | **M0 Rev.2 complete** — repository foundation, safety configuration, clock architecture, canonical schemas, venue contract, CI. Next: M1 storage foundation |
+| Implementation code | **M0 Rev.2 and M1 complete** — foundation, safety configuration, clocks, schemas, venue contract, CI; storage stack, migrations and verification. Next: M2 BTC Hyperliquid recorder |
 | Production | **Not approved.** Architecture approval is not production approval (Phase 10 §114) |
 | Provider contracts, coverage, licensing, pricing | Unverified — required before procurement (Phase 3 §36) |
 | Venue validation, security audit, penetration test, legal review | Outstanding (Phases 9, 10) |

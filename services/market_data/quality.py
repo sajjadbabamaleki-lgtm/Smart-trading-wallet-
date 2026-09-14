@@ -57,6 +57,15 @@ class QualityVerdict:
 
     status: DataQualityStatus
     findings: tuple[str, ...] = ()
+    backfill: bool = False
+    """Whether the venue replayed this event rather than delivering it live.
+
+    Separate from `status` because it is a separate question. Backfill is good
+    data — real trades, at their real prices — that simply did not reach us as
+    it happened. What it is unusable for is latency measurement, and the whole
+    reason to mark it is so that a research query can exclude it from timing
+    analysis without excluding it from price and volume analysis.
+    """
 
     @property
     def usable_for_training(self) -> bool:
@@ -85,14 +94,33 @@ class QualityEngine:
         self._max_source_delay = max_source_delay
         self._max_clock_skew = max_clock_skew
 
-    def validate(self, event: MarketEvent, *, now: datetime) -> QualityVerdict:
+    def validate(
+        self,
+        event: MarketEvent,
+        *,
+        now: datetime,
+        stream_start: datetime | None = None,
+    ) -> QualityVerdict:
         """Classify one event.
 
         `now` is passed in rather than read from a clock so that a replay
-        produces the same verdict as the original live run.
+        produces the same verdict as the original live run. `stream_start` is
+        passed for the same reason and is when this process first heard from
+        the venue; the engine holds no state of its own.
+
+        An event whose venue timestamp precedes `stream_start` happened before
+        we were listening, so it cannot have reached us late — the venue
+        replayed it. Hyperliquid does exactly this on subscribing to `trades`,
+        and the first live acceptance run classified that burst as INVALID with
+        `source_delay_35.3s_exceeds_plausible`: a correct observation about the
+        delay and the wrong conclusion about the data.
         """
         findings: list[str] = []
         invalid = False
+
+        backfill = self._is_backfill(event, stream_start)
+        if backfill:
+            findings.append("backfill_on_subscribe")
 
         # Impossible values. The schema already rejects the clearly impossible
         # (non-positive price, negative quantity, crossed book), so reaching
@@ -103,7 +131,10 @@ class QualityEngine:
 
         # Timestamp sanity.
         delay = event.timestamps.source_to_receive_seconds
-        if delay is not None:
+        if delay is not None and not backfill:
+            # Skipped for backfill: the "delay" there is the age of the replayed
+            # event, not transport, and a sanity bound on transport says nothing
+            # about it.
             if delay > self._max_source_delay.total_seconds():
                 findings.append(f"source_delay_{delay:.1f}s_exceeds_plausible")
                 invalid = True
@@ -123,10 +154,34 @@ class QualityEngine:
             findings.append(spread_finding)
 
         if invalid:
-            return QualityVerdict(status=DataQualityStatus.INVALID, findings=tuple(findings))
+            return QualityVerdict(
+                status=DataQualityStatus.INVALID, findings=tuple(findings), backfill=backfill
+            )
+        if backfill and len(findings) == 1:
+            # Backfill alone is not a defect, so it does not cost the event its
+            # VALID status — it is recorded as a fact about delivery. Any other
+            # finding still downgrades it on its own merits.
+            return QualityVerdict(
+                status=DataQualityStatus.VALID, findings=tuple(findings), backfill=True
+            )
         if findings:
-            return QualityVerdict(status=DataQualityStatus.WARNING, findings=tuple(findings))
+            return QualityVerdict(
+                status=DataQualityStatus.WARNING, findings=tuple(findings), backfill=backfill
+            )
         return QualityVerdict(status=DataQualityStatus.VALID)
+
+    @staticmethod
+    def _is_backfill(event: MarketEvent, stream_start: datetime | None) -> bool:
+        """Whether the venue replayed an event that predates our subscription.
+
+        Decided on the venue's own timestamp, not on the size of the delay: a
+        threshold would have to guess, while "this happened before we were
+        listening" is a fact the two timestamps settle between them.
+        """
+        if stream_start is None:
+            return False
+        occurred = event.timestamps.exchange_time or event.timestamps.consensus_time
+        return occurred is not None and occurred < stream_start
 
     def _check_spread(self, event: MarketEvent) -> str | None:
         mid = event.mid_price

@@ -27,7 +27,7 @@ than one that reports a twenty-minute gap.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from libs.domain.clock import Clock
 from libs.exchange.hyperliquid.messages import (
@@ -66,6 +66,13 @@ class RecorderMetrics:
     market_events_written: int = 0
     trader_events_written: int = 0
     duplicates_dropped: int = 0
+    backfill_events: int = 0
+    """Events the venue replayed rather than delivered live.
+
+    Counted separately because they are good data that no latency figure
+    may be computed from. A run whose events are mostly backfill has
+    observed the venue's history, not its behaviour.
+    """
     quality_valid: int = 0
     quality_warning: int = 0
     quality_invalid: int = 0
@@ -82,6 +89,7 @@ class RecorderMetrics:
             "market_events_written": self.market_events_written,
             "trader_events_written": self.trader_events_written,
             "duplicates_dropped": self.duplicates_dropped,
+            "backfill_events": self.backfill_events,
             "quality_valid": self.quality_valid,
             "quality_warning": self.quality_warning,
             "quality_invalid": self.quality_invalid,
@@ -109,6 +117,12 @@ class Recorder:
     heartbeat: Heartbeat = field(default_factory=Heartbeat)
     machine: StateMachine = field(default_factory=StateMachine)
     metrics: RecorderMetrics = field(default_factory=RecorderMetrics)
+    # When we first heard from the venue. Set from the first frame's own
+    # receipt time rather than from the clock at startup, so a replay
+    # reconstructs the same boundary the live run used and reaches the same
+    # verdicts. Everything the venue timestamps before this is history it
+    # replayed to us on subscribing, not data that arrived late.
+    stream_start: datetime | None = None
     staleness_limit: timedelta = timedelta(seconds=30)
 
     async def run(self) -> RecorderMetrics:
@@ -133,6 +147,11 @@ class Recorder:
         self.metrics.messages_received += 1
         received_at = frame.receipt.local_receive_time
         self.heartbeat.record_data(received_at)
+        if self.stream_start is None:
+            # The first frame we ever see fixes the boundary. Anything the
+            # venue stamped earlier than this happened while we were not
+            # listening.
+            self.stream_start = received_at
 
         # 1. Archive raw, before anything can go wrong downstream.
         raw = RawFrame(
@@ -266,7 +285,11 @@ class Recorder:
                     },
                 )
 
-            verdict = self.quality.validate(event, now=self.clock.now())
+            verdict = self.quality.validate(
+                event, now=self.clock.now(), stream_start=self.stream_start
+            )
+            if verdict.backfill:
+                self.metrics.backfill_events += 1
             if verdict.status is DataQualityStatus.VALID:
                 self.metrics.quality_valid += 1
             elif verdict.status is DataQualityStatus.WARNING:

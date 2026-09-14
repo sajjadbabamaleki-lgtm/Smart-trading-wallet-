@@ -122,6 +122,54 @@ class TestQualityEngine:
         assert verdict.status is DataQualityStatus.INVALID
         assert any("source_delay" in finding for finding in verdict.findings)
 
+    def test_a_replayed_event_is_valid_not_invalid(self) -> None:
+        """The case the first live acceptance run got wrong.
+
+        Subscribing to Hyperliquid's `trades` channel makes the venue replay
+        recent history. Those frames arrived with venue timestamps 30-35 s old
+        and were classified INVALID as an implausible source delay — a correct
+        reading of the delay and the wrong conclusion about the data. They are
+        real trades at real prices; what they cannot support is a latency
+        figure.
+        """
+        subscribed_at = NOW
+        replayed = event(exchange_time=NOW - timedelta(seconds=35))
+        verdict = QualityEngine().validate(replayed, now=NOW, stream_start=subscribed_at)
+        assert verdict.status is DataQualityStatus.VALID
+        assert verdict.backfill
+        assert verdict.findings == ("backfill_on_subscribe",)
+
+    def test_a_late_live_event_is_still_invalid(self) -> None:
+        """Backfill must not become an excuse for a stalled feed.
+
+        Same 35-second delay, but the event happened *after* we subscribed, so
+        nothing replayed it — it genuinely took 35 seconds to arrive.
+        """
+        subscribed_at = NOW - timedelta(hours=1)
+        stalled = event(exchange_time=NOW - timedelta(seconds=35))
+        verdict = QualityEngine().validate(stalled, now=NOW, stream_start=subscribed_at)
+        assert verdict.status is DataQualityStatus.INVALID
+        assert not verdict.backfill
+        assert any("source_delay" in finding for finding in verdict.findings)
+
+    def test_backfill_does_not_excuse_a_real_defect(self) -> None:
+        """Delivery and validity are separate questions, in both directions."""
+        broken = event(exchange_time=NOW - timedelta(seconds=35), quantity=Decimal(0))
+        verdict = QualityEngine().validate(broken, now=NOW, stream_start=NOW)
+        assert verdict.status is DataQualityStatus.INVALID
+        assert verdict.backfill
+        assert "trade_quantity_is_zero" in verdict.findings
+
+    def test_without_a_stream_start_nothing_is_backfill(self) -> None:
+        """The old behaviour is unchanged when the boundary is unknown.
+
+        Not knowing when we subscribed is not evidence that an event was
+        replayed, so the delay bound applies as before.
+        """
+        verdict = QualityEngine().validate(event(exchange_time=NOW - timedelta(minutes=5)), now=NOW)
+        assert verdict.status is DataQualityStatus.INVALID
+        assert not verdict.backfill
+
     def test_clock_skew_is_a_warning_not_a_rejection(self) -> None:
         """Skew must be visible; it invalidates latency measurement."""
         verdict = QualityEngine().validate(

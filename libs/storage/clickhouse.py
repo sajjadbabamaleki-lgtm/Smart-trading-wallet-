@@ -12,7 +12,7 @@ import time
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 from libs.config import Settings
@@ -106,11 +106,32 @@ def _quiet_driver() -> Iterator[None]:
         driver_logger.setLevel(previous)
 
 
-def check_health(url: str, **kwargs: Any) -> StoreHealth:
-    """Verify ClickHouse is reachable and answers a query."""
+def check_health(
+    url: str,
+    *,
+    username: str,
+    password: str,
+    database: str,
+    timeout_seconds: float = 5.0,
+) -> StoreHealth:
+    """Verify ClickHouse is reachable and answers a query.
+
+    Credentials are named rather than forwarded through `**kwargs`, for the
+    reason set out in `object_store.check_health`: Any hides a missing required
+    argument from the type checker.
+    """
     started = time.monotonic()
     try:
-        with _quiet_driver(), connect(url, **kwargs) as client:
+        with (
+            _quiet_driver(),
+            connect(
+                url,
+                username=username,
+                password=password,
+                database=database,
+                timeout_seconds=timeout_seconds,
+            ) as client,
+        ):
             version = client.server_version
             result = client.query("SELECT 1").result_rows
             elapsed_ms = (time.monotonic() - started) * 1000

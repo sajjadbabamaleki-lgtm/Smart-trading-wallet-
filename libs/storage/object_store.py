@@ -16,7 +16,7 @@ from __future__ import annotations
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Final
 
 from libs.config import Settings
 from libs.storage.health import StoreHealth, StoreStatus
@@ -89,11 +89,36 @@ def check_health_from_settings(settings: Settings) -> StoreHealth:
     )
 
 
-def check_health(endpoint: str, bucket: str, **kwargs: Any) -> StoreHealth:
-    """Verify the archive bucket exists and is versioned."""
+# PLR0913: six arguments, and naming them is the point — this function had a
+# `**kwargs: Any` tail that hid two required credentials from the type
+# checker. Bundling them back into an object would restore the same blind
+# spot in a different shape.
+def check_health(  # noqa: PLR0913
+    endpoint: str,
+    bucket: str,
+    *,
+    access_key: str,
+    secret_key: str,
+    region: str = "us-east-1",
+    timeout_seconds: float = 5.0,
+) -> StoreHealth:
+    """Verify the archive bucket exists and is versioned.
+
+    Credentials are named here rather than forwarded through `**kwargs`. The
+    kwargs form type-checked clean while omitting them, because Any accepts
+    anything and mypy cannot see through it to `connect`'s required arguments —
+    so the first caller that forgot them failed at runtime, inside an
+    integration test that had never been run against a real stack.
+    """
     started = time.monotonic()
     try:
-        with connect(endpoint, **kwargs) as client:
+        with connect(
+            endpoint,
+            access_key=access_key,
+            secret_key=secret_key,
+            region=region,
+            timeout_seconds=timeout_seconds,
+        ) as client:
             client.head_bucket(Bucket=bucket)
             versioning = client.get_bucket_versioning(Bucket=bucket)
             elapsed_ms = (time.monotonic() - started) * 1000

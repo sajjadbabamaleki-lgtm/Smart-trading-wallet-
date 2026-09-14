@@ -50,7 +50,7 @@ class TestHealthChecks:
 
     def test_object_store_is_healthy_and_versioned(self, settings: Settings) -> None:
         """Versioning is what makes the raw archive effectively immutable."""
-        health = obj.check_health(settings.object_store_endpoint, settings.object_store_bucket)
+        health = obj.check_health_from_settings(settings)
         assert health.is_usable, health.detail
         assert health.facts["versioning"] == "Enabled"
 

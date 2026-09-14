@@ -3,8 +3,8 @@
 An AI-powered automated trading platform for **BTC, ETH, SOL and BNB**, trading
 perpetual futures with an independent risk-control authority over every position.
 
-This repository currently holds the approved architecture specifications. No
-trading, data, or model code has been implemented yet.
+This repository holds the complete V1 architecture program — ten approved phase
+specifications. No trading, data, or model code has been implemented yet.
 
 ## What the system is
 
@@ -20,10 +20,15 @@ Three operating modes are in scope:
 - **Copilot** — the same analysis, but a proposed trade requires user approval.
 - **Research** — analytical transparency and strategy evaluation, no execution.
 
-Wallet connectivity starts with **Phantom** and **Trust Wallet**. The user's seed
+Wallet connectivity starts with **Phantom** and **Trust Wallet**, behind a
+unified wallet adapter so the trading core stays wallet-agnostic. The user's seed
 phrase or private key is never transmitted to or stored by backend
-infrastructure, and wallet connectivity stays logically separate from the trading
-core so a native non-custodial wallet can be added later without redesigning it.
+infrastructure; automation signs through an isolated execution credential
+instead. Autopilot is **off by default** and requires explicit trading
+authorization, which is a separate grant from logging in.
+
+The initial execution venue is **Hyperliquid**, subject to final production
+validation.
 
 ## Decision pipeline
 
@@ -32,20 +37,24 @@ Market Data
   → Historical Intelligence Engine
   → Market Regime Detection
   → Strategy / AI Engine
-  → Trading Signal
-  → Risk Engine
+  → Trade Candidate
+  → RISK ENGINE            (approve / modify / reject)
+  → Execution Intent       (immutable, expiring, single-use)
   → Execution Engine
   → Trading Venue
+  → Reconciliation → Continuous Risk Monitoring → Audit & Attribution
 ```
 
 The architectural rule behind that ordering: **the AI/Strategy Engine never has
-direct authority to execute trades.** The Risk Engine decides whether capital may
-be exposed, and neither a model nor a strategy may override system-level risk
-limits.
+direct authority to execute trades.** The Risk Engine holds veto authority and
+decides whether capital may be exposed; neither a model, a strategy, the
+frontend, nor a user setting may exceed its hard limits. Surrounding the pipeline
+are an independent kill switch, Safe Mode, security monitoring, and an immutable
+audit trail.
 
 ## Specifications
 
-See [`docs/`](docs/README.md) for the full library and the cross-cutting
+See [`docs/`](docs/README.md) for the library and the twenty cross-cutting
 invariants that govern implementation work.
 
 | Phase | Document |
@@ -55,29 +64,53 @@ invariants that govern implementation work.
 | 3 | [Historical Data Engine](docs/phase-3-historical-data-engine.md) |
 | 4 | [Research & Backtesting Laboratory](docs/phase-4-research-and-backtesting-laboratory.md) |
 | 5 | [Strategy Intelligence & AI/ML Architecture](docs/phase-5-strategy-intelligence-and-ai-ml-architecture.md) |
+| 6 | [Risk Engine & Execution Architecture](docs/phase-6-risk-engine-and-execution-architecture.md) |
+| 7 | [Testnet, Paper Trading & Shadow Validation](docs/phase-7-testnet-paper-trading-and-shadow-validation.md) |
+| 8 | [Limited-Capital Live Trading & Production Qualification](docs/phase-8-limited-capital-live-trading-and-production-qualification.md) |
+| 9 | [Product Interface, Wallet Integration & Human Control Layer](docs/phase-9-product-interface-wallet-integration-and-human-control-layer.md) |
+| 10 | [Security Architecture, Independent Audit & Production Launch Gate](docs/phase-10-security-architecture-independent-audit-and-production-launch-gate.md) |
 
-Phases 6–10 are pending; Phase 6 is **Risk Engine & Execution Architecture**.
+## Validation ladder
 
-## Development order
-
-Phase 1 §18 fixes the build priority, from the trading intelligence outward:
+Capital is reached only through the full sequence, and each stage has its own
+acceptance and rejection criteria:
 
 ```
-Data Quality → Research Infrastructure → Strategy Intelligence → Risk Management
-→ Execution Reliability → Live Validation → User Experience → Native Wallet Expansion
+Historical Backtest → Out-of-Sample → Walk-Forward → Stress Testing
+→ Testnet → Paper Trading → Shadow Trading → Limited-Capital Live
+→ Production Qualified
 ```
 
-Interface quality is explicitly not a substitute for validated trading
-performance.
+Passing one stage never implies passing the next. Production status is
+reversible, and the unit that holds it is a specific trading configuration
+(Strategy × Asset × Model × Risk × Execution), not the application as a whole.
+
+## Next program
+
+The architecture phase is closed. Phase 10 §116 names the successor — not
+"Phase 11":
+
+```
+IMPLEMENTATION PROGRAM — BUILD 0.1
+
+Foundation Infrastructure
+  → Historical Data Recorder
+  → Research Environment
+  → Backtesting Engine
+  → Risk & Execution Skeleton
+  → Testnet Integration
+```
 
 ## Status
 
 | Area | State |
 |------|-------|
-| Specifications, phases 1–5 | Approved, in this repository |
-| Specifications, phases 6–10 | Not yet written |
-| Data, research, strategy, risk, execution code | Not started |
-| Provider contracts, coverage, licensing, pricing | Unverified — required before procurement (Phase 3) |
+| Specifications, phases 1–10 | Approved, in this repository |
+| Implementation code | Not started |
+| Production | **Not approved.** Architecture approval is not production approval (Phase 10 §114) |
+| Provider contracts, coverage, licensing, pricing | Unverified — required before procurement (Phase 3 §36) |
+| Venue validation, security audit, penetration test, legal review | Outstanding (Phases 9, 10) |
 
 No model training begins before the Historical Data Engine can guarantee dataset
-lineage and point-in-time integrity.
+lineage and point-in-time integrity. No real capital is introduced before the
+Phase 6 and Phase 7 acceptance gates pass on implemented systems.

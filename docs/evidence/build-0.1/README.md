@@ -47,6 +47,24 @@ M0 closed the four infrastructure rows and the safety-configuration rows. M1
 adds the storage schemas, the migration mechanism and the verification script.
 The rest are open by design.
 
+## Acceptance status
+
+See **[acceptance-attempts.md](acceptance-attempts.md)** for the attempt log.
+
+| Milestone | State | Decision |
+|-----------|-------|----------|
+| M1 — storage foundation | implemented, verification **not executed** | **NOT ACCEPTED** |
+| M2 — BTC recorder | implemented, live verification **not executed** | **NOT ACCEPTED** |
+| M3 — integrity and replay | implemented, unaccepted (inherits M1/M2) | **NOT ACCEPTED** |
+
+The verification machinery exists and is tested
+(`.github/workflows/acceptance-m1-m2.yml`,
+`infrastructure/scripts/acceptance_m1_m2.py`, 60 verifier tests). It has not
+produced a result: GitHub Actions has rejected every job ever queued in this
+repository before execution, at zero billable milliseconds — ordinary CI
+included. That is an account- or repository-level Actions restriction rather
+than a defect here, and the attempt log records what the owner needs to check.
+
 ## Verification owed
 
 Two milestones were written in an environment that could not execute their

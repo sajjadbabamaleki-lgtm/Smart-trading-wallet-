@@ -41,9 +41,12 @@ research/datasets/*
 !research/datasets/.gitkeep
 research/notebooks/.ipynb_checkpoints/
 
-# Evidence artifacts are generated
+# Evidence artifacts are generated. The acceptance-attempt log is not: it
+# records verification attempts and their blockers, which must survive in
+# version control rather than in a workflow artifact that expires.
 docs/evidence/build-0.1/*
 !docs/evidence/build-0.1/README.md
+!docs/evidence/build-0.1/acceptance-attempts.md
 
 # Node
 node_modules/

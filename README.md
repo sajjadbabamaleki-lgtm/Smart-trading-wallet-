@@ -133,6 +133,7 @@ make stack-up          # start PostgreSQL, ClickHouse, Redis, MinIO locally
 make stack-verify      # check every store is reachable and correctly configured
 make migrate           # verify, then apply pending migrations
 make test-integration  # run integration tests against the running stack
+make accept            # the full M1/M2 acceptance — real stack, live venue, evidence
 make help              # all targets
 
 # Record from the live testnet feed without writing anything
@@ -147,6 +148,16 @@ python -m services.market_data.cli --replay session.jsonl --determinism
 # Produce the replay, data-quality and gap-detection evidence artifacts
 python infrastructure/scripts/verify_replay.py session.jsonl --out docs/evidence/build-0.1
 ```
+
+`make accept` is how M1 and M2 stop being claims. It starts the real stack,
+applies migrations, verifies every store, runs the integration tests, asserts
+the execution guard, records live BTC data read-only from the public venue,
+replays the capture and writes an explicit per-milestone decision. It needs
+Docker and unrestricted internet access, and it preflights both before starting
+anything. The procedure is
+[`docs/runbooks/m1-m2-acceptance.md`](docs/runbooks/m1-m2-acceptance.md); the
+CI workflow calls the same script, so a result means the same thing wherever it
+ran.
 
 `make stack-verify` is how the storage claim is checked rather than asserted: it
 reports each store's status, latency and configuration, and exits non-zero if

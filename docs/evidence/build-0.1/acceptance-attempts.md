@@ -4,8 +4,12 @@ Every attempt to execute the M1/M2 acceptance verification, with its outcome.
 Committed rather than left as a workflow artifact, because a record of *why*
 acceptance has not been granted is the part that must not expire.
 
-Verification machinery: `.github/workflows/acceptance-m1-m2.yml`,
-`infrastructure/scripts/acceptance_m1_m2.py`, `services/market_data/acceptance.py`.
+Verification machinery: `infrastructure/scripts/accept_m1_m2.sh` (the one
+acceptance path — `make accept` and `.github/workflows/acceptance-m1-m2.yml`
+both call it), `infrastructure/scripts/acceptance_m1_m2.py`,
+`services/market_data/acceptance.py`.
+
+Procedure: [`docs/runbooks/m1-m2-acceptance.md`](../../runbooks/m1-m2-acceptance.md).
 
 ---
 
@@ -118,3 +122,31 @@ latency is supported by evidence at this commit.
 
 **M3 remains blocked**, and M3's own code — already committed at `2d94c7c` —
 inherits the same status: implemented, unaccepted.
+
+---
+
+## After attempt 1 — acceptance no longer depends on GitHub Actions
+
+No second attempt has been made. What changed is that one is now possible
+without the blocker being fixed first.
+
+Attempt 1 could not run because the only acceptance path was a GitHub Actions
+workflow, and Actions does not execute in this repository. That made an
+external billing or policy setting a precondition for verifying this project's
+own code, which is the wrong dependency for the one procedure that decides
+whether three milestones are real.
+
+The steps now live in `infrastructure/scripts/accept_m1_m2.sh`. `make accept`
+runs them on any machine with Docker and unrestricted internet, and the
+workflow calls the same script rather than restating it — so the two cannot
+drift, and an acceptance result means the same thing wherever it was produced.
+A preflight stage checks the Docker daemon, the ports and the route to the
+venue before starting anything, because the sandbox's own failures (no daemon,
+HTTP 403 to `api.hyperliquid.xyz`) both previously surfaced late and disguised
+as something else.
+
+The verification itself is unchanged, and so is its status. **M1, M2 and M3
+remain NOT ACCEPTED.** Machinery that can run is still not a run.
+
+Next attempt: `make accept` on a machine that passes preflight, then an entry
+above recording what it found.

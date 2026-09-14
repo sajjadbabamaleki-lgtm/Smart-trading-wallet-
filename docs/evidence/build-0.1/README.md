@@ -58,12 +58,16 @@ See **[acceptance-attempts.md](acceptance-attempts.md)** for the attempt log.
 | M3 — integrity and replay | implemented, unaccepted (inherits M1/M2) | **NOT ACCEPTED** |
 
 The verification machinery exists and is tested
-(`.github/workflows/acceptance-m1-m2.yml`,
+(`infrastructure/scripts/accept_m1_m2.sh`,
 `infrastructure/scripts/acceptance_m1_m2.py`, 60 verifier tests). It has not
 produced a result: GitHub Actions has rejected every job ever queued in this
 repository before execution, at zero billable milliseconds — ordinary CI
 included. That is an account- or repository-level Actions restriction rather
 than a defect here, and the attempt log records what the owner needs to check.
+
+Acceptance no longer depends on that being fixed. `make accept` runs the same
+verification locally, and the workflow calls the same script, so there is one
+acceptance path rather than two that could disagree.
 
 ## Verification owed
 
@@ -73,30 +77,33 @@ unverified claim that looks finished is worse than an open one.
 
 **M1 — the stack was never started.** No Docker daemon was available. The
 compose file is syntax-validated and 16 integration tests are written but
-unrun. Owed:
-
-```bash
-make stack-up && make migrate && make test-integration
-```
+unrun.
 
 **M2 — the recorder has never seen the venue.** Message shapes come from
 Hyperliquid's official SDK type definitions, not from a live connection, and
 the fixtures are hand-written from them. Two divergences between those
 definitions and the wire format are already known (`Trade` omits `tid` and
 `users`; `sz` is typed as an integer where the API sends a decimal string),
-which is reason enough to distrust the rest until tested. Owed:
+which is reason enough to distrust the rest until tested.
+
+Both are owed by a single command, on a machine with Docker and unrestricted
+internet access:
 
 ```bash
-python -m services.market_data.cli --dry-run --minutes 5 --capture session.jsonl
-python infrastructure/scripts/verify_replay.py session.jsonl --out docs/evidence/build-0.1
+make accept
 ```
+
+It runs the whole sequence — stack, migrations, store verification,
+integration tests, the execution-guard assertion, the live recording and the
+replay verification — and writes the evidence and an explicit per-milestone
+decision. [`docs/runbooks/m1-m2-acceptance.md`](../../runbooks/m1-m2-acceptance.md)
+is the procedure; `infrastructure/scripts/accept_m1_m2.sh` is the one
+implementation, which the workflow calls too.
 
 That run answers three questions no fixture can: whether the frames parse,
 whether `users` is present on trades (which decides whether trader-level
 research is possible at all), and what the real source-to-receipt delay
-distribution looks like. `--capture` turns it into a permanent fixture, and
-`verify_replay.py` then produces the determinism, data-quality and
-gap-detection artifacts from it.
+distribution looks like. The capture it keeps becomes a permanent fixture.
 
 Until a real capture exists, every fixture in the repository is hand-written
 from the venue's SDK type definitions, and `synthetic_receipts` is true for all

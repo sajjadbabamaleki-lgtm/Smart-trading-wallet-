@@ -10,10 +10,20 @@ name: Acceptance — M1/M2
 #
 # It is manual by default. `workflow_dispatch` only.
 #
+# The acceptance steps themselves live in
+# `infrastructure/scripts/accept_m1_m2.sh`, which this workflow calls rather
+# than restates. The same script is what `make accept` runs on a developer
+# machine, so an acceptance result means the same thing wherever it was
+# produced. That matters here specifically: GitHub Actions has rejected every
+# job ever queued in this repository at zero billable milliseconds
+# (docs/evidence/build-0.1/acceptance-attempts.md), so the local path is the
+# one that currently works — and it must not be a second, divergent
+# implementation of the same verification.
+#
 # Safety: this is a MARKET-DATA verification, not a trading verification. It
-# holds no credential, submits no order, and asserts the execution guard before
-# connecting. Public Hyperliquid market data is read-only; mainnet execution
-# stays hard-blocked by `libs/config/settings.py` (ADR-009).
+# holds no credential, submits no order, and the script asserts the execution
+# guard before connecting. Public Hyperliquid market data is read-only; mainnet
+# execution stays hard-blocked by `libs/config/settings.py` (ADR-009).
 
 on:
   workflow_dispatch:
@@ -46,7 +56,6 @@ concurrency:
 
 env:
   UV_VERSION: "0.8.17"
-  COMPOSE_FILE: infrastructure/docker/docker-compose.yml
   EVIDENCE_DIR: evidence
 
 jobs:
@@ -67,212 +76,17 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra dev --frozen
 
-      - name: Prepare evidence directory
-        run: mkdir -p "$EVIDENCE_DIR"
-
-      # ----------------------------------------------------------------------
-      # Provenance. Recorded before anything can change it.
-      # ----------------------------------------------------------------------
-      - name: Record environment provenance
+      # Everything from preflight through the verdict. The script writes its
+      # evidence as it goes and collects container logs on the way out, so a
+      # failure here still leaves the artifact worth uploading.
+      - name: Run the acceptance
         run: |
-          set -euo pipefail
-          {
-            echo "commit=$GITHUB_SHA"
-            echo "run_id=$GITHUB_RUN_ID"
-            echo "runner=$(uname -srm)"
-            echo "python=$(uv run python --version)"
-            echo "uv=$(uv --version)"
-            echo "docker=$(docker --version)"
-            echo "compose=$(docker compose version)"
-            echo "lockfile_sha256=$(sha256sum uv.lock | cut -d' ' -f1)"
-          } | tee "$EVIDENCE_DIR/provenance.txt"
-
-      # ----------------------------------------------------------------------
-      # M1 — real storage stack
-      # ----------------------------------------------------------------------
-      - name: Start the storage stack
-        run: |
-          set -euo pipefail
-          docker compose -f "$COMPOSE_FILE" up -d
-          docker compose -f "$COMPOSE_FILE" ps
-
-      - name: Wait for real readiness
-        run: |
-          set -euo pipefail
-          # Waits on the compose healthchecks rather than sleeping: a fixed
-          # sleep either wastes time or races, and a race here looks like a
-          # store failure.
-          deadline=$((SECONDS + 240))
-          services="postgres clickhouse redis minio"
-          while [ $SECONDS -lt $deadline ]; do
-            unhealthy=""
-            for service in $services; do
-              cid=$(docker compose -f "$COMPOSE_FILE" ps -q "$service")
-              if [ -z "$cid" ]; then
-                unhealthy="$unhealthy $service(absent)"
-                continue
-              fi
-              status=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$cid")
-              [ "$status" = "healthy" ] || unhealthy="$unhealthy $service($status)"
-            done
-            if [ -z "$unhealthy" ]; then
-              echo "all services healthy after ${SECONDS}s"
-              exit 0
-            fi
-            echo "waiting on:$unhealthy"
-            sleep 5
-          done
-          echo "::error::services did not become healthy within 240s"
-          docker compose -f "$COMPOSE_FILE" ps
-          exit 1
-
-      - name: Wait for object store bootstrap
-        run: |
-          set -euo pipefail
-          # minio-init creates and versions the bucket, then exits. Its exit
-          # code is the evidence that the archive is ready.
-          deadline=$((SECONDS + 120))
-          while [ $SECONDS -lt $deadline ]; do
-            cid=$(docker compose -f "$COMPOSE_FILE" ps -aq minio-init)
-            state=$(docker inspect -f '{{.State.Status}}' "$cid")
-            if [ "$state" = "exited" ]; then
-              code=$(docker inspect -f '{{.State.ExitCode}}' "$cid")
-              docker logs "$cid" 2>&1 | tail -20
-              [ "$code" = "0" ] && exit 0
-              echo "::error::minio-init exited $code"
-              exit 1
-            fi
-            sleep 3
-          done
-          echo "::error::minio-init did not finish within 120s"
-          exit 1
-
-      - name: Record service versions
-        run: |
-          set -euo pipefail
-          {
-            echo "{"
-            echo "  \"postgres\": \"$(docker compose -f "$COMPOSE_FILE" exec -T postgres postgres --version | tr -d '\n')\","
-            echo "  \"clickhouse\": \"$(docker compose -f "$COMPOSE_FILE" exec -T clickhouse clickhouse-server --version | tr -d '\n')\","
-            echo "  \"redis\": \"$(docker compose -f "$COMPOSE_FILE" exec -T redis redis-server --version | tr -d '\n')\""
-            echo "}"
-          } | tee "$EVIDENCE_DIR/service-versions.json"
-
-      - name: Apply migrations
-        run: |
-          set -euo pipefail
-          uv run python infrastructure/scripts/verify_stack.py --migrate \
-            | tee "$EVIDENCE_DIR/migrations.txt"
-
-      - name: Verify every store
-        run: |
-          set -euo pipefail
-          # --json is the machine-readable form the acceptance decision reads.
-          uv run python infrastructure/scripts/verify_stack.py --json \
-            > "$EVIDENCE_DIR/storage.json"
-          cat "$EVIDENCE_DIR/storage.json"
-
-      - name: Run integration tests
-        id: integration
-        continue-on-error: true
-        run: |
-          set -uo pipefail
-          uv run pytest tests/integration -m integration -v \
-            --junitxml="$EVIDENCE_DIR/integration-junit.xml" \
-            2>&1 | tee "$EVIDENCE_DIR/integration.txt"
-          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
-
-      - name: Record integration result
-        run: |
-          set -euo pipefail
-          # Written whatever the outcome, because the acceptance decision must
-          # be able to distinguish failed from not-run.
-          code="${{ steps.integration.outputs.exit_code }}"
-          passed=false
-          [ "$code" = "0" ] && passed=true
-          printf '{"passed": %s, "exit_code": %s}\n' "$passed" "${code:-null}" \
-            | tee "$EVIDENCE_DIR/integration.json"
-
-      # ----------------------------------------------------------------------
-      # M2 — live public market data. Read-only.
-      # ----------------------------------------------------------------------
-      - name: Assert the execution guard before connecting
-        run: |
-          set -euo pipefail
-          # Fails the job before any network activity if the configuration
-          # could reach capital. Cheap, and the one check whose failure must
-          # stop everything.
-          uv run python - <<'PY' | tee "$EVIDENCE_DIR/safety-assertion.txt"
-          import sys
-          from libs.config import load_settings
-
-          settings = load_settings()
-          checks = {
-              "execution_cannot_reach_real_capital":
-                  not settings.execution_environment.reaches_real_capital,
-              "order_submission_disabled": not settings.may_submit_orders,
-              "no_credential_configured":
-                  not settings.testnet_api_wallet_private_key,
-              "market_data_read_only": settings.market_data_is_read_only,
-          }
-          for name, ok in checks.items():
-              print(f"{'PASS' if ok else 'FAIL'}  {name}")
-          print(f"market data endpoint: {settings.market_data_endpoint}")
-          print(f"execution endpoint:   {settings.venue_endpoint}")
-          if not all(checks.values()):
-              print("refusing to proceed: this must be a read-only run", file=sys.stderr)
-              sys.exit(1)
-          PY
-        env:
-          STW_MARKET_DATA_ENVIRONMENT: ${{ inputs.market_data_environment }}
-
-      - name: Live acceptance verification
-        id: live
-        continue-on-error: true
-        run: |
-          set -uo pipefail
-          uv run python infrastructure/scripts/acceptance_m1_m2.py \
+          bash infrastructure/scripts/accept_m1_m2.sh \
             --minutes "${{ inputs.minutes }}" \
+            --market-data "${{ inputs.market_data_environment }}" \
             --minimum-frames "${{ inputs.minimum_frames }}" \
             --out "$EVIDENCE_DIR" \
-            --storage-report "$EVIDENCE_DIR/storage.json" \
-            --integration-report "$EVIDENCE_DIR/integration.json" \
-            --commit "$GITHUB_SHA" \
-            --run-id "$GITHUB_RUN_ID" \
-            2>&1 | tee "$EVIDENCE_DIR/acceptance-stdout.txt"
-          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
-        env:
-          STW_MARKET_DATA_ENVIRONMENT: ${{ inputs.market_data_environment }}
-          STW_EXECUTION_ENVIRONMENT: DEVELOPMENT
-          STW_TRADING_ENABLED: "false"
-          STW_ASSET_ALLOWLIST: BTC
-          STW_POSTGRES_DSN: postgresql://stw:stw@localhost:5432/stw
-          STW_CLICKHOUSE_URL: http://localhost:8123
-          STW_CLICKHOUSE_USER: stw
-          STW_CLICKHOUSE_PASSWORD: stw
-          STW_CLICKHOUSE_DATABASE: stw
-          STW_REDIS_URL: redis://localhost:6379/0
-          STW_OBJECT_STORE_ENDPOINT: http://localhost:9000
-          STW_OBJECT_STORE_BUCKET: stw-raw
-          STW_OBJECT_STORE_ACCESS_KEY: stw
-          STW_OBJECT_STORE_SECRET_KEY: stw-dev-only
-
-      - name: Replay the captured live session
-        continue-on-error: true
-        run: |
-          set -uo pipefail
-          # Independent of the acceptance script's own determinism check, and
-          # over the same capture — two paths agreeing is stronger evidence
-          # than one asserting.
-          if [ -s "$EVIDENCE_DIR/live-btc-capture.jsonl" ]; then
-            uv run python infrastructure/scripts/verify_replay.py \
-              "$EVIDENCE_DIR/live-btc-capture.jsonl" \
-              --out "$EVIDENCE_DIR" \
-              2>&1 | tee "$EVIDENCE_DIR/replay-verification.txt"
-          else
-            echo "no live capture was produced; replay not attempted" \
-              | tee "$EVIDENCE_DIR/replay-verification.txt"
-          fi
+            --stop-stack
 
       - name: Summarise into the run summary
         if: always()
@@ -281,21 +95,13 @@ jobs:
           if [ -f "$EVIDENCE_DIR/m1-m2-acceptance.md" ]; then
             cat "$EVIDENCE_DIR/m1-m2-acceptance.md" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "## Acceptance report was not produced" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "The run failed before the report could be written. See the" \
-              "uploaded evidence for the step that failed." >> "$GITHUB_STEP_SUMMARY"
+            {
+              echo "## Acceptance report was not produced"
+              echo ""
+              echo "The run failed before the report could be written. See the"
+              echo "uploaded evidence for the step that failed."
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
-
-      - name: Collect container logs
-        if: always()
-        run: |
-          set -uo pipefail
-          mkdir -p "$EVIDENCE_DIR/container-logs"
-          for service in postgres clickhouse redis minio minio-init; do
-            docker compose -f "$COMPOSE_FILE" logs --no-color "$service" \
-              > "$EVIDENCE_DIR/container-logs/$service.log" 2>&1 || true
-          done
 
       # Uploaded whatever happened. A failed acceptance run with preserved
       # evidence is more valuable than a green one without it.
@@ -307,19 +113,3 @@ jobs:
           path: ${{ env.EVIDENCE_DIR }}
           if-no-files-found: warn
           retention-days: 90
-
-      - name: Stop the stack
-        if: always()
-        run: docker compose -f "$COMPOSE_FILE" down -v
-
-      # The job's own verdict, decided last so the evidence is always uploaded
-      # first. Both milestones must be ACCEPTED for this to pass.
-      - name: Acceptance verdict
-        run: |
-          set -euo pipefail
-          code="${{ steps.live.outputs.exit_code }}"
-          if [ "${code:-1}" != "0" ]; then
-            echo "::error::M1/M2 acceptance did not pass (verifier exit ${code:-unknown}). See the evidence artifact."
-            exit 1
-          fi
-          echo "M1 and M2 ACCEPTED with live evidence."

@@ -5,7 +5,7 @@
 UV := uv
 
 .PHONY: help setup format lint typecheck test test-unit test-integration audit check \
-        stack-up stack-down stack-logs stack-verify migrate clean
+        stack-up stack-down stack-logs stack-verify migrate accept clean
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -55,6 +55,9 @@ stack-verify: ## Check every store is reachable and correctly configured
 
 migrate: ## Verify the stack, then apply pending migrations
 	$(UV) run python infrastructure/scripts/verify_stack.py --migrate
+
+accept: ## Run the full M1/M2 acceptance against the real stack and the live venue
+	@bash infrastructure/scripts/accept_m1_m2.sh $(ACCEPT_ARGS)
 
 clean: ## Remove caches and build artifacts
 	rm -rf .mypy_cache .ruff_cache .pytest_cache htmlcov .coverage coverage.xml requirements-audit.txt

@@ -49,6 +49,11 @@ EVIDENCE_DIR="$REPO_ROOT/docs/evidence/build-0.1/live"
 STOP_STACK="no"
 HEALTH_TIMEOUT="240"
 
+# Filled by preflight: "<http_code> <connect_s> <tls_s> <total_s>" for the
+# venue probe. Recorded in the provenance so a latency figure can be read
+# together with the distance it was measured over.
+VENUE_PROBE="unmeasured 0 0 0"
+
 usage() {
     cat <<'USAGE'
 Usage: accept_m1_m2.sh [options]
@@ -158,15 +163,29 @@ preflight() {
     # opens — but a failure guarantees it will not, and that failure is worth
     # 10 seconds rather than 15 minutes.
     if command -v curl >/dev/null 2>&1; then
+        # The timings are kept, not just the status. The source-to-receipt
+        # delay this acceptance reports is dominated by the physical distance
+        # between the recording host and the venue, so the same recorder in
+        # Singapore and in Nuremberg produces different numbers from identical
+        # code. An evidence artifact that does not say where it was measured
+        # cannot be compared with another one, and TCP connect time is the
+        # honest proxy for that — measured directly, with no third party asked
+        # where this machine is.
+        #
         # Assigned, then defaulted on failure. `$(curl ... || echo 000)` would
         # concatenate curl's own "000" with the fallback and report "000000".
-        local code
-        code="$(curl -sS -m 10 -o /dev/null -w '%{http_code}' \
+        local probe code
+        probe="$(curl -sS -m 10 -o /dev/null \
+            -w '%{http_code} %{time_connect} %{time_appconnect} %{time_total}' \
             -X POST "https://$VENUE_HOST/info" \
             -H 'Content-Type: application/json' \
-            -d '{"type":"meta"}' 2>/dev/null)" || code="000"
+            -d '{"type":"meta"}' 2>/dev/null)" || probe="000 0 0 0"
+        VENUE_PROBE="$probe"
+        code="${probe%% *}"
         if [ "$code" = "200" ]; then
-            info "$VENUE_HOST: reachable"
+            local tcp
+            tcp="$(echo "$probe" | cut -d' ' -f2)"
+            info "$VENUE_HOST: reachable (TCP connect ${tcp}s)"
         else
             if [ "$code" = "000" ]; then
                 fail "$VENUE_HOST is unreachable — no HTTP response; the connection was blocked or refused"
@@ -215,6 +234,16 @@ provenance() {
         echo "lockfile_sha256=$(sha256sum uv.lock | cut -d' ' -f1)"
         echo "market_data_environment=$MARKET_DATA_ENVIRONMENT"
         echo "minutes=$MINUTES"
+        # Where this was measured from, expressed as distance rather than as a
+        # place name. Every latency figure in this run's evidence is relative
+        # to these; a run with a 12 ms connect time and one with 180 ms are not
+        # reporting the same quantity.
+        echo "venue_host=$VENUE_HOST"
+        read -r _probe_code _probe_tcp _probe_tls _probe_total <<<"$VENUE_PROBE"
+        echo "venue_probe_http_code=$_probe_code"
+        echo "venue_tcp_connect_seconds=$_probe_tcp"
+        echo "venue_tls_established_seconds=$_probe_tls"
+        echo "venue_request_total_seconds=$_probe_total"
     } | tee "$EVIDENCE_DIR/provenance.txt"
 }
 

@@ -36,6 +36,46 @@ testnet data cannot answer what the real venue sends, while reading a public
 book risks nothing. ADR-009 separates market data from execution precisely so
 this choice is available without widening the execution guard.
 
+## Where to run it
+
+A server, not a laptop. Two reasons, and only the first is about this run:
+
+- **The acceptance's latency figures are relative to where they were measured.**
+  The source-to-receipt delay is dominated by the physical distance between the
+  recording host and the venue, so identical code produces different numbers in
+  Singapore and in Frankfurt. The run records its own TCP connect and TLS
+  handshake times to the venue in `provenance.txt` for exactly this reason — a
+  latency distribution without that context cannot be compared against another
+  run, and TBIE Gate 0 is a comparison.
+- **From M2 onward the recorder wants to stay up.** A laptop sleeps, changes
+  networks and gets closed. Each of those is a gap, and the gap registry will
+  faithfully record every one.
+
+Pick the region deliberately and keep it fixed across runs: changing it
+silently changes every latency number. A small VPS — 2 vCPU, 4 GB RAM, 40 GB
+disk — is enough for the stack plus a multi-hour capture.
+
+### First-time setup on a fresh Ubuntu server
+
+```bash
+# Docker, from Docker's own repository rather than the distro's older package
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker "$USER" && newgrp docker
+
+# uv, git, make
+curl -LsSf https://astral.sh/uv/install.sh | sh
+sudo apt-get update && sudo apt-get install -y git make
+source "$HOME/.local/bin/env"
+
+git clone https://github.com/sajjadbabamaleki-lgtm/Smart-trading-wallet-.git
+cd Smart-trading-wallet-
+make setup
+make accept
+```
+
+If `make accept` reaches `preflight passed`, the server qualifies. If it does
+not, it names which check failed and why, before starting anything.
+
 ## Prerequisites
 
 - Docker with the daemon running, and Docker Compose v2

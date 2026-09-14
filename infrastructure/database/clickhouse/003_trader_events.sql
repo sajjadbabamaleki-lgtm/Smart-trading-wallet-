@@ -9,6 +9,13 @@
 -- ORDER BY leads with wallet, because every TBIE query is per-wallet over time
 -- — skill estimation, markout, turnover. That differs from market_events on
 -- purpose: the access pattern differs.
+--
+-- The time column is local_receive_time, for the reasons set out at length
+-- in 002: point-in-time correctness is defined by when we received a fact,
+-- a deliberately nullable column has no business in a sorting key, and
+-- ClickHouse refuses one outright. It matters more here than there —
+-- TBIE's Gate 0 asks what was knowable within a latency budget, and that
+-- question is asked in receipt time.
 
 CREATE TABLE IF NOT EXISTS trader_events (
     event_id          String,
@@ -55,5 +62,5 @@ CREATE TABLE IF NOT EXISTS trader_events (
 )
 ENGINE = MergeTree
 PARTITION BY toYYYYMM(local_receive_time)
-ORDER BY (wallet, asset, exchange_time, event_id)
+ORDER BY (wallet, asset, local_receive_time, event_id)
 SETTINGS index_granularity = 8192;

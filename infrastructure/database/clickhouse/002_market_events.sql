@@ -16,10 +16,32 @@
 -- fields, because a source that does not supply one must leave it empty rather
 -- than have a value invented.
 --
--- ORDER BY (asset, event_type, exchange_time) matches the dominant research
--- query — one asset, one event type, a time range — and gives good compression
--- because neighbouring rows are similar. The partition is monthly: daily
--- partitions on a multi-billion-row table produce too many parts.
+-- ORDER BY (asset, event_type, local_receive_time) matches the dominant
+-- research query — one asset, one event type, a time range — and gives good
+-- compression because neighbouring rows are similar. The partition is monthly:
+-- daily partitions on a multi-billion-row table produce too many parts.
+--
+-- The time column in the sorting key is *our receipt time*, not the venue's,
+-- and that is a correctness decision rather than a concession to ClickHouse
+-- refusing a nullable sorting key (which it does, and which is how this was
+-- found).
+--
+-- Point-in-time correctness is defined by when information was available to
+-- us: at decision time T only what we had received by T may be used. That
+-- makes a PIT-safe scan a local_receive_time range, so ordering by anything
+-- else would leave the one query the research layer must run as the
+-- unindexed one. The partition key already uses local_receive_time; the
+-- sorting key now agrees with it instead of cutting across it.
+--
+-- It also resolves a contradiction. exchange_time is nullable on purpose —
+-- absent means the venue supplied nothing, and inventing a value is
+-- prohibited. Putting it in the sorting key asks the engine to give those
+-- unknowns a position in the ordering, which is inventing one.
+--
+-- Venue-time analysis is not lost: exchange_time remains a column and stays
+-- queryable. It is a full scan within the matched partitions rather than an
+-- indexed lookup, which is the right cost to pay on the query that is not the
+-- point-in-time one.
 
 CREATE TABLE IF NOT EXISTS market_events (
     event_id          String,
@@ -64,5 +86,5 @@ CREATE TABLE IF NOT EXISTS market_events (
 )
 ENGINE = MergeTree
 PARTITION BY toYYYYMM(local_receive_time)
-ORDER BY (asset, event_type, exchange_time, event_id)
+ORDER BY (asset, event_type, local_receive_time, event_id)
 SETTINGS index_granularity = 8192;

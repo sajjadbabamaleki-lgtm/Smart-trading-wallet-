@@ -21,13 +21,13 @@ artifacts are git-ignored here; the acceptance matrix will be committed.
 
 | Area | Requirement | State |
 |------|-------------|-------|
-| Infrastructure | Clean environment starts the stack | **M1 defined and verifiable** via `make stack-up` + `make stack-verify`; not yet run in CI |
+| Infrastructure | Clean environment starts the stack | **Done** — a clean Contabo VPS ran `make accept` end to end on 2026-09-14; all four stores healthy, 16/16 integration tests |
 | Infrastructure | Configuration is validated | **M0 done** |
 | Infrastructure | Secrets absent from source | **M0 done** |
-| Infrastructure | CI passes | **M0 done** |
+| Infrastructure | CI passes | **Done** — CI executed for the first time on 2026-09-14 once the repository became public; lint, types, 452 tests, gitleaks and the dependency audit all green |
 | Data | Schemas and migrations exist for both stores | **M1 done** |
-| Data | Recorder pipeline, raw retained, normalization, quality classification | **M2 code done**, unverified against the live venue |
-| Data | Reconnect, gap detection, duplicates, freshness | **M2 implemented and tested against fixtures**; live behaviour is M3 |
+| Data | Recorder pipeline, raw retained, normalization, quality classification | **Done and live-verified** — 15 minutes of mainnet BTC, 8240 events across four channels, no schema deviation |
+| Data | Reconnect, gap detection, duplicates, freshness | **Implemented**; gap detection corrected against live data — `tid` is a hash, not a sequence, and no longer produces false gaps |
 | Data | Dataset manifests | M4 |
 | Replay | Deterministic, independent of wall-clock time | **M3 done** — `verify_replay.py` replays each capture twice and compares; 53 replay tests |
 | Replay | Capture format, sessions reloadable as fixtures | **M3 done** |
@@ -64,56 +64,44 @@ parser's expectations, and that data arrival latency has a floor near 300 ms
 that is neither our clock nor our network. See the attempt log for the numbers
 and for what they mean for TBIE Gate 0.
 
-The verification machinery exists and is tested
-(`infrastructure/scripts/accept_m1_m2.sh`,
-`infrastructure/scripts/acceptance_m1_m2.py`, 60 verifier tests). It has not
-produced a result: GitHub Actions has rejected every job ever queued in this
-repository before execution, at zero billable milliseconds — ordinary CI
-included. That is an account- or repository-level Actions restriction rather
-than a defect here, and the attempt log records what the owner needs to check.
+The verification machinery is
+`infrastructure/scripts/accept_m1_m2.sh` — the single acceptance path, which
+`make accept` and the CI workflow both call — together with
+`infrastructure/scripts/acceptance_m1_m2.py` and 60 verifier tests. It no longer
+depends on GitHub Actions, which had rejected every job ever queued in this
+repository until the repository was made public on 2026-09-14. Both now work.
 
-Acceptance no longer depends on that being fixed. `make accept` runs the same
-verification locally, and the workflow calls the same script, so there is one
-acceptance path rather than two that could disagree.
+## What the live run established
+
+Three claims moved from assumption to evidence, and one stayed honest.
+
+**`users` is present on public trades.** This decided whether trader-level
+research is possible at all (ADR-006, TBIE). It is.
+
+**No schema deviation.** Every field the parser relies on was present across
+all four channels, and no unknown field appeared. The hand-written fixtures had
+the shape right; what they had wrong was the meaning of `tid`.
+
+**Aggressor attribution remains unproven**, correctly. `users` is ordered
+[buyer, seller] — direction — while `side` carries aggression. Joining them is
+an inference the public trade frame cannot test, so no markout may be computed
+from an assumed taker.
+
+**Data arrival latency has a floor near 300 ms** that is neither our clock
+(NTP-synchronised, 274 µs root dispersion) nor our network (28 ms one-way).
+It is the interval between Hyperliquid stamping an event and publishing it to
+subscribers, and therefore the observation floor for any consumer of this feed.
+TBIE Gate 0's delay ladder starts below that floor and needs re-basing.
 
 ## Verification owed
 
-Two milestones were written in an environment that could not execute their
-final check. Both are recorded here rather than left implicit, because an
-unverified claim that looks finished is worse than an open one.
+**M1** — one further `make accept` on the current commit. Its only blocking
+failure was an object-store health check called without credentials, fixed at
+`2c8c4c0`, after which the same suite passed 16/16 on the same machine.
 
-**M1 — the stack was never started.** No Docker daemon was available. The
-compose file is syntax-validated and 16 integration tests are written but
-unrun.
-
-**M2 — the recorder has never seen the venue.** Message shapes come from
-Hyperliquid's official SDK type definitions, not from a live connection, and
-the fixtures are hand-written from them. Two divergences between those
-definitions and the wire format are already known (`Trade` omits `tid` and
-`users`; `sz` is typed as an integer where the API sends a decimal string),
-which is reason enough to distrust the rest until tested.
-
-Both are owed by a single command, on a machine with Docker and unrestricted
-internet access:
-
-```bash
-make accept
-```
-
-It runs the whole sequence — stack, migrations, store verification,
-integration tests, the execution-guard assertion, the live recording and the
-replay verification — and writes the evidence and an explicit per-milestone
-decision. [`docs/runbooks/m1-m2-acceptance.md`](../../runbooks/m1-m2-acceptance.md)
-is the procedure; `infrastructure/scripts/accept_m1_m2.sh` is the one
-implementation, which the workflow calls too.
-
-That run answers three questions no fixture can: whether the frames parse,
-whether `users` is present on trades (which decides whether trader-level
-research is possible at all), and what the real source-to-receipt delay
-distribution looks like. The capture it keeps becomes a permanent fixture.
-
-Until a real capture exists, every fixture in the repository is hand-written
-from the venue's SDK type definitions, and `synthetic_receipts` is true for all
-but one of them — so no latency figure produced from them means anything.
-
-Until both are done, M1 and M2 are **implemented but not accepted**.
+**An open question, not a defect.** The TRADE latency tail reaches 18968 ms
+while BBO tops out at 903 ms over the same socket. Transport does not
+discriminate by channel and per-frame work does, so part of that tail is
+probably this recorder rather than the venue. Separating socket-read time from
+receipt-stamp time would settle it. Until then the TRADE tail must not be
+quoted as a venue property.

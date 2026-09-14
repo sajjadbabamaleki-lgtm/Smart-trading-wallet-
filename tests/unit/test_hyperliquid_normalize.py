@@ -43,7 +43,10 @@ class TestTrades:
         assert event.venue == "hyperliquid"
         assert event.side is Side.BUY
         assert event.price == Decimal("60000.5")
-        assert event.sequence == 1001
+        assert event.venue_event_id == "1001"
+        # `tid` identifies a trade; it is a hash and orders nothing, so it must
+        # never reach `sequence`, which gap detection subtracts.
+        assert event.sequence is None
 
     def test_both_venue_time_and_receipt_time_are_carried(self) -> None:
         """Only our receipt time is ours to measure (ADR-007)."""

@@ -19,7 +19,7 @@ handled by the parser and exercised here: the SDK's `Trade` omits `tid` and
 | `btc_session.jsonl` | A short well-formed session across all four recorded channels |
 | `btc_malformed.jsonl` | Frames the parser must refuse without stopping the recorder |
 | `btc_duplicates.jsonl` | A reconnect redelivering frames, plus genuinely repeated trades |
-| `btc_sequence_gap.jsonl` | Trades with a missing `tid` range |
+| `btc_tid_jump.jsonl` | Trades whose `tid` jumps — ordinary, since `tid` is a hash of the two order ids and not a counter |
 | `btc_capture.jsonl` | A session in capture format — header plus per-frame receipt timestamps |
 
 ## Two line forms

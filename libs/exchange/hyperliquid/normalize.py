@@ -104,7 +104,12 @@ def _trade_events(
         instrument=_instrument(record.coin),
         event_type=MarketEventType.TRADE,
         timestamps=stamps,
-        sequence=record.trade_id,
+        # `tid` identifies; it does not order. Hyperliquid documents it as a
+        # 50-bit hash of the buyer's and seller's order ids, so consecutive
+        # trades carry unrelated values and the venue publishes no sequence
+        # number on this channel at all.
+        venue_event_id=None if record.trade_id is None else str(record.trade_id),
+        sequence=None,
         price=record.price,
         quantity=record.quantity,
         side=record.side,

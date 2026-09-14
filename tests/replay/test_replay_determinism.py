@@ -31,7 +31,7 @@ ALL_CAPTURES = (
     "btc_capture.jsonl",
     "btc_session.jsonl",
     "btc_duplicates.jsonl",
-    "btc_sequence_gap.jsonl",
+    "btc_tid_jump.jsonl",
     "btc_malformed.jsonl",
 )
 
@@ -116,13 +116,15 @@ class TestReplayFindings:
         report = ReplayReport(result=await ReplayEngine(session).run())
         assert report.as_dict()["capture"]["malformed_lines"] == [1]
 
-    async def test_the_gap_in_the_capture_is_detected_on_replay(self) -> None:
+    async def test_the_tid_jump_in_the_capture_produces_no_gap_on_replay(self) -> None:
+        """tid jumps 5002 -> 5006, which is ordinary: tid is a hash, not a counter.
+
+        Replay must reach the same conclusion as the live path, so the premise
+        corrected there is asserted here too.
+        """
         session = load_session(FIXTURES / "btc_capture.jsonl")
         result = await ReplayEngine(session).run()
-        # tid jumps 5002 -> 5006.
-        assert len(result.gaps) == 1
-        assert result.gaps[0].expected_sequence == 5003
-        assert result.gaps[0].actual_sequence == 5006
+        assert result.gaps == ()
 
     async def test_the_comparison_renders_a_verdict(self) -> None:
         comparison = await verify_determinism(load_session(FIXTURES / "btc_capture.jsonl"))

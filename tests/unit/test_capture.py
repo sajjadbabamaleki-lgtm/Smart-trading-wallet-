@@ -111,7 +111,7 @@ class TestRoundTrip:
 
 class TestSyntheticReceipts:
     def test_bare_frames_get_receipts_derived_from_venue_time(self) -> None:
-        session = load_session(FIXTURES / "btc_sequence_gap.jsonl")
+        session = load_session(FIXTURES / "btc_tid_jump.jsonl")
         assert session.synthetic_receipts
         first = session.frames[0].receipt
         assert first.exchange_time is None  # not set until normalization
@@ -129,7 +129,7 @@ class TestSyntheticReceipts:
             "btc_session.jsonl",
             "btc_malformed.jsonl",
             "btc_duplicates.jsonl",
-            "btc_sequence_gap.jsonl",
+            "btc_tid_jump.jsonl",
             "btc_capture.jsonl",
         ):
             times = [

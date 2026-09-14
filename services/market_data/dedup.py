@@ -79,14 +79,18 @@ class DuplicateDetector:
     def identity(event: MarketEvent) -> str:
         """A stable identity for an event.
 
-        Prefers the venue's identifier. `sequence` carries the venue's trade id
-        where one was supplied, and a venue id is authoritative in a way that
+        Prefers the venue's own identifier, which is authoritative in a way
         content never is: two distinct trades can share content, but not an id.
+        `venue_event_id` is that identifier and is opaque — for Hyperliquid
+        trades it is `tid`, a hash. A true `sequence` serves equally well as an
+        identity where a venue publishes one, so it is the second choice.
 
         Content is hashed only as a fallback, and includes the event type and
         venue timestamp so that a BBO update and a book snapshot at the same
         quote do not collide.
         """
+        if event.venue_event_id is not None:
+            return f"{event.asset}:{event.event_type.value}:vid:{event.venue_event_id}"
         if event.sequence is not None:
             return f"{event.asset}:{event.event_type.value}:seq:{event.sequence}"
 

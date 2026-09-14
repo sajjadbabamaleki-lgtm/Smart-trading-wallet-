@@ -35,9 +35,32 @@ class MarketEvent(BaseModel):
     event_type: MarketEventType
     timestamps: EventTimestamps
 
-    sequence: int | None = Field(
-        default=None, description="Venue sequence number, where one is published."
+    venue_event_id: str | None = Field(
+        default=None,
+        description=(
+            "The venue's own identifier for this event, opaque. Used to recognise "
+            "a redelivered message; carries no ordering meaning."
+        ),
     )
+    sequence: int | None = Field(
+        default=None,
+        description=(
+            "Monotonic venue sequence number, only where the venue actually "
+            "publishes one. Gap detection subtracts consecutive values, so a "
+            "value here is a claim that the difference counts messages."
+        ),
+    )
+    """Identity and order are separate fields because they are separate claims.
+
+    Hyperliquid's `tid` is a 50-bit hash of the two order ids. It identifies a
+    trade perfectly and orders nothing, so putting it in `sequence` made the gap
+    detector read the distance between two hashes as missing messages — the
+    first live run reported ten trillion of them in a quarter of an hour.
+
+    Keeping them apart makes that error unavailable rather than merely fixed: an
+    opaque string cannot be subtracted, so a venue that publishes no sequence
+    can no longer produce a sequence gap.
+    """
     price: Decimal | None = None
     quantity: Decimal | None = None
     side: Side | None = None

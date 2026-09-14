@@ -180,7 +180,7 @@ class TestMalformedFrames:
         """Tolerance is specific: unknown fields pass, bad values do not."""
         _, sink, _ = await record("btc_malformed.jsonl")
         assert len(sink.market_events) == 1
-        assert sink.market_events[0].sequence == 9001
+        assert sink.market_events[0].venue_event_id == "9001"
 
     async def test_no_partial_events_are_written_for_rejected_frames(self) -> None:
         _, sink, metrics = await record("btc_malformed.jsonl")
@@ -198,7 +198,7 @@ class TestDuplicates:
         trades = [
             event for event in sink.market_events if event.event_type is MarketEventType.TRADE
         ]
-        assert [event.sequence for event in trades] == [2001, 2002]
+        assert [event.venue_event_id for event in trades] == ["2001", "2002"]
 
     async def test_duplicates_are_still_archived_raw(self) -> None:
         """Dedup is a normalization decision, not a reason to lose the frame."""
@@ -207,24 +207,44 @@ class TestDuplicates:
 
 
 class TestGapDetection:
-    async def test_a_missing_sequence_range_is_reported(self) -> None:
-        _, sink, metrics = await record("btc_sequence_gap.jsonl")
-        assert metrics.gaps_detected == 1
-        gap = sink.gaps[0]
-        assert gap.expected_sequence == 3003
-        assert gap.actual_sequence == 3007
-        assert gap.missing_count == 4
-        assert not gap.suspected
+    """A jump in `tid` is not a gap, and this is where that is enforced.
 
-    async def test_recording_continues_past_a_gap(self) -> None:
-        recorder, _sink, metrics = await record("btc_sequence_gap.jsonl")
+    These tests previously asserted the opposite, on a fixture whose `tid`s were
+    invented as consecutive integers. The real venue never sends those:
+    Hyperliquid documents `tid` as a 50-bit hash of the buyer's and seller's
+    order ids. The first live BTC recording reported gaps of ten trillion
+    messages, several times a minute, because the distance between two hashes
+    was being read as a count of missing messages.
+
+    Sequence-gap detection itself is unchanged and still covered, driven
+    directly with a real sequence in `tests/unit/test_recorder_components.py`.
+    What changed is that the Hyperliquid trade channel no longer claims to
+    publish one, because it does not.
+    """
+
+    async def test_a_jump_in_tid_is_not_reported_as_a_gap(self) -> None:
+        _, sink, metrics = await record("btc_tid_jump.jsonl")
+        assert metrics.gaps_detected == 0
+        assert sink.gaps == []
+
+    async def test_the_trades_either_side_of_the_jump_are_all_recorded(self) -> None:
+        """A false gap must not come at the cost of dropping real trades."""
+        recorder, sink, metrics = await record("btc_tid_jump.jsonl")
         assert metrics.market_events_written == 4
+        assert [event.venue_event_id for event in sink.market_events] == [
+            "3001",
+            "3002",
+            "3007",
+            "3008",
+        ]
         assert recorder.machine.state.is_recording
 
-    async def test_the_gap_carries_a_readable_reason(self) -> None:
-        _, sink, _ = await record("btc_sequence_gap.jsonl")
-        assert "3002" in sink.gaps[0].detection_reason
-        assert "3007" in sink.gaps[0].detection_reason
+    async def test_the_jump_still_leaves_each_trade_distinctly_identified(self) -> None:
+        """Identity survives; only the ordering claim was withdrawn."""
+        _, sink, _ = await record("btc_tid_jump.jsonl")
+        ids = [event.venue_event_id for event in sink.market_events]
+        assert len(set(ids)) == len(ids)
+        assert all(event.sequence is None for event in sink.market_events)
 
 
 class TestPersistenceFailure:

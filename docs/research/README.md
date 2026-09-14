@@ -2,90 +2,206 @@
 
 Component-level research and architecture specifications. These are **not**
 approved production signals and **not** part of the Build 0.1 critical path.
-Each carries its own promotion gate and its own valid negative outcome.
+Each carries its own promotion gates and its own valid negative outcomes.
 
-Documents are stored verbatim as delivered; status is carried by this index.
+Documents are stored verbatim as delivered; status is carried by filename and
+this index.
 
-| Component | Status | Production authority | Build 0.1 critical path |
-|-----------|--------|----------------------|-------------------------|
-| [Trader Behavior Intelligence Engine (TBIE)](trader-behavior-intelligence-engine.md) | Research Candidate — High Priority | None | No — but it does affect recorder design |
+| Component | Version | Status | Production authority | Build 0.1 critical path |
+|-----------|---------|--------|----------------------|-------------------------|
+| [Trader Behavior Intelligence Engine (TBIE)](trader-behavior-intelligence-engine.md) | 1.1 — evidence-audited | High-Priority Experimental Candidate | None | No — but it constrains recorder and clock design |
+| [TBIE v1.0](trader-behavior-intelligence-engine-v1.0-superseded.md) | 1.0 | Superseded by 1.1, retained for traceability | None | — |
 
 ## TBIE in one paragraph
 
 Hyperliquid exposes persistent pseudonymous wallet identities, so it is possible
 to ask whether *who* trades carries information beyond price, order book,
 derivatives and anonymous order flow. TBIE would estimate the point-in-time,
-context-dependent, time-varying informational quality of wallets and cohorts, and
+context-dependent, time-varying informational quality of wallets and cohorts and
 emit that as research features. It is explicitly **not** copy trading: observed
-trader behaviour is evidence, never an instruction, and TBIE holds no execution,
-leverage, sizing, stop, risk-limit or kill-switch authority (§3, §62).
+behaviour is evidence, never an instruction, and TBIE holds no execution,
+leverage, sizing, stop, risk-limit or kill-switch authority (v1.0 §3, §62).
 
-## What this changes today
+## The distinction v1.1 exists to enforce
 
-Nothing on the critical path. The immediate sequence stays
-M0 Rev.2 → M1 → M2 → M3 → BTC research dataset → baseline research, with the
-trader-behaviour experiment after it (§66).
+> Existing research demonstrates **predictive information**, not **executable
+> trading alpha**. (§1, §19)
 
-Two concrete effects:
+Three propositions, kept separate (§72):
 
-1. **Recorder design (§51).** M2 stays the BTC market recorder, but must not
-   discard trader-identity-linked event information that would later be expensive
-   or impossible to reconstruct. Two raw streams — market events and trader
-   events — sharing one time model. This is a *preservation* decision, not a
-   requirement to implement TBIE during M2.
-2. **An ADR (§50, §66).** Build 0.1 Rev.2 should record trader behaviour as an
-   experimental feature family: architectural support preserved, status
-   experimental, production authority none, validation requirement = point-in-time
-   ablation against an anonymous baseline.
+| | Proposition | Status |
+|---|-------------|--------|
+| 1 | Trader identity contains predictive information | **Supported** |
+| 2 | It contains information beyond anonymous market data | **Supported** |
+| 3 | Our system can convert that into durable net profit | **Unproven** |
 
-   *Open item:* the document asks for this as **ADR-004**, while Rev.1 §4 sketches
-   ADR-004 as "why V1 begins as a modular monolith". Rev.1 presents its numbers as
-   examples rather than an assigned registry, so the number needs settling once
-   when `docs/ADR/` is created during M0.
+The entire TBIE engineering programme exists to test proposition 3.
 
-## Why it is worth testing
+## Evidence audit
 
-The document cites 2026 empirical work on Hyperliquid as grounds for testing —
-not as proof of profitability:
+v1.1 audits every external claim against primary sources and classifies each as
+VERIFIED / VERIFIED WITH QUALIFICATION / PARTIALLY VERIFIED / UNVERIFIED. No
+architectural commitment requiring significant spend may rest on an unverified
+claim (§2, §65). Full matrix in §36.
 
-- wallet informativeness persisting across adjacent ten-day windows (rank
-  correlation ≈ 0.52), and top-ranked wallet activity raising out-of-sample
-  one-second return R² to ≈ 12.31%, a reported ≈ 13.2% improvement over an
-  anonymous benchmark, checked against 200 activity-matched placebo cohorts (§5.1)
-- Binance leading Hyperliquid at venue level while a minority of Hyperliquid
-  wallets still showed persistent anticipatory behaviour — so venue-level and
-  trader-level information leadership are different phenomena (§6)
-- feasibility of reconstructing Level-4-style data from a non-validating node,
-  including rejected orders and failed cancellations (§7)
+**Verified** — the principal study (Zhai, *Public Trader Identity: Adverse
+Selection and Return Predictability*, 2026, SSRN/arXiv working paper):
 
-**These citations are unverified in this repository.** They carry the whole
-rationale, so confirming the papers, their numbers, and their methodology is
-prerequisite work before any infrastructure spend — particularly before the
-node-ingestion stages (§48 Stage 4–5, §49).
+- Scale: 17.1B Level-4 messages, 14.3M aggressive orders, 147,113 wallets,
+  $84.3B taker notional (§4). BTC is the largest market in the sample —
+  ≈9.75B messages, 98,900 wallets, $46.8B notional, 0.20 bps spread — which
+  matters directly for a BTC-only MVP (§5).
+- Skill is measured by signed 10-second midpoint markout, not PnL — validating
+  v1.0's architectural choice (§6).
+- Genuine temporal separation: score on Jul 1–10, test persistence Jul 11–20,
+  evaluate prediction Jul 21–27, rankings frozen in between (§8).
+- Persistence across adjacent ten-day windows, Spearman ρ = 0.52 (§9).
+- Concentration in the upper tail; top-ventile adjusted markout ≈ 3.11 bps (§10).
+- Minimum 100 qualifying aggressive orders → 2,314 scored wallets, 231 in the top
+  decile; TWAP and liquidations excluded (§7). 91.3% of those wallets traded
+  again in the validation window, so persistence is not a survivorship artefact
+  (§12).
+- The benchmark is **not** price-only: it already carries depth imbalance,
+  quote-update OFI, signed taker flow, returns, realized volatility and spread
+  (§13).
+- Headline: at 1s, ridge R² 10.88% → 12.31%, a **relative** +13.2%, t = 9.2 —
+  which is not 13.2% return, alpha, or profitability (§14).
+- 200 activity-matched placebo cohorts; identity gain exceeds them at the
+  relevant horizons (§15).
+- Gradient-boosted trees: 19.48% → 20.65%, +6.0% — nonlinear anonymous features
+  absorb part of the identity information, so TBIE must always compete against
+  strong nonlinear baselines (§16).
+- Temporal replication on a separate December 2025 dataset (26.25B messages) —
+  though still the same study and methodology, not independent reproduction
+  (§21).
+- Level-4 reconstruction feasibility and counterparty/position fields confirmed
+  by the Albers et al. paper **and** by Hyperliquid's own node documentation
+  (§28, §29).
 
-## The two risks that decide this
+**Not verified:** executable profitability, receipt-to-fill alpha, profitable
+copy trading (§36).
 
-The document rates leakage risk and latency sensitivity **VERY HIGH** (§64), and
-both are existential rather than incidental:
+**Rejected:** "Hyperliquid smart money leads Binance" — Binance leads at
+aggregate venue level, and even the pooled informed cohort tends to *follow* it;
+only wallet-level heterogeneity shows a minority anticipating (§24, §27). Also
+rejected: that full-node data is cheap, and that the API alone can reconstruct
+long trader history (§36).
 
-1. **Leakage (§18, §19, §45).** Ranking wallets with hindsight and backtesting
-   the past with that ranking would manufacture an edge from nothing. Only
-   point-in-time skill estimation, the historically observable population
-   (no leaderboard survivorship), and placebo/future-leaked comparisons keep the
-   experiment honest.
-2. **Latency (§23, §42).** The cited evidence is strongest at one-second
-   horizons. The question is never "did the trader predict the market" but
-   "was the information still actionable after our observation, computation,
-   transmission and execution latency". A signal that is real and unreachable is
-   worth nothing.
+## Latency is now Gate 0
 
-Then capacity, crowding, reflexivity and concentration (§24, §25, §47): if the
-edge vanishes when the single top wallet is removed, there is no edge.
+The horizon structure (§17) corrects the earlier reading in both directions —
+the signal is fast-decaying but demonstrably not confined to one second:
 
-## Outcome
+| Horizon | Anonymous R² | + Identity | Relative gain |
+|---------|--------------|------------|---------------|
+| 0.2s | 6.91% | 8.20% | +18.7% |
+| 0.5s | 10.16% | 11.76% | +15.8% |
+| 1s | 10.88% | 12.31% | +13.2% |
+| 2s | 10.60% | 11.66% | +10.0% |
+| 5s | 9.17% | 9.79% | +6.7% |
+| 10s | 7.18% | 7.56% | +5.2% |
+| 30s | 3.56% | 3.67% | +3.0% |
 
-`TBIE_NO_EDGE` is a valid result (§60). If trader identity fails incremental
-ablation against the anonymous baseline, the component is archived or kept
-research-only, and the trading architecture works without it. No narrative,
-leaderboard, reputation, founder preference or AI complexity may override that
-(§65).
+For trees the increment runs +10.7% at 200 ms down to +2.7% at 30s, remaining
+statistically distinguishable from zero through roughly ten seconds (§17).
+
+So the binding constraint is not the horizon — it is that the study indexes time
+by **consensus timestamps**, never by an audited **local receipt clock**. Nothing
+in it establishes that observe → decode → update state → compute features →
+infer → risk-check → submit → fill completes before the remaining information is
+gone. The paper itself says an execution model is out of scope (§18, §19).
+
+Hence latency viability is promoted from a late robustness test to **Gate 0**,
+ahead of full TBIE development, node infrastructure, embeddings and cohort
+modelling (§37). It runs as two experiments — synthetic delay replay across a
+0 ms → 30 s ladder to estimate the decay curve, and live measured per-stage
+latency at p50/p90/p95/p99/p99.9, because trading systems fail in tails
+(§39–41, §62–63) — then shadow executability (§64). Receipt-time and monotonic
+clock instrumentation become mandatory to answer it at all (§42, §43).
+
+## Four outcomes, not pass/fail
+
+| Outcome | Meaning |
+|---------|---------|
+| `TBIE_ALPHA_VALIDATED` | executable incremental alpha |
+| `TBIE_RISK_ONLY` | improves adverse-selection / execution-risk estimation, no directional alpha |
+| `TBIE_RESEARCH_ONLY` | real statistical structure, insufficient economic value |
+| `TBIE_NO_EDGE` | nothing durable survives rigorous testing |
+
+A feature can fail as alpha while succeeding as risk intelligence (§45, §46) —
+which is why the broader objective is no longer "can we follow successful
+traders" but whether behavioural identity improves estimates of return, adverse
+selection, execution quality or regime (§47). Accordingly a single global
+`TraderScore` is to be avoided in favour of a `TraderInformationVector` across
+direction, adverse selection, liquidity, execution and regime (§48, §49).
+
+**Kill rule (§78):** if PIT-correct experiments repeatedly show the information
+disappears before realistic execution, cannot survive costs, depends on a few
+wallets, or fails outside the original period, alpha development stops. No
+founder override, and no model-complexity rescue without a new falsifiable
+hypothesis.
+
+## Infrastructure gates
+
+- **Node is an economic decision, not a default.** Hyperliquid's own docs put
+  default node operation at ≈100 GB of logs per day — ≈3 TB/month, ≈36.5 TB/year
+  uncompressed, before retention, replication, backups, indexes or derived
+  datasets (§34). Approved only if Gate 0 suggests actionable value, or Level-4
+  data proves independent execution/risk value, or the cost is low enough to
+  justify preserving an otherwise irrecoverable asset — otherwise **defer**
+  (§58, §59). Privileged Foundation connectivity must not be assumed available
+  (§35).
+- **Own recorder stays mandatory.** API history is bounded (2,000 fills per
+  response, only the 10,000 most recent; 2,000 most recent historical orders),
+  and the official archive uploads roughly monthly with no guarantee of
+  timeliness or completeness (§32, §33).
+- **Rejected-order and TWAP research is interesting, not yet justified.**
+  Rejected post-only orders were ≈67% of message traffic in one BTC study; that
+  does not license Build 0.1 to ingest every rejected order (§30, §31).
+
+## What this changes in the build
+
+Nothing on the critical path: M0 → M1 → M2 → M3 → BTC dataset → baseline
+strategy → risk/execution stands as-is, and TBIE Experiment 0 begins only once
+recorder, integrity and replay all pass (§57, §77, §81).
+
+- **M0 (§74):** register TBIE's research status, resolve the ADR namespace,
+  make event schemas capable of carrying optional identity-linked fields, make
+  the clock architecture capable of future latency measurement, and take no
+  production dependency on TBIE.
+- **M2 (§75, §56):** still just the BTC recorder — but do not discard
+  `wallet`, `counterparty`, `side`, `price`, `size`, `order_id`,
+  `start_position`, `twap_id`, `cloid`, event time, receive time or the raw event
+  reference when they are available at reasonable cost. Preserve optionality;
+  avoid irreversible information loss. M2 must **not** become a trader-ranking
+  engine, wallet profiler, copy-trading system, cross-venue predictor or
+  Level-4 research cluster (§76).
+- **ADR (§73):** the number is repository-assigned — inspect `docs/ADR/` during
+  M0 and take the next canonical number. v1.0's hardcoded "ADR-004" is
+  withdrawn. Title: *Trader Behavior Intelligence as an Experimental Feature
+  Family*.
+
+## Experiment order (§61)
+
+```
+0  Latency viability      — does identity survive realistic delay?
+1  PIT wallet persistence — reproducible without future leakage?
+2  Incremental information — beats strong anonymous baselines?
+3  Economic value         — survives costs?
+4  Cohort construction    — does skill weighting beat raw flow?
+5  Weak-trader divergence — does informed-minus-weak add value?
+6  Cross-venue            — do selected wallets lead other venues?
+```
+
+Mandatory throughout: concentration tests removing the top 1/5/10 wallets and
+top 1%/5% (§52), wallet-turnover measurement (§53), placebos including a
+future-leaked control that quantifies how much false performance PIT violation
+would manufacture (§67), cost stress at 2× fees / 2× slippage / 2× latency
+(§68), regime decomposition (§69), and full experiment provenance (§70).
+
+## Governing principle (§82)
+
+> Capture what may become irrecoverable. Verify what can be verified. Measure
+> latency before assuming executability. Buy infrastructure only after evidence
+> earns it. Treat predictive information and profitable execution as two
+> different hypotheses.

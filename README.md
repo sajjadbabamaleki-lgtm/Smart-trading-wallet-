@@ -114,11 +114,13 @@ may legitimately end the trading research rather than trigger weaker standards.
 Experimental component research lives in [`docs/research/`](docs/research/README.md) —
 off the critical path, with no production authority, each carrying its own
 promotion gate and its own valid negative outcome. Currently:
-**[Trader Behavior Intelligence Engine](docs/research/trader-behavior-intelligence-engine.md)**,
-which asks whether the point-in-time estimated skill of pseudonymous Hyperliquid
-wallets carries predictive information beyond anonymous market data — and which
-affects M2 recorder design, since trader-identity-linked events discarded now may
-be impossible to reconstruct later.
+**[Trader Behavior Intelligence Engine](docs/research/trader-behavior-intelligence-engine.md)**
+(v1.1, evidence-audited), which asks whether the point-in-time estimated skill of
+pseudonymous Hyperliquid wallets carries predictive information beyond anonymous
+market data. The audit finds the predictive information well supported and
+executable profitability unproven, so latency viability becomes its Gate 0. It
+constrains M0 clock design and M2 recorder scope — identity-linked events and
+receipt timestamps discarded now may be impossible to reconstruct later.
 
 ## Status
 
@@ -126,7 +128,7 @@ be impossible to reconstruct later.
 |------|-------|
 | Specifications, phases 1–10 | Approved, in this repository |
 | Implementation program | Build 0.1 Rev.2 approved; Rev.1 superseded, retained |
-| Research candidates | TBIE accepted as experimental feature family; no production authority |
+| Research candidates | TBIE v1.1 accepted as experimental feature family; predictive information supported, executable alpha unproven; no production authority |
 | Implementation code | Not started — next target is M0 Rev.2 → M1 → M2 |
 | Production | **Not approved.** Architecture approval is not production approval (Phase 10 §114) |
 | Provider contracts, coverage, licensing, pricing | Unverified — required before procurement (Phase 3 §36) |

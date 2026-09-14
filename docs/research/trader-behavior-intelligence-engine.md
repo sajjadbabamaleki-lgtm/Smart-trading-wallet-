@@ -1,1673 +1,2015 @@
 Trader Behavior Intelligence Engine
 
-Research & Architecture Specification
+Evidence-Audited Research & Architecture Specification
 
 Project: AI-Powered Automated Perpetual Futures Trading Platform
-Document Type: Research & Architecture Specification
 Component: Trader Behavior Intelligence Engine (TBIE)
 Initial Market: BTC Perpetual Futures
 Initial Venue: Hyperliquid
-Revision: 1.0
-Status: Research Candidate — High Priority
+Document Version: 1.1
+Supersedes: Version 1.0
+Document Class: Research & Architecture Specification
+Research Status: HIGH-PRIORITY EXPERIMENTAL CANDIDATE
 Production Signal Status: NOT APPROVED
 Real-Capital Authority: NONE
-Date: September 2026
+Evidence Audit Date: September 2026
 
 ⸻
 
-1. Executive Summary
+1. Purpose of This Revision
 
-This document evaluates whether the observable trading behavior of historically successful and unsuccessful traders can provide incremental predictive information for an automated BTC perpetual-futures trading system.
+Version 1.1 performs an evidence audit of the empirical claims used to justify the Trader Behavior Intelligence Engine.
 
-The conclusion is:
+The purpose is to separate:
 
-Trader behavior should be treated as a high-priority experimental feature family, but not as a copy-trading system and not as an independent trading authority.
+* independently verified source claims,
+* claims supported only by working papers,
+* architectural inference,
+* unresolved execution questions,
+* and hypotheses that must be reproduced internally.
 
-The central hypothesis is not:
+The central conclusion remains:
 
-“Successful traders bought BTC, therefore the system should buy BTC.”
+Persistent pseudonymous trader identity on Hyperliquid is a scientifically credible candidate source of incremental market information.
 
-Instead, the hypothesis is:
+However, this revision introduces an important qualification:
 
-“Certain pseudonymous traders may exhibit persistent, context-dependent informational advantage or disadvantage, and their real-time behavior may contain incremental predictive information beyond price, order-book, derivatives, and anonymous order-flow data.”
+Existing research demonstrates predictive information, not executable trading alpha.
 
-Recent empirical research on Hyperliquid provides meaningful support for testing this hypothesis.
+The distinction is fundamental.
 
-A 2026 study reconstructed a full-depth limit-order book from 17.1 billion messages and examined 14.3 million aggressive orders from 147,113 wallets representing approximately $84.3 billion of taker notional. Trader informativeness showed a 0.52 rank correlation across adjacent ten-day windows. Adding activity from the highest-ranked wallets to an anonymous price, quote, and order-flow benchmark increased out-of-sample one-second return R² to 12.31%, representing a 13.2% improvement over the benchmark. (SSRN)
-
-Separate 2026 research comparing Binance and Hyperliquid BTC perpetual markets found that Binance led aggregate price discovery, but a minority of Hyperliquid wallets exhibited persistent anticipatory behavior. The strongest first-half wallet cohort remained the only tested quintile with positive second-half lead scores across all evaluated horizons. (SSRN)
-
-These results do not prove that trader identity can generate profitable signals after fees, latency, slippage, funding, and implementation constraints.
-
-They do establish that the hypothesis is scientifically credible enough to test.
-
-The proposed component is therefore:
-
-Trader Behavior Intelligence Engine (TBIE)
-
-TBIE will estimate the historical, contextual, and time-varying informational quality of pseudonymous trading entities and transform their activity into research features.
-
-TBIE will never directly authorize an order.
-
-Its outputs must pass through the broader intelligence architecture and ultimately through the independent Risk Engine.
+TBIE therefore remains a research feature family until the project independently demonstrates that trader-identity information survives realistic observation delay, computation latency, network latency, execution latency, fees, spread, slippage, queue effects, and market impact.
 
 ⸻
 
-2. Strategic Objective
+2. Evidence Classification Standard
 
-TBIE exists to answer one question:
+Every external claim supporting TBIE is assigned one of four states:
 
-Does point-in-time observable trader behavior provide statistically significant, economically meaningful, out-of-sample predictive information beyond the existing market-data baseline?
+VERIFIED
 
-The engine is not designed to identify celebrities, famous traders, influencers, or social-media personalities.
+The claimed number or methodology was found directly in the primary paper or official documentation.
 
-The relevant analytical object is:
+VERIFIED WITH QUALIFICATION
 
-A persistent pseudonymous trading entity with an observable behavioral history.
+The claim is correct, but its interpretation requires an important limitation.
 
-The system therefore analyzes wallets and behavioral entities, not personalities.
+PARTIALLY VERIFIED
 
-⸻
+Evidence supports the general claim but not every detail required for production decisions.
 
-3. Non-Objective: Copy Trading
+UNVERIFIED / PROJECT HYPOTHESIS
 
-TBIE must explicitly not become a conventional copy-trading engine.
+The claim has not been demonstrated sufficiently and must be tested internally.
 
-The following logic is prohibited:
-
-Trader X buys
-      ↓
-System buys
-
-The intended architecture is:
-
-Trader activity
-      ↓
-Historical contextual skill estimation
-      ↓
-Current trader-state estimation
-      ↓
-Cohort / consensus analysis
-      ↓
-Feature generation
-      ↓
-Meta-model
-      ↓
-LONG / SHORT / NO TRADE
-      ↓
-Independent Risk Engine
-
-Observed trader behavior is evidence.
-
-It is not an instruction.
+No architectural commitment requiring significant infrastructure expenditure should depend solely on an UNVERIFIED claim.
 
 ⸻
 
-4. Why Hyperliquid Is Unusual
+3. Primary Evidence Audit
 
-Traditional centralized exchanges generally do not expose persistent counterparty identities at sufficient granularity to reconstruct individual trading behavior.
+The principal study supporting TBIE is:
 
-Hyperliquid creates an unusual research environment because trading activity can be associated with persistent pseudonymous wallet identities.
+Daojing Zhai, “Public Trader Identity: Adverse Selection and Return Predictability,” 2026.
 
-Recent academic work demonstrates that running a Hyperliquid non-validating node can enable reconstruction of highly granular order-flow datasets containing order placements, cancellations, rejected orders, failed cancellation attempts, pseudonymous trader identities, counterparties on both sides of transactions, and post-transaction inventory information. (SSRN)
+The paper is currently available as an SSRN/arXiv working paper.
 
-This creates the possibility of studying not merely:
-
-* Price
-* Volume
-* Order-book state
-
-but:
-
-* Who acted
-* When they acted
-* How aggressively they acted
-* What they did before
-* What happened after their action
-* Whether their informational quality persisted
-
-This distinction is central to TBIE.
+It should therefore be treated as serious research evidence, but not as settled scientific consensus or equivalent to independently replicated peer-reviewed evidence.
 
 ⸻
 
-5. Research Evidence
+4. Dataset Size
 
-5.1 Public Trader Identity and Return Predictability
+The paper reports:
 
-The strongest current empirical evidence comes from the 2026 study Public Trader Identity: Adverse Selection and Return Predictability.
+17.1 billion Level-4 messages
+14.3 million aggressive orders
+147,113 wallets
+27.9 million taker fills
+$84.3 billion taker notional
 
-The study analyzed:
+across the ten most active perpetual markets in its July 2026 dataset.
 
-* 17.1 billion messages
-* 14.3 million aggressive orders
-* 147,113 wallets
-* Approximately $84.3 billion in taker notional
+Audit Result
 
-Wallet informativeness was ranked according to subsequent price movement following aggressive orders.
+VERIFIED
 
-The ordering displayed persistence across adjacent ten-day windows, with rank correlation:
+The reported figures are directly supported by the paper.
+
+⸻
+
+5. BTC-Specific Relevance
+
+The dataset is not merely a broad altcoin sample.
+
+BTC is the largest market in the July dataset.
+
+The paper reports approximately:
+
+BTC Level-4 messages:     9.75 billion
+BTC aggressive orders:   4.02 million
+BTC taker fills:          8.66 million
+BTC wallets:              98,900
+BTC taker notional:       $46.8 billion
+BTC spread:               0.20 bps
+
+The principal predictive analysis focuses on:
+
+BTC
+ETH
+SOL
+
+because these were the three markets with the greatest message activity.
+
+Audit Result
+
+VERIFIED
+
+This materially strengthens relevance to the BTC-only Lean Quant MVP.
+
+⸻
+
+6. Definition of Trader Informativeness
+
+The paper does not classify wallets using realized PnL.
+
+Instead, it measures post-trade adverse selection using signed midpoint markout.
+
+For aggressive order (e):
+
+[
+x_e =
+10^4 q_e
+\frac{m_{t_e+10s}-m_{t_e^-}}
+{m_{t_e^-}}
+]
+
+where:
+
+* (q_e=+1) for buy,
+* (q_e=-1) for sell,
+* (m_{t_e^-}) is the midpoint immediately before the event,
+* (m_{t_e+10s}) is the midpoint ten seconds later.
+
+A positive markout means price subsequently moved in the aggressor’s direction.
+
+Wallet skill is then estimated using a notional-weighted average of these markouts.
+
+Audit Result
+
+VERIFIED
+
+This validates the architectural decision in TBIE v1.0 to treat markout as a central measure of informational timing rather than relying exclusively on PnL.
+
+⸻
+
+7. Minimum Wallet Sample
+
+The principal wallet-ranking experiment includes wallets with at least:
+
+100 qualifying aggressive orders
+
+during the scoring period.
+
+The July experiment produced:
+
+2,314 scored wallets
+
+with:
+
+231 wallets
+
+in the top decile.
+
+TWAP and liquidation events were excluded from the benchmark scoring procedure.
+
+Audit Result
+
+VERIFIED
+
+This also confirms that meaningful trader ranking requires minimum sample requirements.
+
+TBIE must not rank wallets after only a handful of observations.
+
+⸻
+
+8. Point-in-Time Ranking
+
+The paper uses:
+
+July 1–10
+
+as the scoring window.
+
+Wallet rankings are then frozen before subsequent evaluation.
+
+Persistence is evaluated during:
+
+July 11–20
+
+and the predictive model is ultimately evaluated during:
+
+July 21–27.
+
+Audit Result
+
+VERIFIED
+
+This is materially important.
+
+The paper does not simply identify successful wallets using future performance and then retroactively label their earlier trades as informed.
+
+Its principal design contains a genuine temporal separation.
+
+⸻
+
+9. Persistence of Trader Informativeness
+
+Across adjacent ten-day windows, wallet informativeness rankings show:
 
 [
 \rho = 0.52
 ]
 
-Adding live activity from highly ranked wallets to an anonymous benchmark based on prices, quotes, and order flow increased out-of-sample one-second return:
+Spearman rank correlation.
+
+The paper additionally reports split-half reliability analysis suggesting that the observed persistence is substantial relative to the estimated measurement reliability of the score.
+
+Audit Result
+
+VERIFIED
+
+However:
 
 [
-R^2 = 12.31%
+\rho=0.52
 ]
 
-representing a reported:
+does not imply permanent trader skill.
 
-[
-13.2%
-]
+It indicates meaningful persistence over the tested horizon.
 
-improvement over the benchmark.
-
-The improvement was also compared with 200 activity-matched placebo cohorts. (SSRN)
-
-This is not evidence of 13.2% trading profitability.
-
-It is evidence that persistent trader identity contained incremental short-horizon information in the studied sample.
+TBIE must therefore continue to model skill as time-varying.
 
 ⸻
 
-6. Cross-Venue Evidence
+10. Concentration in the Upper Tail
 
-A separate 2026 study examined price discovery between Binance and Hyperliquid BTC perpetual futures.
+The paper finds that trader informativeness is highly concentrated.
 
-At the aggregate venue level, Binance led Hyperliquid.
+After controlling for market, time, order size, volatility, and spread, markouts remain relatively flat across most wallet ventiles and increase sharply in the upper tail.
 
-However, wallet-level analysis revealed substantial heterogeneity.
+The reported top-ventile adjusted markout reaches approximately:
 
-A minority of Hyperliquid wallets demonstrated behavior that preceded subsequent Binance price movement.
+[
+3.11\text{ bps}
+]
 
-Split-sample analysis suggested that the strongest wallet cohort retained anticipatory characteristics out of sample across the tested horizons. (SSRN)
+Audit Result
 
-This produces an important architectural principle:
+VERIFIED
 
-Venue-level informational leadership and trader-level informational leadership are not the same phenomenon.
+This supports a key architectural conclusion:
 
-Hyperliquid can be a follower in aggregate while still containing individual traders whose actions possess anticipatory information.
+Trader identity should not be treated uniformly.
 
-TBIE must therefore operate at wallet and cohort level rather than relying only on aggregate Hyperliquid flow.
+The potential information appears concentrated in a relatively narrow subset of wallets.
 
 ⸻
 
-7. Level-4 Market Data Opportunity
+11. Persistence Beyond Immediate Price Pressure
 
-Research published in 2026 demonstrates the feasibility of reconstructing unusually granular Hyperliquid market data by operating a non-validating node.
+The paper reports that top-decile wallet markout rises from approximately:
 
-The resulting dataset includes information beyond conventional Level-3 feeds, including rejected orders and failed cancellation attempts in addition to order placements, cancellations, counterparty identity, and post-transaction inventory. (SSRN)
+1.25 bps at 0.5 seconds
 
-Another 2026 study analyzing approximately 4.5 billion messages from the BTC perpetual contract found that rejected post-only orders represented approximately 67% of message traffic in its dataset and identified anticipatory liquidity-replenishment behavior associated with a small number of market makers. (SSRN)
+to:
 
-This suggests that TBIE may eventually analyze more than completed trades.
+2.11 bps at 10 seconds
 
-Potential behavioral information includes:
+and remains elevated at longer horizons including five minutes.
 
-Order submission
+Audit Result
+
+VERIFIED WITH QUALIFICATION
+
+This suggests the measured effect is not merely an instantaneous mechanical price reaction.
+
+However, the authors explicitly acknowledge that persistent market impact, repeated directional flow, and latent metaorders remain possible explanations.
+
+Therefore:
+
+Persistent markout must not automatically be interpreted as private information or superior forecasting skill.
+
+⸻
+
+12. Wallet Continuity
+
+Of the 231 top-decile wallets identified during the July scoring period:
+
+91.3%
+
+traded again during the validation period.
+
+Audit Result
+
+VERIFIED
+
+This reduces the possibility that the persistence result is purely an artifact of disappearing wallets.
+
+⸻
+
+13. Anonymous Benchmark
+
+The primary predictive experiment compares an anonymous market model against an identity-augmented model.
+
+The anonymous model includes standard market-microstructure information such as:
+
+Best-quote depth imbalance
+Near-touch depth imbalance
+Quote-update order-flow imbalance
+Latest signed trade
+Signed taker flow
+Recent return
+Recent realized volatility
+Quoted spread
+
+The identity model adds analogous information specifically associated with previously ranked high-informativeness wallets plus identity-only features such as:
+
+Net distinct informed buyers
+Informed-wallet share of best-quote depth
+Informed-wallet contribution to quote imbalance
+
+Audit Result
+
+VERIFIED
+
+This is critical because TBIE is not being compared against a trivial price-only benchmark.
+
+Trader identity is tested for incremental information beyond substantial anonymous microstructure information.
+
+⸻
+
+14. Headline One-Second Result
+
+At the one-second prediction horizon, the linear ridge benchmark reports:
+
+Anonymous model R²:       10.88%
+Identity model R²:        12.31%
+Relative improvement:     +13.2%
+Reported t-statistic:     9.2
+
+Audit Result
+
+VERIFIED
+
+The number previously used in TBIE v1.0 is correct.
+
+However:
+
++13.2% is a relative improvement in predictive R².
+
+It is NOT:
+
+* 13.2% return,
+* 13.2% alpha,
+* 13.2% profitability,
+* or 13.2% trading performance.
+
+⸻
+
+15. Placebo Cohorts
+
+The paper constructs:
+
+200 activity-matched placebo cohorts
+
+matched to the high-informativeness wallets using scoring-window order count and notional.
+
+The identity gain exceeds the placebo cohorts through the relevant short horizons.
+
+Audit Result
+
+VERIFIED
+
+This is an important robustness test because it reduces the likelihood that the result is merely caused by tracking highly active or large traders.
+
+⸻
+
+16. Nonlinear Model Test
+
+The paper also evaluates gradient-boosted trees.
+
+At one second:
+
+Anonymous R²:        19.48%
+Identity R²:         20.65%
+Relative gain:       +6.0%
+
+Audit Result
+
+VERIFIED
+
+The smaller incremental improvement indicates that nonlinear anonymous market features absorb some of the information associated with trader identity.
+
+However, identity still contributes additional information.
+
+This suggests TBIE should always compete against strong nonlinear market baselines.
+
+⸻
+
+17. Critical Latency Finding
+
+The original TBIE document emphasized the one-second headline result.
+
+The full paper reveals a more nuanced horizon structure.
+
+For the ridge model:
+
+Horizon	Anonymous R²	+ Identity R²	Relative Gain
+0.2s	6.91%	8.20%	+18.7%
+0.5s	10.16%	11.76%	+15.8%
+1s	10.88%	12.31%	+13.2%
+2s	10.60%	11.66%	+10.0%
+5s	9.17%	9.79%	+6.7%
+10s	7.18%	7.56%	+5.2%
+30s	3.56%	3.67%	+3.0%
+
+For gradient-boosted trees, the incremental identity gain falls from approximately:
+
++10.7% at 200 ms
+
+to:
+
++2.7% at 30 seconds.
+
+The tree-model identity increment remains statistically distinguishable from zero through approximately ten seconds, but not at thirty seconds in the reported specification.
+
+Audit Result
+
+VERIFIED
+
+This materially updates the previous interpretation.
+
+The signal is:
+
+FAST DECAYING
+
+but it is not demonstrated only at one second.
+
+⸻
+
+18. Revised Latency Interpretation
+
+The previous concern:
+
+“If the signal only survives below 100 ms, TBIE is unusable.”
+
+is not supported by the paper.
+
+The evidence suggests identity information remains measurable at multi-second horizons.
+
+However, another limitation is more important.
+
+The paper indexes timing using:
+
+CONSENSUS TIMESTAMPS
+
+rather than an independently audited:
+
+LOCAL RECEIPT-TIME CLOCK
+
+Therefore the study does not establish that our system can:
+
+observe event
+↓
+decode event
+↓
+update trader state
+↓
+calculate features
+↓
+run inference
+↓
+run risk checks
+↓
+submit order
+↓
+receive execution
+
+before the remaining predictive information disappears.
+
+Audit Result
+
+EXECUTABILITY UNVERIFIED
+
+This becomes the most important TBIE research question.
+
+⸻
+
+19. Paper’s Own Execution Limitation
+
+The primary study explicitly states that implementable profitability would require modeling factors including:
+
+Latency
+Queue priority
+Fill probability
+Fees
+Inventory
+Dynamic execution
+
+and that such an execution model is outside the scope of the paper.
+
+Audit Result
+
+VERIFIED
+
+Therefore the paper proves:
+
+PREDICTIVE INFORMATION
+
+It does not prove:
+
+EXECUTABLE ALPHA
+
+This distinction is now mandatory throughout TBIE documentation.
+
+⸻
+
+20. Feature Delay Robustness
+
+The paper additionally reports robustness tests where the feature vector is shifted backward by additional delays.
+
+This is useful evidence against extremely fragile timestamp leakage.
+
+However, it still does not substitute for an actual end-to-end receipt-to-fill latency experiment.
+
+Audit Result
+
+PARTIALLY SUPPORTIVE
+
+⸻
+
+21. Independent Historical Replication
+
+The primary study repeats its design on a separately collected December 2025 Hyperliquid dataset.
+
+That dataset includes approximately:
+
+26.25 billion Level-4 messages
+9.53 million aggressive orders
+21.86 million taker fills
+89,800 wallets
+$127.5 billion taker notional
+
+across:
+
+BTC
+ETH
+SOL
+
+The same broad persistence and predictive results reportedly recur.
+
+Audit Result
+
+VERIFIED WITH QUALIFICATION
+
+This is a meaningful temporal replication.
+
+However, it is still replication performed within the same research study and methodology.
+
+It is not equivalent to independent reproduction by a separate research group.
+
+⸻
+
+22. Data Integrity Audit in the Primary Study
+
+The study reports explicit collection auditing.
+
+Among approximately:
+
+27,902,380 crossed fill records
+
+every taker record was paired with its maker-side counterpart.
+
+The archive also used SHA-256 manifests for collected shards and documented collection gaps and node failures.
+
+Audit Result
+
+VERIFIED
+
+This raises confidence in the dataset engineering.
+
+However, the paper also documents real collector failures and gaps.
+
+This reinforces our own architectural requirement:
+
+Recorder health and gap detection are first-class research infrastructure.
+
+⸻
+
+23. Cross-Venue Study
+
+The second important study is:
+
+Boon Chuan Lim, “Binance Leads, but Some Wallets Anticipate: Wallet-Level Cross-Venue Informed Flow in BTC Perpetual Futures,” 2026.
+
+The study covers approximately:
+
+25 May 2026
+to
+22 June 2026
+
+and compares Hyperliquid BTC perpetual activity with Binance BTC perpetual price discovery.
+
+Evidence Status
+
+SUPPORTIVE BUT LOWER CONFIDENCE
+
+The study is a recent working paper by an independent researcher.
+
+It should not carry the same evidentiary weight as multiple independent replications.
+
+⸻
+
+24. Aggregate Cross-Venue Result
+
+The cross-venue study finds:
+
+Binance leads Hyperliquid at the aggregate venue level.
+
+Even the pooled informed Hyperliquid cohort tends to follow Binance.
+
+For the pooled cohort, Binance price movement before Hyperliquid trades exceeds subsequent movement at:
+
+2 seconds
+5 seconds
+10 seconds
+
+Audit Result
+
+VERIFIED
+
+This is important because it prevents a simplistic interpretation that Hyperliquid smart-money flow universally predicts Binance.
+
+It does not.
+
+⸻
+
+25. Wallet-Level Heterogeneity
+
+The same study reports substantial variation across wallets.
+
+The informed cohort contains:
+
+658 wallets
+
+and more than:
+
+2.3 million cohort trades.
+
+Hundreds of individual wallets have sufficient observations for wallet-level analysis.
+
+Audit Result
+
+VERIFIED
+
+⸻
+
+26. Cross-Venue Persistence
+
+The paper performs a split-sample test.
+
+Wallets are ranked during the first half and evaluated during the second half.
+
+The strongest first-half lead-score quintile remains the only quintile with positive second-half leadership across all tested horizons.
+
+The study reports:
+
+588 wallets
+
+with at least 100 qualifying cohort trades in each half for this persistence analysis.
+
+Audit Result
+
+VERIFIED WITH QUALIFICATION
+
+This is evidence of persistence.
+
+However:
+
+* the sample period is short,
+* the paper is recent,
+* it is not yet a broad independent replication,
+* and execution profitability is not established.
+
+Therefore it should motivate experiments, not production architecture.
+
+⸻
+
+27. Revised Cross-Venue Conclusion
+
+The correct conclusion is:
+
+Hyperliquid is generally not the dominant BTC price-discovery venue, but wallet-level heterogeneity may reveal a minority of traders whose actions precede subsequent movement elsewhere.
+
+The incorrect conclusion would be:
+
+Hyperliquid smart money leads Binance.
+
+The latter is not supported.
+
+⸻
+
+28. Level-4 Data Verification
+
+The paper:
+
+“An Open Book: Level 4 Order Book Data from the Hyperliquid Exchange”
+
+by Jakob Albers, Mihai Cucuringu, Sam Howison, and Alexander Y. Shestopaloff documents reconstruction of highly granular Hyperliquid data using a non-validating node.
+
+The dataset includes:
+
+Order placement
 Order cancellation
-Rejected order
-Failed cancellation
-Aggressive execution
-Passive execution
-Position change
-Inventory evolution
-Order persistence
-Order replacement
-Queue behavior
-Execution timing
+Rejected orders
+Failed cancellation attempts
+Pseudonymous wallet identity
+Counterparty identity
+Post-transaction inventory
 
-This substantially expands the potential information surface.
+Audit Result
 
-⸻
+VERIFIED
 
-8. Behavioral Intelligence vs. PnL Ranking
-
-TBIE must not define a successful trader solely using realized PnL or win rate.
-
-A trader with:
-
-90% win rate
-
-can still have negative expected value if occasional losses dominate accumulated gains.
-
-Likewise, a trader with:
-
-35% win rate
-
-may have strongly positive expectancy.
-
-Trader evaluation should therefore be multidimensional.
+This supports the technical feasibility of TBIE’s richer behavioral-data architecture.
 
 ⸻
 
-9. Trader Skill Vector
+29. Official Hyperliquid Schema Verification
 
-The conceptual unit is:
+Hyperliquid’s official node documentation confirms that trade records may contain:
 
-[
-Skill_{i,t,h,r}
-]
+buyer
+seller
+starting position
+order ID
+TWAP ID
+client order ID
 
-where:
+for each side of a trade.
 
-* (i) = pseudonymous trader or behavioral entity
-* (t) = point-in-time evaluation time
-* (h) = prediction horizon
-* (r) = market regime
+The node can also produce full-information L4 book snapshots and order-status streams.
 
-The system should estimate skill conditionally rather than assign permanent labels such as:
+Audit Result
 
-GOOD TRADER
-BAD TRADER
+VERIFIED FROM PRIMARY OFFICIAL SOURCE
 
-A trader may instead exhibit:
-
-BTC Long / Trend Regime        → Strong
-BTC Short / Trend Regime       → Moderate
-BTC Long / Range Regime        → Weak
-BTC Short / High Volatility    → Strong
-1-second horizon               → Strong
-30-second horizon              → Strong
-5-minute horizon               → Neutral
-1-hour horizon                 → Weak
-
-Skill is therefore:
-
-Contextual, horizon-dependent, regime-dependent, and time-varying.
+This is stronger evidence than relying solely on academic reconstruction.
 
 ⸻
 
-10. Proposed Trader State
+30. Rejected-Order Research
 
-At any time (t), TBIE may maintain:
+A separate 2026 Hyperliquid study examines approximately:
 
-TraderState(wallet, t)
-Historical Skill
-Recent Skill
-BTC-Specific Skill
-Long Skill
-Short Skill
-Trend-Regime Skill
-Range-Regime Skill
-Volatility-Regime Skill
-Aggressive Buy Markout
-Aggressive Sell Markout
-Holding-Period Distribution
-Position-Sizing Behavior
-Scale-In Behavior
-Scale-Out Behavior
-Average MFE
-Average MAE
-Drawdown
-Consistency
-Recency
-Funding Exposure
-Margin Behavior
-Order Aggressiveness
-Maker/Taker Behavior
-Current Observable Position
-Position Change
-Behavioral Stability
-Reliability Score
-Sample Size
-Uncertainty
+4.5 billion BTC perpetual messages
 
-Every value must carry sufficient metadata to determine whether it was legally available to the model at prediction time.
+including rejected orders.
+
+It reports that rejected post-only orders accounted for approximately:
+
+67%
+
+of message traffic in its sample and identifies behavior consistent with anticipatory liquidity replenishment by a small number of market makers.
+
+Audit Result
+
+VERIFIED AS REPORTED RESEARCH
+
+This is highly relevant for future market-microstructure research.
+
+It is NOT yet justification for Build 0.1 to ingest every rejected order.
 
 ⸻
 
-11. Markout-Based Skill
+31. TWAP and Hidden Metaorder Evidence
 
-Realized PnL alone is insufficient for measuring informational quality.
+Another 2026 study reconstructs approximately:
 
-TBIE should measure signed price movement following observable actions.
+4.3 million hidden metaorders
 
-If a wallet aggressively buys BTC at time (t), calculate price movement over multiple horizons:
+and compares them with approximately:
 
-t + 1 second
-t + 2 seconds
-t + 5 seconds
-t + 10 seconds
-t + 30 seconds
-t + 1 minute
-t + 5 minutes
-t + 15 minutes
-t + 1 hour
+465,000 visible TWAP executions.
 
-Conceptually:
+The study reports substantial differences in execution behavior, market impact, and liquidity response.
 
-[
-M_{i,t,h}=s_{i,t}(P_{t+h}-P_t)
-]
+Audit Result
 
-where:
+VERIFIED
 
-* (s=+1) for buy
-* (s=-1) for sell
-* (P_t) is an appropriate reference price
-* (h) is the evaluation horizon
-
-Normalized or basis-point variants should also be tested.
-
-This allows TBIE to answer:
-
-Does this trader systematically act before favorable price movement?
-
-That question may be more useful than:
-
-Was the trader’s final position profitable?
+This supports the decision to distinguish trader behavioral classes rather than treating all large directional flow identically.
 
 ⸻
 
-12. PnL Still Matters
+32. API Historical Limitations
 
-Markout should not replace PnL.
+Hyperliquid’s official API documentation currently states:
 
-Both capture different dimensions.
+userFills:
+up to 2,000 recent fills
+userFillsByTime:
+up to 2,000 per response
+only 10,000 most recent fills available
+historicalOrders:
+up to 2,000 most recent historical orders
 
-Markout estimates informational timing.
+Audit Result
 
-PnL estimates the eventual economic result of the trader’s position-management process.
+VERIFIED FROM OFFICIAL DOCUMENTATION
 
-TBIE should therefore distinguish:
-
-INFORMATIONAL SKILL
-from
-POSITION-MANAGEMENT SKILL
-
-A trader may possess one without the other.
-
-⸻
-
-13. Successful Trader Definition
-
-A trader should qualify as potentially informed only after satisfying minimum evidence requirements.
-
-Potential dimensions include:
-
-* Minimum observations
-* Minimum active history
-* Signed markout
-* Risk-adjusted performance
-* Maximum drawdown
-* Consistency
-* Regime stability
-* Directional stability
-* Recency
-* Sample confidence
-* Out-of-sample persistence
-
-No single metric should permanently define trader quality.
+Therefore API-only retrospective trader reconstruction is structurally limited.
 
 ⸻
 
-14. Weak-Trader Intelligence
+33. Historical Archive Limitations
 
-TBIE should not restrict analysis to successful traders.
+Hyperliquid’s official historical-data documentation states that archive uploads occur approximately monthly and:
 
-Persistently poorly timed traders may also contain information.
+timely updates are not guaranteed and data may be missing.
 
-A cohort that systematically:
+Historical node fills and L1 transaction data are available through separate archive paths.
 
-* buys before declines,
-* sells before rallies,
-* enters late into exhausted moves,
-* increases leverage near local extremes,
+Audit Result
 
-may constitute a useful behavioral signal.
-
-Therefore the system should research both:
-
-INFORMED FLOW
-
-and:
-
-UNINFORMED / ADVERSELY SELECTED FLOW
-
-⸻
-
-15. Informed vs. Uninformed Divergence
-
-A potentially powerful feature family is:
-
-[
-D_t =
-Flow^{informed}_t -
-Flow^{uninformed}_t
-]
-
-Example:
-
-High-skill cohort     → strongly LONG
-Low-skill cohort      → strongly SHORT
-
-may contain more information than either cohort independently.
-
-This must be tested empirically.
-
-It must not be assumed.
-
-⸻
-
-16. Smart Trader Consensus
-
-TBIE may construct a weighted consensus across currently active traders.
-
-Let:
-
-[
-s_{i,t}\in[-1,1]
-]
-
-represent normalized directional activity and:
-
-[
-w_{i,t}
-]
-
-represent the point-in-time trader reliability weight.
-
-Then:
-
-[
-Consensus_t =
-\frac{\sum_i w_{i,t}s_{i,t}}
-{\sum_i |w_{i,t}|}
-]
-
-Potential weights may depend on:
-
-* Historical skill
-* Recent skill
-* Relevant horizon
-* Current regime
-* BTC-specific performance
-* Sample size
-* Skill uncertainty
-* Skill decay
-* Drawdown
-* Direction-specific skill
-
-Consensus is a feature.
-
-It is not an order.
-
-⸻
-
-17. Cohort Architecture
-
-Rather than tracking only individual wallets, TBIE should construct behavioral cohorts.
-
-Potential cohorts include:
-
-Persistent Informed Traders
-Persistent Weak Traders
-High-Frequency Makers
-Directional Takers
-Momentum Traders
-Mean-Reversion Traders
-Large Position Traders
-Short-Horizon Leaders
-Long-Horizon Leaders
-Regime Specialists
-Liquidation Absorbers
-TWAP Users
-
-Research on Hyperliquid also indicates meaningful differences in market impact and execution behavior between visible TWAP programs and reconstructed hidden metaorders, reinforcing the value of distinguishing behavioral classes rather than treating all large flow identically. (SSRN)
-
-⸻
-
-18. Point-in-Time Requirement
-
-This is the most important research constraint.
-
-Suppose Wallet A becomes one of Hyperliquid’s best-performing wallets during December.
-
-A corrupted experiment would:
-
-1. Identify Wallet A using December performance.
-2. Go back to January.
-3. Label Wallet A as informed.
-4. Backtest January using that label.
-
-This uses future information.
-
-It is prohibited.
-
-The correct process is:
-
-At time T:
-Use only data available before T
-↓
-Estimate trader skill
-↓
-Freeze trader ranking
-↓
-Observe future trader activity
-↓
-Generate feature
-↓
-Evaluate future outcome
-
-No future reputation may leak backward.
-
-⸻
-
-19. Survivorship Bias
-
-Current leaderboards are unsuitable as historical truth.
-
-If only wallets that survived and became successful are selected, failed traders disappear from the dataset.
-
-The resulting historical model will overestimate the value of trader selection.
-
-Therefore historical cohort construction must include the observable population available at each historical point.
-
-⸻
-
-20. Wallet Rotation
-
-A trader may abandon one wallet and move to another.
+VERIFIED
 
 Therefore:
 
-wallet ≠ guaranteed persistent human identity
-
-TBIE should initially treat every wallet as an independent pseudonymous entity.
-
-Wallet clustering may later become a separate research problem.
-
-Any clustering methodology must be independently validated.
+OUR OWN RECORDER REMAINS MANDATORY
 
 ⸻
 
-21. Multiple Wallets
+34. Node Storage Cost
 
-One trader may operate many wallets.
+Official Hyperliquid documentation states that default node operation can generate approximately:
 
-Multiple traders may potentially share operational infrastructure.
+100 GB of logs per day
 
-TBIE must therefore avoid interpreting wallet counts as counts of unique humans.
+Audit Result
 
-The analytical entity remains:
+VERIFIED
 
-Observable pseudonymous trading behavior.
+Approximate uncompressed implication:
 
-⸻
+~3 TB / month
+~36.5 TB / year
 
-22. Hidden Hedging
+before retention, compression, replication, backups, indexes, or derived datasets.
 
-An observed Hyperliquid position may represent only one component of a broader portfolio.
-
-A trader may be:
-
-LONG BTC on Hyperliquid
-but
-SHORT BTC elsewhere
-
-or may hold:
-
-* Options
-* Spot
-* Futures
-* OTC exposure
-* Cross-asset hedges
-
-Therefore:
-
-Observable direction does not necessarily equal directional belief.
-
-TBIE should infer statistical behavior, not psychological intention.
+Therefore full-node ingestion must not be activated casually.
 
 ⸻
 
-23. Latency Risk
+35. Low-Latency Node Access Qualification
 
-A trader may possess information while being impossible to follow profitably.
+Official Hyperliquid documentation describes additional eligibility requirements for certain Foundation non-validating-node connectivity arrangements.
 
-For example:
+Therefore the architecture must not assume privileged Foundation connectivity is automatically available.
 
-Trader buys
+Decision
+
+The project must benchmark the actual data-access path available to the deployment environment before making latency claims.
+
+⸻
+
+36. Updated Evidence Matrix
+
+Claim	Status
+17.1B messages	VERIFIED
+14.3M aggressive orders	VERIFIED
+147,113 wallets	VERIFIED
+$84.3B taker notional	VERIFIED
+BTC is strongly represented	VERIFIED
+Wallet rank persistence ρ=0.52	VERIFIED
+10-second markout ranking	VERIFIED
+100-order minimum in main scoring design	VERIFIED
+Top-decile concentration	VERIFIED
+3.11 bps top-ventile adjusted markout	VERIFIED
+1s R² = 12.31%	VERIFIED
++13.2% relative R² gain	VERIFIED
+t=9.2	VERIFIED
+200 activity-matched placebos	VERIFIED
+Identity adds information beyond anonymous order flow	VERIFIED
+Effect exists beyond 1 second	VERIFIED
+Tree-model significance through ~10s	VERIFIED
+Ridge improvement through 30s	VERIFIED
+December 2025 replication	VERIFIED
+Executable profitability	NOT VERIFIED
+Receipt-to-fill alpha	NOT VERIFIED
+Profitable copy trading	NOT VERIFIED
+Cross-venue aggregate HL leadership	REJECTED
+Minority-wallet cross-venue anticipation	SUPPORTED
+Persistent wallet-level cross-venue heterogeneity	SUPPORTED
+Full Level-4 reconstruction feasibility	VERIFIED
+Counterparty identity availability	VERIFIED
+Full-node data is cheap	REJECTED
+API alone sufficient for long historical trader reconstruction	REJECTED
+
+⸻
+
+37. Major Revision: Latency Becomes Gate 0
+
+TBIE v1.0 placed latency testing among later robustness tests.
+
+This is changed.
+
+LATENCY VIABILITY IS NOW TBIE GATE 0.
+
+Before:
+
+* full TBIE development,
+* expensive node infrastructure,
+* large-scale trader embeddings,
+* sophisticated cohort modeling,
+* or production integration,
+
+the project must determine whether the identity signal survives realistic system latency.
+
+⸻
+
+38. Gate 0 Objective
+
+The experiment must answer:
+
+How much incremental trader-identity information remains after the delay between public event availability and the moment our order could realistically reach the market?
+
+The delay must include:
+
+Event becomes observable
 ↓
-Price immediately moves
+Network transport
 ↓
-System detects trade
+Event decoding
 ↓
-Signal generated
+State update
 ↓
-Order transmitted
+Feature calculation
 ↓
-Edge already gone
-
-Therefore the correct test is not:
-
-Did the trader predict the market?
-
-It is:
-
-Was actionable predictive information still available after our observation, computation, transmission, and execution latency?
-
-This distinction is mandatory.
-
-⸻
-
-24. Capacity and Crowding
-
-A behavioral signal may degrade as more capital follows it.
-
-TBIE must eventually measure:
-
-* Signal crowding
-* Price impact
-* Capacity
-* Decay
-* Execution deterioration
-
-Historical predictive power does not imply scalable executable alpha.
-
-⸻
-
-25. Reflexivity
-
-If a particular wallet becomes widely monitored, the market may begin reacting immediately to its activity.
-
-The observed relationship can then change.
-
-TBIE must therefore support continuous skill re-estimation and decay detection.
-
-No trader receives permanent privileged status.
-
-⸻
-
-26. Skill Decay
-
-For every trader:
-
-[
-Skill_{i,t}
-]
-
-must be allowed to decline.
-
-Potential causes include:
-
-* Strategy degradation
-* Market-regime change
-* Increased competition
-* Behavioral change
-* Capital scaling
-* Wallet ownership change
-* Random historical luck
-
-TBIE should support recency-weighted and rolling-window estimates.
-
-⸻
-
-27. Confidence and Uncertainty
-
-A wallet with five excellent trades should not automatically outrank a wallet with thousands of moderately informative trades.
-
-Skill estimates therefore require uncertainty.
-
-Conceptually:
-
-Estimated Skill
-+
-Sample Size
-+
-Confidence Interval
-+
-Stability
-+
-Recency
-
-must jointly determine weighting.
-
-⸻
-
-28. Minimum Sample Requirements
-
-The system must establish research-derived thresholds for:
-
-* Minimum fills
-* Minimum active days
-* Minimum market regimes observed
-* Minimum directional diversity
-* Minimum notional
-* Minimum horizon observations
-
-These thresholds must not be arbitrarily selected for the purpose of maximizing backtest performance.
-
-⸻
-
-29. Data Architecture
-
-TBIE requires two related data streams.
-
-Stream A: Market State
-
-BTC MARKET RECORDER
-Price
-Trades
-BBO
-L2 Order Book
-Funding
-Open Interest
-Asset Context
-Volatility State
-
-Stream B: Trader Events
-
-TRADER EVENT RECORDER
-Wallet / Pseudonymous Entity
-Timestamp
-Asset
-Side
-Price
-Size
-Order ID
-Execution Type
-Starting Position
-Resulting Position where available
-Counterparty where available
-Event Type
-Raw Source
-
-The two streams must share a consistent time model.
-
-⸻
-
-30. Raw Data Preservation
-
-Raw events should be preserved before transformation.
-
-Source
-   ↓
-Raw Immutable Event
-   ↓
-Validation
-   ↓
-Normalization
-   ↓
-Enrichment
-   ↓
-Feature Construction
-
-A normalization error must not destroy original evidence.
-
-⸻
-
-31. Event-Time Architecture
-
-Every record should distinguish, where available:
-
-exchange_event_time
-block_time
-source_time
-receive_time
-normalize_time
-persist_time
-
-This allows latency analysis and prevents ambiguous ordering.
-
-⸻
-
-32. Trader Event Schema
-
-Conceptually:
-
-TraderEvent
-event_id
-source
-venue
-asset
-wallet
-counterparty
-event_type
-side
-price
-size
-notional
-order_id
-execution_type
-start_position
-end_position
-exchange_timestamp
-receive_timestamp
-raw_event_reference
-schema_version
-ingestion_version
-
-Fields should remain nullable when source data does not reliably provide them.
-
-Unknown information must not be fabricated.
-
-⸻
-
-33. Trader State Store
-
-Derived trader state should be versioned.
-
-Conceptually:
-
-TraderStateSnapshot
-wallet
-as_of_time
-sample_count
-active_days
-skill_1s
-skill_5s
-skill_30s
-skill_1m
-skill_5m
-skill_1h
-long_skill
-short_skill
-trend_skill
-range_skill
-high_vol_skill
-recent_skill
-historical_skill
-drawdown
-consistency
-confidence
-uncertainty
-feature_version
-
-Every snapshot must be reproducible from historical events available at as_of_time.
-
-⸻
-
-34. Feature Families
-
-Initial candidate features include:
-
-Individual Trader Features
-
-TraderSkill
-TraderSkillChange
-TraderRecentMarkout
-TraderLongSkill
-TraderShortSkill
-TraderRegimeSkill
-TraderActivityIntensity
-TraderPositionChange
-
-Cohort Features
-
-InformedBuyFlow
-InformedSellFlow
-WeakBuyFlow
-WeakSellFlow
-SmartConsensus
-WeakConsensus
-InformedWeakDivergence
-TopDecileNetFlow
-SkillWeightedFlow
-
-Behavioral Features
-
-Aggressiveness
-PositionAcceleration
-ScaleInIntensity
-ScaleOutIntensity
-TradeClustering
-DirectionPersistence
-HoldingPeriodState
-
-⸻
-
-35. Cross-Venue Features
-
-The cross-venue research suggests another experimental family:
-
-Hyperliquid informed-wallet activity
-versus
-Binance BTC price discovery
-
-Possible features include:
-
-HL informed flow
-Binance short-horizon return
-Cross-venue lead score
-Cross-venue lag score
-Wallet anticipatory score
-Venue divergence
-
-This should remain a separate experiment because it introduces additional data synchronization and latency complexity.
-
-⸻
-
-36. Model Architecture
-
-TBIE should initially be implemented as an independent research model.
-
-Conceptually:
-
-                 MARKET STATE
-                      │
-          ┌───────────┼───────────┐
-          ▼           ▼           ▼
-       PRICE       ORDER FLOW   DERIVATIVES
-       MODEL         MODEL        MODEL
-          │           │           │
-          └───────────┼───────────┘
-                      │
-                      ▼
-            TRADER BEHAVIOR MODEL
-                      │
-                      ▼
-              REGIME CONDITIONING
-                      │
-                      ▼
-                  META MODEL
-                      │
-             ┌────────┼────────┐
-             ▼        ▼        ▼
-           LONG     SHORT   NO TRADE
-                      │
-                      ▼
-                 RISK ENGINE
-
-No TBIE output may bypass the Meta Model or Risk Engine.
-
-⸻
-
-37. AI Training Role
-
-Trader data may eventually contribute to AI training through:
-
-* Feature inputs
-* Meta-labeling
-* Regime-conditioned signals
-* Representation learning
-* Trader embeddings
-* Cohort embeddings
-* Anomaly detection
-* Skill-decay detection
-
-However, the first TBIE implementation should favor interpretable statistical features over deep-learning representations.
-
-Complexity must be earned.
-
-⸻
-
-38. Trader Embeddings
-
-A future experimental extension may learn behavioral embeddings:
-
-[
-E_i=f(behavior_i)
-]
-
-where wallets with similar trading behavior occupy similar representation space.
-
-Potential inputs:
-
-* Holding period
-* Aggressiveness
-* Position sizing
-* Direction persistence
-* Regime preference
-* Markout profile
-* Order type
-* Activity timing
-
-This may allow the system to identify trader archetypes without manually defining them.
-
-This remains future research.
-
-⸻
-
-39. Counterfactual Analysis
-
-The system should record what would have happened if TBIE had been followed or ignored.
-
-For every qualifying event:
-
-Observed Trader Signal
+Model inference
 ↓
-System Decision
+Risk evaluation
 ↓
-Risk Decision
+Order construction
 ↓
-Actual Market Outcome
-
-Counterfactuals:
-
-Outcome if TBIE ignored
-Outcome if TBIE included
-Outcome if TBIE inverted
-Outcome under alternative weighting
-
-This enables proper attribution.
+Order transmission
+↓
+Exchange acknowledgement / fill
 
 ⸻
 
-40. Ablation Requirement
+39. Gate 0 Delay Ladder
 
-TBIE must prove incremental value.
+Minimum synthetic delay tests:
 
-The minimum experiment is:
-
-Model A
-
-Market Data
-
-Model B
-
-Market Data
-+
-Derivatives
-
-Model C
-
-Market Data
-+
-Derivatives
-+
-Trader Behavior
-
-TBIE survives only if:
-
-[
-Performance_C > Performance_B
-]
-
-under robust out-of-sample testing.
-
-⸻
-
-41. Economic Significance
-
-Statistical significance alone is insufficient.
-
-TBIE must improve economically relevant outcomes after:
-
-* Fees
-* Spread
-* Slippage
-* Funding
-* Latency
-* Execution failure
-* Turnover
-
-A predictive improvement that cannot survive execution costs is not deployable alpha.
-
-⸻
-
-42. Evaluation Horizons
-
-Initial research should evaluate multiple horizons independently.
-
-Potential horizons:
-
+0 ms
+50 ms
+100 ms
+250 ms
+500 ms
 1 second
 2 seconds
 5 seconds
 10 seconds
 30 seconds
-1 minute
-5 minutes
-15 minutes
-1 hour
 
-The system must not assume that wallet intelligence persists equally across horizons.
+The 50 ms level is included for curve estimation.
 
-Existing research indicates particularly interesting behavior at very short horizons, making latency modeling essential. (SSRN)
+It does not imply the initial Python system can reliably achieve 50 ms end-to-end latency.
 
 ⸻
 
-43. Research Metrics
+40. Latency Curve
 
-Evaluation should include:
+For every delay (d), estimate:
 
-Out-of-Sample R²
-Information Coefficient
-Directional Accuracy
-Signed Markout
-Incremental AUC where appropriate
-Calibration
-Net Expected Value
-Sharpe
-Sortino
-Maximum Drawdown
-Turnover
-Cost Sensitivity
-Regime Stability
-Feature Stability
-Signal Half-Life
-
-No single metric determines success.
-
-⸻
-
-44. Statistical Controls
-
-TBIE research must use the project’s existing quantitative standards:
-
-* Point-in-time correctness
-* Purged cross-validation
-* Embargo
-* Walk-forward testing
-* CPCV where appropriate
-* Multiple-testing controls
-* Deflated Sharpe Ratio
-* Probability of Backtest Overfitting
-* Parameter robustness
-* Placebo cohorts
-* Randomized trader cohorts
-
-⸻
-
-45. Placebo Tests
-
-Placebo testing is particularly important.
-
-Examples:
-
-Top Skill Cohort
-vs.
-Random Activity-Matched Cohort
+[
+Edge(d)
+]
 
 and:
 
-Observed Wallet Ranking
-vs.
-Shuffled Wallet Ranking
+[
+IncrementalInformation(d)
+]
 
-and:
-
-Current Skill
-vs.
-Future-Leaked Skill
-
-The last comparison can help quantify how much apparent performance would be created by leakage.
-
-⸻
-
-46. Adversarial Tests
-
-TBIE should also be attacked deliberately.
-
-Examples:
-
-* Randomize wallet identities.
-* Shift trader timestamps.
-* Delay signals by 100 ms, 500 ms, 1 s, 5 s.
-* Double estimated slippage.
-* Remove top trader.
-* Remove top 10 traders.
-* Invert weak-trader cohort.
-* Change skill window.
-* Change regime definition.
-* Simulate wallet disappearance.
-* Simulate sudden skill decay.
-
-A real signal should not depend on one fragile configuration.
-
-⸻
-
-47. Concentration Risk
-
-TBIE must measure whether apparent edge depends on a tiny number of wallets.
-
-For example:
-
-Signal with all traders
-vs.
-Signal excluding top trader
-vs.
-Signal excluding top 5
-vs.
-Signal excluding top 10
-
-If edge disappears after removing one wallet, the system contains severe concentration risk.
-
-⸻
-
-48. Data Acquisition Strategy
-
-TBIE data acquisition should proceed incrementally.
-
-Stage 1
-
-Use accessible Hyperliquid market and wallet information.
-
-Stage 2
-
-Record required live events internally.
-
-Stage 3
-
-Evaluate whether historical reconstruction is sufficient.
-
-Stage 4
-
-Benchmark the cost and value of operating a non-validating node.
-
-Stage 5
-
-Only if justified, ingest full Level-4-style message data.
-
-This prevents infrastructure cost from exploding before predictive value is demonstrated.
-
-⸻
-
-49. Node Data Cost
-
-The Level-4 opportunity is valuable but potentially expensive.
-
-High-frequency Hyperliquid research has demonstrated datasets containing billions of messages over relatively short periods. One BTC-focused study analyzed approximately 4.5 billion messages over one month. (SSRN)
-
-Therefore full raw node ingestion must be treated as a storage and compute engineering decision rather than an automatic requirement.
-
-Before production ingestion, benchmark:
-
-* Daily raw volume
-* Compression ratio
-* Storage cost
-* Network requirements
-* ClickHouse ingestion rate
-* Replay throughput
-* Retention requirements
-
-⸻
-
-50. Build 0.1 Impact
-
-TBIE does not justify expanding Build 0.1 into a large AI project.
-
-The Lean BTC Quant MVP remains valid.
-
-M0 Rev.2 should receive one additional architecture decision record:
-
-ADR-004
-
-Trader Behavior Intelligence as an Experimental Feature Family
-
-The ADR should state:
-
-Decision: Preserve architectural support for wallet-level trader intelligence.
-
-Status: Experimental.
-
-Production Authority: None.
-
-Data Priority: Preserve required identity-linked event information where practical.
-
-Validation Requirement: Point-in-time ablation against anonymous baseline.
-
-⸻
-
-51. M2 Recorder Impact
-
-M2 remains primarily:
-
-BTC Hyperliquid Live Recorder
-
-However, the recorder architecture must avoid unnecessarily discarding trader-identity information that may later be expensive or impossible to reconstruct.
+The goal is to estimate the signal’s decay curve rather than ask whether one arbitrary delay works.
 
 Conceptually:
 
-                 HYPERLIQUID
-                      │
-          ┌───────────┴───────────┐
-          │                       │
-          ▼                       ▼
- BTC MARKET EVENTS          TRADER EVENTS
-          │                       │
-          ▼                       ▼
-    RAW STORAGE               RAW STORAGE
-          │                       │
-          └───────────┬───────────┘
-                      ▼
-                NORMALIZATION
-                      │
-                      ▼
-                 TIME ALIGNMENT
-                      │
-                      ▼
-                  RESEARCH
+Signal
+│\
+│ \
+│  \
+│   \
+│    \____
+│
+└────────────────
+     Latency
 
-This is an architectural preservation decision, not a requirement to implement the complete TBIE during M2.
+We need to know where the economically usable portion disappears.
 
 ⸻
 
-52. Initial TBIE Experiment
+41. Two Latency Experiments
 
-After the core BTC recorder and research pipeline are reliable, the first TBIE experiment should test:
+Latency testing must be divided into:
 
-Do wallets classified as informed using only information available before time T predict future BTC price movement out of sample beyond price, L2, and anonymous order flow?
+Experiment A: Synthetic Delay
 
-This should be the first formal hypothesis.
+Replay historical events while intentionally delaying trader-identity features.
 
-⸻
+Purpose:
 
-53. Hypothesis H0
+Estimate theoretical decay.
 
-Null hypothesis:
+Experiment B: Live Measured Delay
 
-[
-H_0:
-TraderIdentity
-\text{ provides no incremental predictive information}
-]
+Measure actual:
 
-after controlling for:
+source → receive
+receive → feature
+feature → decision
+decision → order
+order → acknowledgement
+acknowledgement → fill
 
-* Price
-* Order book
-* Anonymous order flow
-* Market regime
+Purpose:
 
-⸻
+Estimate operational feasibility.
 
-54. Hypothesis H1
-
-Alternative hypothesis:
-
-[
-H_1:
-TraderIdentity
-\text{ provides persistent incremental predictive information}
-]
-
-out of sample.
-
-Rejecting (H_0) statistically is still insufficient for deployment.
-
-Economic significance must also pass.
+Synthetic delay alone is insufficient.
 
 ⸻
 
-55. Second Experiment
+42. Receipt Time Becomes Mandatory
 
-If H1 survives:
+TBIE requires a clock distinction that the primary paper did not provide.
 
-Does skill-weighted trader consensus outperform unweighted trader flow?
+Every live event should preserve, where available:
 
-Compare:
+consensus_time
+exchange_time
+block_time
+local_receive_time
+decode_complete_time
+feature_ready_time
+decision_time
+order_send_time
+exchange_ack_time
+fill_time
 
-All Trader Flow
-vs.
-Top Trader Flow
-vs.
-Skill-Weighted Flow
-vs.
-Regime-Conditioned Skill-Weighted Flow
-
-⸻
-
-56. Third Experiment
-
-If the second experiment survives:
-
-Does informed-vs-weak divergence outperform informed flow alone?
-
-Compare:
-
-Informed Flow
-vs.
-Weak Flow
-vs.
-Informed - Weak Divergence
+Without this instrumentation we cannot answer the central executability question.
 
 ⸻
 
-57. Fourth Experiment
+43. Clock Discipline
 
-If sufficient cross-venue data becomes available:
+Use a monotonic local clock for latency measurement.
 
-Do historically anticipatory Hyperliquid wallets predict subsequent Binance BTC price movement after realistic observation latency?
+Wall-clock timestamps remain necessary for synchronization and auditability.
 
-This experiment directly tests whether cross-venue trader intelligence is actionable rather than merely statistically interesting.
+The system should therefore preserve both:
 
-⸻
+UTC timestamp
 
-58. Promotion Gate
+and:
 
-TBIE can move from:
+monotonic process timestamp
 
-Research Candidate
+where appropriate.
 
-to:
-
-Validated Feature
-
-only if it demonstrates:
-
-1. Point-in-time correctness.
-2. Out-of-sample persistence.
-3. Incremental value beyond baseline.
-4. Robustness across periods.
-5. Reasonable regime stability.
-6. Resistance to placebo testing.
-7. Resistance to trader removal.
-8. Resistance to parameter perturbation.
-9. Survival after realistic latency.
-10. Survival after realistic transaction costs.
+Clock synchronization quality must itself be monitored.
 
 ⸻
 
-59. Production Gate
+44. Gate 0 Pass Condition
 
-Validated Feature does not mean Production Signal.
+Exact numerical thresholds must be determined before seeing final results.
 
-Production consideration additionally requires:
+Conceptually, Gate 0 passes only if trader identity retains:
 
-* Paper validation
-* Shadow validation
-* Execution compatibility
-* Feature freshness monitoring
-* Skill-decay monitoring
-* Data-quality monitoring
-* Concentration monitoring
-* Fail-safe behavior
-
-Only then may TBIE influence real-capital decisions.
+1. measurable incremental information at realistic latency,
+2. sufficient economic magnitude to plausibly survive costs,
+3. robustness across multiple periods,
+4. no dependence on one or two wallets,
+5. sufficient observation frequency for the intended strategy.
 
 ⸻
 
-60. Failure Outcome
+45. Gate 0 Failure
 
-The valid outcome:
+If identity information disappears before our realistic execution latency:
+
+TBIE_FAST_ALPHA_REJECTED
+
+The project must then NOT:
+
+* build low-value trader-following infrastructure,
+* operate expensive Level-4 storage solely for TBIE,
+* build complex trader embeddings,
+* or force the feature into the AI.
+
+The data may still remain useful for:
+
+Risk intelligence
+Adverse-selection detection
+Market-regime analysis
+Execution protection
+Liquidity analysis
+
+This distinction is important.
+
+A feature can fail as alpha while succeeding as risk intelligence.
+
+⸻
+
+46. New TBIE Outcome Taxonomy
+
+TBIE now has four possible research outcomes.
+
+Outcome A
+
+TBIE_ALPHA_VALIDATED
+
+Trader identity provides executable incremental alpha.
+
+Outcome B
+
+TBIE_RISK_ONLY
+
+Trader identity improves adverse-selection or execution-risk estimation but does not produce actionable directional alpha.
+
+Outcome C
+
+TBIE_RESEARCH_ONLY
+
+Interesting statistical structure exists but has insufficient economic value.
+
+Outcome D
 
 TBIE_NO_EDGE
 
-must exist.
+No durable incremental information survives rigorous testing.
 
-If trader identity fails incremental testing, the project must not force it into the product merely because the concept is attractive.
-
-The component should then be:
-
-ARCHIVED
-
-or:
-
-RESEARCH ONLY
-
-The broader trading architecture remains functional without it.
+This is more informative than a binary pass/fail system.
 
 ⸻
 
-61. Security and Privacy Principle
+47. Revised Trader Intelligence Objective
 
-TBIE analyzes publicly observable pseudonymous trading behavior.
+TBIE should no longer be framed only as:
 
-The system should not attempt to deanonymize wallet owners unnecessarily.
+Can we follow successful traders?
 
-Research value comes from behavioral persistence, not real-world identity.
+The broader and better question is:
+
+Can persistent pseudonymous behavioral identity improve our estimate of future return, adverse selection, execution quality, or market regime beyond anonymous market data?
+
+This substantially increases the scientific usefulness of the experiment.
+
+⸻
+
+48. Revised Smart-Money Architecture
+
+The system should distinguish:
+
+Directional Information
+Adverse-Selection Information
+Execution Information
+Liquidity Information
+Regime Information
+
+A wallet may be valuable for one dimension and useless for another.
+
+Therefore a single global:
+
+TraderScore
+
+should eventually be avoided.
+
+Prefer:
+
+TraderInformationVector
+
+⸻
+
+49. Trader Information Vector
+
+Conceptually:
+
+[
+T_i(t)=
+[
+I^{direction},
+I^{adverse},
+I^{liquidity},
+I^{execution},
+I^{regime}
+]
+]
+
+conditioned on:
+
+Asset
+Direction
+Horizon
+Regime
+Recency
+Sample confidence
+
+This is a more defensible architecture than ranking traders with one permanent number.
+
+⸻
+
+50. Weak Traders Remain Valuable
+
+Nothing in the audit invalidates the Weak Trader hypothesis.
+
+Persistently poorly timed traders may still provide information.
+
+However, this remains:
+
+PROJECT HYPOTHESIS
+
+It has not been validated by the principal evidence reviewed here to the same degree as high-markout trader identity.
+
+Therefore weak-trader inversion must be tested separately.
+
+⸻
+
+51. Smart Consensus Remains Experimental
+
+The proposed:
+
+[
+Consensus_t=
+\frac{\sum_i w_{i,t}s_{i,t}}
+{\sum_i|w_{i,t}|}
+]
+
+remains architecturally valid.
+
+But no external paper reviewed here proves that this exact weighting scheme produces alpha.
+
+Status
+
+UNVERIFIED PROJECT HYPOTHESIS
+
+It must compete against:
+
+Anonymous flow
+Unweighted wallet flow
+Top-decile flow
+Skill-weighted flow
+Regime-weighted flow
+
+⸻
+
+52. Concentration Test Becomes Mandatory
+
+Because the evidence suggests informational value is concentrated in an upper tail, every TBIE experiment must run:
+
+All informed wallets
+minus top 1 wallet
+minus top 5 wallets
+minus top 10 wallets
+minus top 1%
+minus top 5%
+
+The system must measure how much edge disappears.
+
+A signal dependent on one wallet is not a robust platform-level edge.
+
+⸻
+
+53. Wallet Turnover Test
+
+The system must measure:
+
+new informed wallets entering
+old informed wallets disappearing
+wallet skill decay
+wallet inactivity
+wallet replacement rate
+
+This determines whether the intelligence universe is renewable.
+
+⸻
+
+54. Wallet Identity Constraint
+
+TBIE continues to treat:
+
+wallet
+
+as:
+
+pseudonymous behavioral identifier
+
+not:
+
+verified human trader.
+
+The primary research itself explicitly warns against equating wallet identity with a single human trader.
+
+Therefore wallet clustering remains separate future research.
+
+⸻
+
+55. Hidden Hedge Problem
+
+The evidence audit does not resolve hidden cross-venue hedging.
+
+A Hyperliquid wallet may represent one leg of:
+
+Spot hedge
+Futures hedge
+Options hedge
+Cross-exchange hedge
+Market-making inventory
+OTC exposure
 
 Therefore:
 
-Wallet 0xABC...
+POSITION ≠ BELIEF
 
-is analytically sufficient.
-
-The question:
-
-“Who is this person?”
-
-is generally irrelevant.
-
-The question:
-
-“Does this pseudonymous entity demonstrate persistent predictive behavior?”
-
-is relevant.
+TBIE should learn empirical conditional outcomes rather than infer psychological intent.
 
 ⸻
 
-62. Risk Authority
+56. Data Capture Decision
 
-TBIE has:
+The audit strengthens the decision to preserve identity-linked information early.
 
-NO execution authority
-NO leverage authority
-NO position-size authority
-NO stop-loss authority
-NO risk-limit authority
-NO kill-switch authority
+M2 should preserve, where available and economically reasonable:
 
-TBIE outputs information.
+wallet
+counterparty
+side
+price
+size
+order_id
+start_position
+twap_id
+cloid
+event_time
+receive_time
+raw_event_reference
 
-The Risk Engine controls capital.
+This does NOT mean building the complete TBIE in M2.
 
-This boundary is immutable.
-
-⸻
-
-63. Architectural Position
-
-Final conceptual architecture:
-
-                    MARKET
-                       │
-         ┌─────────────┼─────────────┐
-         │             │             │
-         ▼             ▼             ▼
-       PRICE          L2         DERIVATIVES
-       MODEL         MODEL          MODEL
-         │             │             │
-         └─────────────┼─────────────┘
-                       │
-                       ▼
-              TRADER BEHAVIOR
-              INTELLIGENCE ENGINE
-                       │
-                       ▼
-                 REGIME ENGINE
-                       │
-                       ▼
-                  META MODEL
-                       │
-              ┌────────┼────────┐
-              │        │        │
-              ▼        ▼        ▼
-            LONG     SHORT   NO TRADE
-                       │
-                       ▼
-                  RISK ENGINE
-                       │
-                 APPROVE / REJECT
-                       │
-                       ▼
-                EXECUTION ENGINE
-                       │
-                       ▼
-                  EXCHANGE
+It means avoiding irreversible information loss.
 
 ⸻
 
-64. Research Decision
+57. Important Scope Control
 
-Based on current evidence:
+The project must not allow TBIE excitement to derail the Lean BTC MVP.
+
+Therefore:
+
+TBIE IS NOT ON THE BUILD 0.1 CRITICAL PATH.
+
+The critical path remains:
+
+M0
+↓
+M1 Storage
+↓
+M2 BTC Recorder
+↓
+M3 Integrity / Replay
+↓
+BTC Dataset
+↓
+Baseline Strategy
+↓
+Risk / Execution
+
+TBIE experiments begin only when the underlying data pipeline is trustworthy.
+
+⸻
+
+58. Full Node Decision
+
+A full Level-4-style node feed offers substantial research value.
+
+However:
+
+~100 GB/day default logs
+
+creates meaningful infrastructure cost.
+
+Therefore the node decision becomes a formal economic gate.
+
+Before full deployment, estimate:
+
+Raw GB/day
+Compressed GB/day
+Monthly storage
+Replication
+Backup
+ClickHouse footprint
+Object-storage footprint
+Network egress
+CPU
+Replay cost
+Retention policy
+
+⸻
+
+59. Node Gate
+
+Full node infrastructure is approved only if at least one of the following is true:
+
+Condition A
+
+Gate 0 suggests actionable TBIE value.
+
+Condition B
+
+Level-4 data demonstrates independent value for execution/risk research.
+
+Condition C
+
+The infrastructure cost is sufficiently low to justify preserving an otherwise irrecoverable research asset.
+
+Otherwise:
+
+DEFER NODE
+
+⸻
+
+60. API-Only Limitation
+
+Because user fill and historical-order endpoints expose bounded history, the project must not assume future API calls can reconstruct complete historical wallet behavior.
+
+Therefore:
+
+Capture-first architecture remains correct.
+
+But capture scope must be proportional to evidence.
+
+⸻
+
+61. Revised Initial TBIE Experiment Order
+
+The previous experiment sequence is changed.
+
+New order:
+
+Experiment 0
+
+LATENCY VIABILITY
+
+Does identity information survive realistic delay?
+
+Experiment 1
+
+PIT WALLET PERSISTENCE
+
+Can we reproduce wallet-skill persistence without future leakage?
+
+Experiment 2
+
+INCREMENTAL INFORMATION
+
+Does identity beat strong anonymous market baselines?
+
+Experiment 3
+
+ECONOMIC VALUE
+
+Does the incremental information survive costs?
+
+Experiment 4
+
+COHORT CONSTRUCTION
+
+Does skill weighting improve over raw flow?
+
+Experiment 5
+
+WEAK-TRADER DIVERGENCE
+
+Does informed-vs-weak divergence add value?
+
+Experiment 6
+
+CROSS-VENUE INTELLIGENCE
+
+Do selected Hyperliquid wallets predict future movement on other venues?
+
+⸻
+
+62. Experiment 0A: Historical Delay Replay
+
+Construct:
+
+[
+X^{identity}_{t-d}
+]
+
+for:
+
+[
+d \in
+{
+0,
+50ms,
+100ms,
+250ms,
+500ms,
+1s,
+2s,
+5s,
+10s,
+30s
+}
+]
+
+Compare:
+
+[
+MarketModel
+]
+
+against:
+
+[
+MarketModel + Identity_{delayed}
+]
+
+The output is:
+
+Identity Decay Curve
+
+⸻
+
+63. Experiment 0B: Live Latency Benchmark
+
+Before claiming feasibility, record empirical latency distributions.
+
+Required percentiles:
+
+p50
+p90
+p95
+p99
+p99.9
+
+for every stage of the pipeline.
+
+Average latency is insufficient.
+
+Tail latency matters because trading systems fail in tails.
+
+⸻
+
+64. Experiment 0C: Shadow Executability
+
+Eventually:
+
+Trader event observed
+↓
+TBIE feature generated
+↓
+Hypothetical trade generated
+↓
+Risk approved
+↓
+Shadow order timestamped
+↓
+Market execution simulated
+
+Compare theoretical signal value with realistic shadow execution.
+
+This is the first meaningful bridge from academic predictability to our trading system.
+
+⸻
+
+65. Benchmark Requirement
+
+TBIE must never be evaluated against price-only models.
+
+Minimum benchmark:
+
+Price
+BBO
+L2 imbalance
+Order-flow imbalance
+Signed taker flow
+Volatility
+Spread
+Funding
+Open interest
+
+where available and PIT-correct.
+
+Only incremental value beyond this benchmark counts.
+
+⸻
+
+66. Model Complexity Rule
+
+Initial TBIE research should begin with:
+
+Linear / Ridge
+Logistic models where appropriate
+Gradient-boosted trees
+
+before:
+
+Transformers
+Deep sequence models
+Trader embeddings
+Graph neural networks
+
+If simple models extract the signal sufficiently, complexity is unnecessary.
+
+If simple models show no robust information, deep learning must not be used as a fishing expedition.
+
+⸻
+
+67. Required Placebos
+
+At minimum:
+
+Activity-matched random wallets
+Random wallet labels
+Shuffled wallet ranking
+Randomized event directions
+Delayed identity
+Future-leaked identity control
+Random cohort sizes
+
+The future-leaked control is particularly valuable because it quantifies how much false performance could be manufactured by violating point-in-time discipline.
+
+⸻
+
+68. Required Cost Stress
+
+Any candidate TBIE trading signal must survive:
+
+Base fees
+2× fees
+Base slippage
+2× slippage
+Expected latency
+2× latency
+Normal spread
+Stress spread
+Normal volatility
+High volatility
+
+A signal surviving only ideal execution is rejected.
+
+⸻
+
+69. Required Regime Tests
+
+Evaluate independently under:
+
+Trend
+Range
+High volatility
+Low volatility
+Funding extremes
+High open interest
+Low liquidity
+Stress / liquidation events
+
+Trader skill may be regime-specific.
+
+That is acceptable.
+
+What is prohibited is hiding regime dependence.
+
+⸻
+
+70. Research Reproducibility
+
+Every TBIE experiment must store:
+
+experiment_id
+dataset_id
+dataset_checksum
+feature_version
+wallet_score_version
+model_version
+code_commit
+training_window
+validation_window
+test_window
+latency_assumption
+fee_assumption
+slippage_assumption
+random_seed
+results
+
+No result without provenance may influence architecture.
+
+⸻
+
+71. Updated Architectural Status
+
+Following the evidence audit:
 
 Scientific Plausibility: HIGH
 
-Data Availability: PROMISING
+Primary Evidence Verification: STRONG
 
-Implementation Complexity: MEDIUM TO HIGH
+Independent Replication: LIMITED
 
-Leakage Risk: VERY HIGH
+BTC Relevance: HIGH
 
-Latency Sensitivity: VERY HIGH
+Data Availability: HIGH
 
-Potential Incremental Information: PROMISING
+Point-in-Time Feasibility: HIGH
+
+Latency Risk: VERY HIGH
+
+Execution Uncertainty: VERY HIGH
+
+Infrastructure Cost Risk: MEDIUM/HIGH
+
+Potential Differentiation: HIGH
 
 Production Readiness: NONE
 
 Research Priority: HIGH
 
-Build 0.1 Critical Path: NO
+⸻
 
-Recorder Architecture Impact: YES
+72. Updated Decision
+
+TBIE remains:
+
+ACCEPTED AS A HIGH-PRIORITY EXPERIMENTAL FEATURE FAMILY
+
+The evidence audit strengthens the case that trader identity contains real market information.
+
+It does NOT justify deployment.
+
+The project must distinguish three propositions:
+
+Proposition 1
+
+Trader identity contains predictive information.
+
+SUPPORTED
+
+Proposition 2
+
+Trader identity contains information beyond anonymous market data.
+
+SUPPORTED
+
+Proposition 3
+
+Our system can convert that information into durable net trading profit.
+
+UNPROVEN
+
+The entire TBIE engineering program exists to test Proposition 3.
 
 ⸻
 
-65. Final Decision
+73. ADR Numbering Correction
 
-Trader Behavior Intelligence is formally accepted into the research architecture as an:
+The TBIE architecture decision must not hardcode:
 
-EXPERIMENTAL HIGH-PRIORITY FEATURE FAMILY
+ADR-004
 
-It is not accepted as a proven source of alpha.
+until the repository’s actual ADR namespace is inspected.
 
-It is not accepted as a production trading signal.
+The correct procedure during M0 is:
 
-It is not accepted as a copy-trading mechanism.
+Inspect docs/ADR/
+↓
+Determine next canonical ADR number
+↓
+Create TBIE ADR
+↓
+Update index
 
-The project will preserve the data and architecture required to evaluate it rigorously.
+The ADR title should be:
 
-The decisive experiment remains:
+Trader Behavior Intelligence as an Experimental Feature Family
 
-Can point-in-time, historically estimated trader skill predict future BTC perpetual returns beyond anonymous market information, and does that incremental information remain economically valuable after latency, fees, spread, slippage, funding, and execution constraints?
-
-If the answer is YES:
-
-PROMOTE
-
-If the answer is NO:
-
-REMOVE
-
-No narrative, reputation, leaderboard, founder preference, or AI complexity may override that result.
+The number is repository-assigned.
 
 ⸻
 
-66. Immediate Project Action
+74. M0 Impact
 
-Add:
+M0 does not require architectural redesign.
 
-ADR-004 — Trader Behavior Intelligence as an Experimental Feature Family
+It requires only:
 
-to Build 0.1 Rev.2.
+1. TBIE research status registration.
+2. ADR namespace resolution.
+3. Event schemas capable of preserving optional identity-linked information.
+4. Clock architecture capable of future latency measurement.
+5. No production dependency on TBIE.
 
-Preserve trader-identity-linked event information during recorder design where technically and economically reasonable.
+⸻
 
-Do not delay the BTC market recorder to build the full TBIE.
+75. M2 Impact
 
-The immediate engineering sequence remains:
+M2 remains the BTC Hyperliquid Recorder.
+
+However, M2 must now satisfy an additional requirement:
+
+Do not discard identity-linked fields or receive-time information when they are available at reasonable cost.
+
+This preserves optionality without expanding M2 into a full trader-intelligence system.
+
+⸻
+
+76. What M2 Must Not Become
+
+M2 must NOT become:
+
+Trader ranking engine
+AI model
+Copy trading system
+Wallet profiler
+Cross-venue predictor
+Full Level-4 research cluster
+
+Its responsibility remains:
+
+RELIABLE EVIDENCE CAPTURE
+
+⸻
+
+77. Research Trigger
+
+After M2 and M3 demonstrate reliable capture and deterministic replay, TBIE Experiment 0 may begin.
+
+The trigger is:
+
+Recorder PASS
++
+Integrity PASS
++
+Replay PASS
+
+Only then:
+
+START LATENCY VIABILITY TEST
+
+⸻
+
+78. TBIE Kill Rule
+
+The project adopts an explicit kill rule.
+
+If repeated PIT-correct experiments show that trader-identity information:
+
+* disappears before realistic execution,
+* cannot survive costs,
+* depends excessively on a few wallets,
+* fails outside the original period,
+* or provides no incremental value over strong market baselines,
+
+then:
+
+TBIE ALPHA DEVELOPMENT STOPS.
+
+No founder override.
+
+No model-complexity rescue attempt without a new falsifiable hypothesis.
+
+⸻
+
+79. TBIE Promotion Rule
+
+TBIE can progress toward production only through:
+
+External Evidence
+↓
+Internal Replication
+↓
+Latency Gate
+↓
+Incremental-Information Gate
+↓
+Economic Gate
+↓
+Robustness Gate
+↓
+Paper
+↓
+Shadow
+↓
+Limited Live
+
+Skipping a gate is prohibited.
+
+⸻
+
+80. Final Evidence-Audited Conclusion
+
+The evidence audit changes the interpretation of TBIE in an important way.
+
+The original idea was:
+
+Professional-trader behavior might be useful training data.
+
+The evidence now supports a more precise proposition:
+
+Persistent pseudonymous trader identity on Hyperliquid appears to contain measurable short-horizon information that is not fully captured by anonymous price, quote, and order-flow variables.
+
+The strongest current evidence demonstrates:
+
+* persistent wallet-level markout differences,
+* out-of-sample predictive improvement,
+* placebo resistance,
+* nonlinear-model robustness,
+* multi-second signal persistence,
+* and temporal replication.
+
+But the research does not establish:
+
+* executable profitability,
+* receipt-to-fill viability,
+* sustainable alpha after costs,
+* scalability,
+* or production robustness.
+
+Therefore the project’s next scientific question is no longer:
+
+Is trader identity interesting?
+
+The evidence suggests that it is.
+
+The question is:
+
+CAN WE GET THERE IN TIME?
+
+More formally:
+
+After accounting for the actual delay between a Hyperliquid trader event becoming observable and our own executable order reaching the market, does point-in-time trader identity still provide economically meaningful incremental information beyond price, L2, anonymous order flow, derivatives state, and realistic trading costs?
+
+Until that question is answered:
+
+TBIE = HIGH-PRIORITY RESEARCH
+
+not:
+
+TBIE = TRADING EDGE
+
+⸻
+
+81. Immediate Engineering Decision
+
+Proceed with:
 
 M0 Rev.2
-    ↓
-M1 Storage
-    ↓
+↓
+M1 Storage Foundation
+↓
 M2 BTC Recorder
-    ↓
-M3 Data Integrity / Replay
-    ↓
-BTC Research Dataset
-    ↓
-Baseline Research
-    ↓
-Trader Behavior Experiment
+↓
+M3 Data Integrity + Replay
 
-The principle is:
+while preserving:
 
-Capture the evidence now. Earn the complexity later.
+Trader identity
+Counterparty identity where available
+Position context where available
+Raw events
+Consensus/event timestamps
+Local receive timestamps
+Monotonic receive timestamps
+
+Then run:
+
+TBIE EXPERIMENT 0 — LATENCY VIABILITY
+
+before committing to expensive full-node TBIE infrastructure.
+
+⸻
+
+82. Governing Principle
+
+Capture what may become irrecoverable.
+Verify what can be verified.
+Measure latency before assuming executability.
+Buy infrastructure only after evidence earns it.
+Treat predictive information and profitable execution as two different hypotheses.

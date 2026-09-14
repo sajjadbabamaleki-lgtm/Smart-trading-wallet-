@@ -82,6 +82,9 @@ ignore = [
 "services/*/cli.py" = [
     "T201",      # likewise — a CLI's report goes to stdout
 ]
+"services/*/*_cli.py" = [
+    "T201",      # a package may have more than one entry point
+]
 "services/market_data/acceptance.py" = [
     "PLR0912",   # the decision logic is a flat list of checks; nesting it would hide the criteria
     "PLR0913",   # each argument is a distinct piece of evidence, not config to bundle

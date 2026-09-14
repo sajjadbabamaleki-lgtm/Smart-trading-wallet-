@@ -33,14 +33,9 @@ if str(REPO_ROOT) not in sys.path:
 
 from libs.config import ConfigurationError, Settings, load_settings  # noqa: E402
 from libs.domain.clock import SystemClock  # noqa: E402
-from libs.exchange.hyperliquid.subscriptions import (  # noqa: E402
-    MAINNET_WS_URL,
-    RECORDED_CHANNELS,
-    TESTNET_WS_URL,
-)
+from libs.exchange.hyperliquid.subscriptions import RECORDED_CHANNELS  # noqa: E402
 from libs.exchange.hyperliquid.websocket import HyperliquidWebSocketSource  # noqa: E402
 from libs.observability.logging import configure_logging, get_logger  # noqa: E402
-from libs.schemas.enums import ExecutionEnvironment  # noqa: E402
 from services.market_data.capture import (  # noqa: E402
     CaptureHeader,
     SessionWriter,
@@ -91,24 +86,21 @@ class _CapturingSink:
 
 
 def websocket_url(settings: Settings) -> str:
-    """Endpoint for the configured environment.
+    """Market-data endpoint for the configured market-data environment.
 
-    Derived, never configured — the same rule as the REST endpoint
-    (Build 0.1 Rev.1 §46). DEVELOPMENT has no venue of its own, so it reads the
-    testnet feed: recording public market data carries no capital risk, and
-    refusing to read it would make the recorder untestable in the one
-    environment it is meant to be developed in.
+    Derived from `market_data_environment`, never configured, and deliberately
+    independent of `execution_environment` (ADR-009). Reading a public order
+    book carries no capital risk; the execution guard is unaffected by what
+    this returns, and `market_data_is_read_only` asserts that rather than
+    assuming it.
     """
-    if settings.execution_environment in (
-        ExecutionEnvironment.DEVELOPMENT,
-        ExecutionEnvironment.TESTNET,
-    ):
-        return TESTNET_WS_URL
-    raise ConfigurationError(
-        f"no market-data endpoint is permitted for "
-        f"{settings.execution_environment.value} at this build stage "
-        f"(mainnet would be {MAINNET_WS_URL})"
-    )
+    if not settings.market_data_is_read_only:
+        raise ConfigurationError(
+            "refusing to start the recorder: the execution guard reports that "
+            "capital could be reached in this configuration, so a market-data "
+            "read is no longer provably risk-free"
+        )
+    return settings.market_data_endpoint
 
 
 async def _replay(path: Path, args: argparse.Namespace) -> int:
@@ -207,7 +199,10 @@ async def run(args: argparse.Namespace) -> int:
     logger.info(
         "recorder_starting",
         extra={
-            "environment": settings.execution_environment.value,
+            "execution_environment": settings.execution_environment.value,
+            "market_data_environment": settings.market_data_environment.value,
+            "market_data_endpoint": settings.market_data_endpoint,
+            "execution_enabled": settings.may_submit_orders,
             "assets": list(settings.asset_allowlist),
             "source": source.name,
             "sink": "memory",
@@ -235,6 +230,7 @@ async def run(args: argparse.Namespace) -> int:
             capture_writer.__exit__()
 
     report: dict[str, Any] = {
+        "settings": settings.describe(),
         "state": recorder.machine.state.value,
         "metrics": metrics.as_dict(),
         "freshness": None if monitor.last_check is None else monitor.last_check.freshness.as_dict(),

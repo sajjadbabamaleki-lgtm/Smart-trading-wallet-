@@ -7,6 +7,7 @@ cannot silently reinterpret historical records (Build 0.1 Rev.1 §20).
 from libs.schemas.enums import (
     DataQualityStatus,
     ExecutionEnvironment,
+    MarketDataEnvironment,
     MarketEventType,
     PitStatus,
     Side,
@@ -18,6 +19,7 @@ from libs.schemas.trader_event import TraderEvent
 __all__ = [
     "DataQualityStatus",
     "ExecutionEnvironment",
+    "MarketDataEnvironment",
     "MarketEvent",
     "MarketEventType",
     "PitStatus",

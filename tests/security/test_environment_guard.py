@@ -17,7 +17,8 @@ from libs.config import (
     ConfigurationError,
     load_settings,
 )
-from libs.schemas.enums import ExecutionEnvironment
+from libs.config.settings import MARKET_DATA_ENDPOINTS, Settings
+from libs.schemas.enums import ExecutionEnvironment, MarketDataEnvironment
 
 TESTNET_KEY = "0x" + "ab" * 32
 
@@ -239,3 +240,79 @@ class TestSettingsAreImmutable:
         settings = load_settings()
         with pytest.raises(Exception, match=r"frozen"):
             settings.trading_enabled = True  # type: ignore[misc]
+
+
+class TestMarketDataIsSeparateFromExecution:
+    """ADR-009: reading public market data must not open a capital path.
+
+    These are the tests that make the split safe rather than merely convenient.
+    Splitting the settings let the recorder reach mainnet *market data*; if it
+    also let anything reach mainnet *execution*, the split would have traded a
+    real safety property for a research convenience.
+    """
+
+    def test_mainnet_market_data_does_not_enable_execution(self) -> None:
+        settings = load_settings(market_data_environment=MarketDataEnvironment.MAINNET_PUBLIC)
+        assert settings.market_data_endpoint == "wss://api.hyperliquid.xyz/ws"
+        assert settings.venue_endpoint is None
+        assert settings.may_submit_orders is False
+        assert settings.market_data_is_read_only
+
+    def test_mainnet_market_data_does_not_relax_the_execution_guard(self) -> None:
+        """The two settings are independent; widening one must not widen the other."""
+        with pytest.raises(ConfigurationError, match="not permitted"):
+            load_settings(
+                market_data_environment=MarketDataEnvironment.MAINNET_PUBLIC,
+                execution_environment=ExecutionEnvironment.PRODUCTION,
+            )
+
+    def test_market_data_defaults_to_testnet(self) -> None:
+        """Reaching mainnet data is an explicit choice, never a default."""
+        assert load_settings().market_data_environment is MarketDataEnvironment.TESTNET
+
+    def test_every_market_data_environment_has_an_endpoint(self) -> None:
+        assert set(MARKET_DATA_ENDPOINTS) == set(MarketDataEnvironment)
+        for endpoint in MARKET_DATA_ENDPOINTS.values():
+            assert endpoint.startswith("wss://")
+
+    def test_the_market_data_endpoint_is_not_configurable(self) -> None:
+        """Derived, for the same reason the execution endpoint is."""
+        settings = load_settings()
+        assert "market_data_endpoint" not in type(settings).model_fields
+        with pytest.raises(ConfigurationError):
+            load_settings(market_data_endpoint="wss://somewhere.else/ws")
+
+    def test_an_unknown_market_data_environment_is_refused(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("STW_MARKET_DATA_ENVIRONMENT", "MAINNET_WRITABLE")
+        with pytest.raises(ConfigurationError):
+            load_settings()
+
+    def test_the_read_only_invariant_is_not_a_constant(self) -> None:
+        """It must fail if the execution guard is ever widened.
+
+        Asserted by constructing a settings object whose execution environment
+        reaches capital. That cannot be reached through `load_settings` while
+        PERMITTED_ENVIRONMENTS excludes it, which is the point — the invariant
+        is checked against the underlying state rather than the validator.
+        """
+        reachable = Settings.model_construct(
+            execution_environment=ExecutionEnvironment.PRODUCTION,
+            market_data_environment=MarketDataEnvironment.MAINNET_PUBLIC,
+            trading_enabled=True,
+            testnet_api_wallet_private_key=TESTNET_KEY,
+        )
+        assert not reachable.market_data_is_read_only
+
+    def test_the_safe_summary_reports_both_environments(self) -> None:
+        described = load_settings(
+            market_data_environment=MarketDataEnvironment.MAINNET_PUBLIC
+        ).describe()
+        assert described["market_data_environment"] == "MAINNET_PUBLIC"
+        assert described["execution_environment"] == "DEVELOPMENT"
+        assert described["market_data_is_read_only"] is True
+        assert described["may_submit_orders"] is False
+
+    def test_public_read_only_is_asserted_on_the_enum(self) -> None:
+        assert MarketDataEnvironment.MAINNET_PUBLIC.is_public_read_only

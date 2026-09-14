@@ -74,9 +74,14 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "infrastructure/scripts/**" = [
     "T201",      # these are CLIs; printing is the output
+    "PLR0915",   # an orchestrator is a linear sequence; splitting it hides the order of operations
 ]
 "services/*/cli.py" = [
     "T201",      # likewise — a CLI's report goes to stdout
+]
+"services/market_data/acceptance.py" = [
+    "PLR0912",   # the decision logic is a flat list of checks; nesting it would hide the criteria
+    "PLR0913",   # each argument is a distinct piece of evidence, not config to bundle
 ]
 "tests/**" = [
     "S101",      # assert is the point of a test

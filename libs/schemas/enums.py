@@ -25,6 +25,37 @@ class ExecutionEnvironment(StrEnum):
         return self in (ExecutionEnvironment.LIMITED_LIVE, ExecutionEnvironment.PRODUCTION)
 
 
+class MarketDataEnvironment(StrEnum):
+    """Where public market data is read from.
+
+    Deliberately separate from `ExecutionEnvironment` (ADR-009). Reading a
+    public order book carries no capital risk; submitting an order does. Tying
+    them to one setting forced a choice between two bad options: read thin
+    testnet data and learn little about the real venue, or widen the execution
+    guard to reach mainnet data and put real capital one configuration edit
+    away.
+
+    `MAINNET_PUBLIC` is read-only by construction. It grants no endpoint the
+    Execution Engine can use and no credential; the execution guard is
+    untouched by it, and tests assert that.
+    """
+
+    DEVELOPMENT = "DEVELOPMENT"
+    TESTNET = "TESTNET"
+    MAINNET_PUBLIC = "MAINNET_PUBLIC"
+
+    @property
+    def is_public_read_only(self) -> bool:
+        """Whether this environment permits only public reads.
+
+        True for MAINNET_PUBLIC: the name is the contract. It exists so that a
+        caller can assert the property rather than re-deriving it from a
+        comparison, and so that adding a future writable mainnet value cannot
+        silently inherit read-only treatment.
+        """
+        return self is MarketDataEnvironment.MAINNET_PUBLIC
+
+
 class Side(StrEnum):
     BUY = "BUY"
     SELL = "SELL"

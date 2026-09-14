@@ -29,7 +29,7 @@ from pydantic import Field, ValidationError, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 from pydantic_settings.exceptions import SettingsError
 
-from libs.schemas.enums import ExecutionEnvironment
+from libs.schemas.enums import ExecutionEnvironment, MarketDataEnvironment
 
 BUILD_STAGE: Final = "0.1"
 
@@ -61,6 +61,20 @@ place, and are unreachable while PERMITTED_ENVIRONMENTS excludes them.
 PRIVATE_KEY_HEX_LENGTH: Final = 64
 """An Ethereum private key is 32 bytes, i.e. 64 hex characters."""
 
+MARKET_DATA_ENDPOINTS: Final[dict[MarketDataEnvironment, str]] = {
+    MarketDataEnvironment.DEVELOPMENT: "wss://api.hyperliquid-testnet.xyz/ws",
+    MarketDataEnvironment.TESTNET: "wss://api.hyperliquid-testnet.xyz/ws",
+    MarketDataEnvironment.MAINNET_PUBLIC: "wss://api.hyperliquid.xyz/ws",
+}
+"""Market-data endpoint per market-data environment (ADR-009).
+
+Separate from `VENUE_ENDPOINTS`, and that separation is the safety property:
+this mapping is consumed only by the recorder, never by the Execution Engine,
+so a mainnet entry here cannot become an execution path. Both are derived from
+configuration rather than configurable, for the same reason
+(Build 0.1 Rev.1 §46).
+"""
+
 SUPPORTED_ASSETS: Final[frozenset[str]] = frozenset({"BTC", "ETH", "SOL", "BNB"})
 """Assets the long-term architecture supports.
 
@@ -86,6 +100,13 @@ class Settings(BaseSettings):
     )
 
     execution_environment: ExecutionEnvironment = ExecutionEnvironment.DEVELOPMENT
+
+    # Where public market data is read from. Independent of execution
+    # (ADR-009): reading a public book risks nothing, so restricting the
+    # recorder to thin testnet data bought no safety and cost the ability to
+    # learn what the real venue sends. Defaults to TESTNET, so reaching mainnet
+    # data is an explicit choice.
+    market_data_environment: MarketDataEnvironment = MarketDataEnvironment.TESTNET
 
     trading_enabled: bool = Field(
         default=False,
@@ -206,6 +227,27 @@ class Settings(BaseSettings):
         return self
 
     @property
+    def market_data_endpoint(self) -> str:
+        """Endpoint the recorder reads from. Derived, never configured."""
+        return MARKET_DATA_ENDPOINTS[self.market_data_environment]
+
+    @property
+    def market_data_is_read_only(self) -> bool:
+        """Whether reading market data can, in this configuration, move capital.
+
+        It cannot, and the check is over the two things that would have to be
+        true for it to: an execution endpoint the Execution Engine could reach,
+        and a credential to sign with. Market data reaching mainnet does not
+        supply either.
+
+        Written as a real conjunction rather than `return True` so that it fails
+        if the execution guard is ever widened — the invariant this asserts is
+        "mainnet market data did not open an execution path", and a constant
+        would assert nothing.
+        """
+        return not self.execution_environment.reaches_real_capital and not self.may_submit_orders
+
+    @property
     def venue_endpoint(self) -> str | None:
         """Endpoint for the configured environment, or None if it submits no orders."""
         return VENUE_ENDPOINTS[self.execution_environment]
@@ -229,6 +271,9 @@ class Settings(BaseSettings):
         return {
             "build_stage": BUILD_STAGE,
             "execution_environment": self.execution_environment.value,
+            "market_data_environment": self.market_data_environment.value,
+            "market_data_endpoint": self.market_data_endpoint,
+            "market_data_is_read_only": self.market_data_is_read_only,
             "venue_endpoint": self.venue_endpoint,
             "trading_enabled": self.trading_enabled,
             "may_submit_orders": self.may_submit_orders,

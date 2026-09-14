@@ -18,6 +18,7 @@ advance.
 | [ADR-006](ADR-006-trader-behavior-intelligence-experimental.md) | Trader behaviour intelligence as an experimental feature family | Accepted |
 | [ADR-007](ADR-007-clock-abstraction-and-latency-instrumentation.md) | Clock abstraction and receipt-time latency instrumentation | Accepted |
 | [ADR-008](ADR-008-sql-migrations-without-a-framework.md) | SQL migrations without a framework | Accepted |
+| [ADR-009](ADR-009-market-data-separate-from-execution.md) | Market-data environment separate from execution environment | Accepted |
 
 ## Namespace resolution
 

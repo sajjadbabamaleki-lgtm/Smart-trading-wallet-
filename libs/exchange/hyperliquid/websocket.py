@@ -82,6 +82,19 @@ class HyperliquidWebSocketSource:
 
     disconnected_at: datetime | None = field(default=None, init=False)
     attempts: int = field(default=0, init=False)
+    successful_connections: int = field(default=0, init=False)
+    """How many times the socket opened and subscribed successfully.
+
+    Zero means we never reached the venue. Without this, a caller cannot tell
+    "connected but the venue sent nothing" from "never connected at all" —
+    the retry loop swallows the failure by design, and an acceptance report
+    that conflated the two would claim a connection it never had.
+    """
+
+    last_error: str | None = field(default=None, init=False)
+    """The most recent connection failure, for the evidence record."""
+
+    subscriptions_sent: int = field(default=0, init=False)
 
     @property
     def name(self) -> str:
@@ -109,6 +122,7 @@ class HyperliquidWebSocketSource:
                     max_size=None,  # book snapshots can be large
                 ) as socket:
                     await self._subscribe(socket)
+                    self.successful_connections += 1
                     if self.disconnected_at is not None:
                         logger.info(
                             "reconnected",
@@ -141,6 +155,7 @@ class HyperliquidWebSocketSource:
                 raise
             except Exception as exc:
                 self.disconnected_at = self.disconnected_at or self.clock.now()
+                self.last_error = f"{type(exc).__name__}: {exc}"
                 logger.warning(
                     "websocket_disconnected",
                     extra={
@@ -168,4 +183,5 @@ class HyperliquidWebSocketSource:
             for channel in self.channels:
                 request = subscription_request(channel, asset)
                 await socket.send(json.dumps(request))  # type: ignore[attr-defined]
+                self.subscriptions_sent += 1
                 logger.info("subscribed", extra={"channel": channel, "asset": asset})

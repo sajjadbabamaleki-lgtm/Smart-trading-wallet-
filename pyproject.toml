@@ -13,12 +13,15 @@ dependencies = [
     "boto3>=1.35,<2",
     # M2 recorder. The venue WebSocket client.
     "websockets>=13,<16",
+    # M4 research datasets. The declared analytical foundation
+    # (Build 0.1 Rev.1 §8-9), used to write Parquet.
+    "polars>=1.12,<2",
 ]
 
 # Production dependencies stay deliberately small (Build 0.1 Rev.1 §7).
-# Polars and NumPy are the declared analytical foundation (§8-9) but are not
-# imported by any module yet, so they are added when M4 needs them rather than
-# carried unused — the same rule complexity is held to everywhere else.
+# Polars arrives with M4, which is the milestone that first writes a dataset;
+# it was deliberately absent until something imported it. NumPy is still not
+# imported by any module and so is still not here.
 
 [project.optional-dependencies]
 dev = [

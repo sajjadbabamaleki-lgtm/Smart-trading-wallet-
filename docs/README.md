@@ -6,7 +6,8 @@ stored verbatim as delivered.
 
 The architecture program is complete. Phase 10 closes it with
 **ARCHITECTURE APPROVED / PRODUCTION NOT YET APPROVED**, and names the next
-program **Implementation Program — Build 0.1** (see [Build order](#build-order)).
+program **Implementation Program — Build 0.1**, which lives in
+[`docs/build/`](build/README.md).
 
 | Phase | Document | Status | Core subject |
 |-------|----------|--------|--------------|
@@ -134,6 +135,10 @@ Foundation Infrastructure
   → Risk & Execution Skeleton
   → Testnet Integration
 ```
+
+That program lives in [`docs/build/`](build/README.md). The active plan is
+**Build 0.1 Rev.2 — Lean BTC Quant MVP**, which narrows the first implementation
+to BTC only without changing the architecture defined here.
 
 Interface quality is explicitly not a substitute for validated trading
 performance, and the architecture phase is closed — the next program is not

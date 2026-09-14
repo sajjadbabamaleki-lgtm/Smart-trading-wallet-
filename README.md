@@ -85,28 +85,37 @@ Passing one stage never implies passing the next. Production status is
 reversible, and the unit that holds it is a specific trading configuration
 (Strategy × Asset × Model × Risk × Execution), not the application as a whole.
 
-## Next program
+## Implementation program
 
 The architecture phase is closed. Phase 10 §116 names the successor — not
-"Phase 11":
+"Phase 11" — and the program documents live in [`docs/build/`](docs/build/README.md).
+
+The active plan is **[Build 0.1 Rev.2 — Lean BTC Quant MVP](docs/build/build-0.1-rev2-lean-btc-quant-mvp.md)**,
+which narrows the first implementation without changing the architecture above:
+**BTC only**, Hyperliquid testnet, one horizon, one strategy family, on-chain and
+commercial datasets deferred, and AI removed from the critical path so the
+infrastructure can be proven before model complexity arrives. Risk and execution
+move earlier, so the capital-control boundary exists before any AI does.
 
 ```
-IMPLEMENTATION PROGRAM — BUILD 0.1
-
-Foundation Infrastructure
-  → Historical Data Recorder
-  → Research Environment
-  → Backtesting Engine
-  → Risk & Execution Skeleton
-  → Testnet Integration
+M0 Rev.2 Foundation → M1 Storage → M2 BTC Hyperliquid Live Recorder
+→ M3 Data Integrity & Replay → M4 BTC Research Dataset → M5 Baseline Research
+→ M6 Event-Driven Backtesting → M7 Risk & Execution Skeleton → M8 Testnet
+→ M9 Paper → M10 Shadow → ML only if justified → Limited Live only after all gates
 ```
+
+Immediate engineering target: **M0 Rev.2 → M1 → M2**. Real capital is prohibited
+and mainnet execution is hard-blocked throughout; profitability is not a Build
+0.1 acceptance criterion. `NO_EDGE_FOUND` is a valid outcome of this program and
+may legitimately end the trading research rather than trigger weaker standards.
 
 ## Status
 
 | Area | State |
 |------|-------|
 | Specifications, phases 1–10 | Approved, in this repository |
-| Implementation code | Not started |
+| Implementation program | Build 0.1 Rev.2 approved; Rev.1 superseded, retained |
+| Implementation code | Not started — next target is M0 Rev.2 → M1 → M2 |
 | Production | **Not approved.** Architecture approval is not production approval (Phase 10 §114) |
 | Provider contracts, coverage, licensing, pricing | Unverified — required before procurement (Phase 3 §36) |
 | Venue validation, security audit, penetration test, legal review | Outstanding (Phases 9, 10) |

@@ -69,8 +69,15 @@ services:
       timeout: 3s
       retries: 10
 
+  # MinIO is pulled from quay.io, not Docker Hub. MinIO withdrew both
+  # `minio/minio` and `minio/mc` from Docker Hub; quay.io is its own registry
+  # and still serves the same releases publicly. The withdrawal is worth
+  # recording because of how it fails: Docker Hub answers an anonymous client
+  # with 401, so the error reads "pull access denied ... may require 'docker
+  # login'" — a credentials problem that is really a missing repository, and
+  # an hour lost looking in the wrong place.
   minio:
-    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
     restart: unless-stopped
     command: ["server", "/data", "--console-address", ":9001"]
     environment:
@@ -92,7 +99,7 @@ services:
   # immutable, and if a provider revises history both versions must remain
   # traceable (Phase 3 §17).
   minio-init:
-    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    image: quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z
     depends_on:
       minio:
         condition: service_healthy

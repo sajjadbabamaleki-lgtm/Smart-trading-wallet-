@@ -1,0 +1,30 @@
+# Gitleaks configuration.
+#
+# Extends the default ruleset rather than replacing it. Allowlisting is limited
+# to documentation and example files, which must never contain a real value —
+# .env.example ships with blank credential fields for exactly this reason.
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "evm-private-key"
+description = "32-byte hex private key"
+regex = '''(?i)(?:0x)?[0-9a-f]{64}'''
+keywords = ["0x"]
+path = '''(?i)\.(py|toml|ya?ml|json|env|sh|ts|tsx|md)$'''
+
+[rules.allowlist]
+paths = [
+    '''\.env\.example$''',
+    '''^docs/''',
+    '''^tests/''',
+]
+
+[allowlist]
+description = "Documentation, specifications and fixtures"
+paths = [
+    '''\.env\.example$''',
+    '''^docs/.*\.md$''',
+    '''uv\.lock$''',
+]

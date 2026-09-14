@@ -122,6 +122,35 @@ executable profitability unproven, so latency viability becomes its Gate 0. It
 constrains M0 clock design and M2 recorder scope — identity-linked events and
 receipt timestamps discarded now may be impossible to reconstruct later.
 
+## Development
+
+Requires [uv](https://docs.astral.sh/uv/) and Docker.
+
+```bash
+make setup        # create the virtualenv, install dependencies
+make check        # lint, typecheck, tests — exactly what CI runs
+make stack-up     # start PostgreSQL, ClickHouse, Redis, MinIO locally
+make help         # all targets
+```
+
+Configuration comes from environment variables prefixed `STW_`; copy
+`.env.example` to `.env` to start. Invalid configuration fails startup rather
+than degrading at runtime.
+
+Three safety guards are enforced in `libs/config/settings.py` and covered by
+`tests/security/`:
+
+- Only `DEVELOPMENT` and `TESTNET` execution environments pass validation.
+  Anything beyond them is refused — real capital is prohibited and mainnet
+  execution is hard-blocked at this build stage.
+- The venue endpoint is **derived** from the environment, never configured, so
+  changing a URL cannot enable real-money trading.
+- A signing credential in a development environment, or a malformed one
+  anywhere, refuses startup.
+
+`STW_TRADING_ENABLED` defaults to `false` — Kill Switch 0.1 — and the tradable
+asset allowlist defaults to BTC only.
+
 ## Status
 
 | Area | State |
@@ -129,7 +158,7 @@ receipt timestamps discarded now may be impossible to reconstruct later.
 | Specifications, phases 1–10 | Approved, in this repository |
 | Implementation program | Build 0.1 Rev.2 approved; Rev.1 superseded, retained |
 | Research candidates | TBIE v1.1 accepted as experimental feature family; predictive information supported, executable alpha unproven; no production authority |
-| Implementation code | Not started — next target is M0 Rev.2 → M1 → M2 |
+| Implementation code | **M0 Rev.2 complete** — repository foundation, safety configuration, clock architecture, canonical schemas, venue contract, CI. Next: M1 storage foundation |
 | Production | **Not approved.** Architecture approval is not production approval (Phase 10 §114) |
 | Provider contracts, coverage, licensing, pricing | Unverified — required before procurement (Phase 3 §36) |
 | Venue validation, security audit, penetration test, legal review | Outstanding (Phases 9, 10) |

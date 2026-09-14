@@ -1,0 +1,57 @@
+# Secrets — never commit.
+#
+# Patterns are deliberately narrow. A broad glob such as `*secret*` also
+# excludes source files that merely discuss secrets — it silently dropped
+# tests/security/test_secret_hygiene.py from the first commit of this
+# repository, which would have left CI running without the tests that prove
+# secrets stay out of logs.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.keystore
+secrets.json
+secrets.yaml
+secrets.yml
+credentials.json
+.credentials
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+requirements-audit.txt
+
+# Data — raw captures and datasets never enter git
+data/
+raw/
+*.parquet
+*.duckdb
+research/datasets/*
+!research/datasets/.gitkeep
+research/notebooks/.ipynb_checkpoints/
+
+# Evidence artifacts are generated
+docs/evidence/build-0.1/*
+!docs/evidence/build-0.1/README.md
+
+# Node
+node_modules/
+.next/
+dist/
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/

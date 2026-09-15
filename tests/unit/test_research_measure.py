@@ -60,6 +60,15 @@ class TestHalfSpread:
         with pytest.raises(MeasurementError, match="BBO or L2_SNAPSHOT"):
             measure_half_spread_bps([trade(0), trade(10)])
 
+    def test_an_empty_range_says_so_rather_than_blaming_the_row_types(self) -> None:
+        """An empty range and a range of trades share a symptom, not a cause."""
+        with pytest.raises(MeasurementError, match="sample is empty"):
+            measure_half_spread_bps([])
+
+    def test_an_empty_range_says_so_for_mid_movement_too(self) -> None:
+        with pytest.raises(MeasurementError, match="sample is empty"):
+            measure_mid_move_bps([], delay=timedelta(milliseconds=322))
+
     def test_a_one_sided_quote_is_skipped_not_filled_in(self) -> None:
         """Inventing the missing side would put a fabricated number in a cost model."""
         one_sided = quote(0)

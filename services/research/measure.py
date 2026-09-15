@@ -132,9 +132,18 @@ def measure_half_spread_bps(rows: Sequence[dict[str, Any]]) -> Distribution:
     """
     quotes = _quotes(rows)
     if not quotes:
+        # An empty range and a range full of trades are different problems with
+        # the same symptom, and saying "no two-sided quotes" about zero rows is
+        # a true statement pointing at the wrong cause.
+        if not rows:
+            raise MeasurementError(
+                "the sample is empty: no rows in the requested range. Widen it, or "
+                "check that the recorder was running over that period"
+            )
         raise MeasurementError(
-            "no two-sided quotes in the sample; a spread cannot be measured from "
-            "trades alone — include BBO or L2_SNAPSHOT rows"
+            f"{len(rows)} rows in range but none carry both a bid and an ask; a "
+            f"spread cannot be measured from trades alone — include BBO or "
+            f"L2_SNAPSHOT rows"
         )
     observations = [(ask - bid) / 2 / ((ask + bid) / 2) * Decimal(10000) for _, bid, ask in quotes]
     return _summarise(observations)
@@ -156,6 +165,16 @@ def measure_mid_move_bps(rows: Sequence[dict[str, Any]], *, delay: timedelta) ->
         raise MeasurementError("delay must be positive")
 
     quotes = _quotes(rows)
+    if not quotes:
+        if not rows:
+            raise MeasurementError(
+                "the sample is empty: no rows in the requested range. Widen it, or "
+                "check that the recorder was running over that period"
+            )
+        raise MeasurementError(
+            f"{len(rows)} rows in range but none carry both a bid and an ask; mid "
+            f"movement needs quotes"
+        )
     observations: list[Decimal] = []
     later = 0
     for index, (moment, bid, ask) in enumerate(quotes):

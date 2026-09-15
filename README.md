@@ -4,7 +4,10 @@ An AI-powered automated trading platform for **BTC, ETH, SOL and BNB**, trading
 perpetual futures with an independent risk-control authority over every position.
 
 This repository holds the complete V1 architecture program — ten approved phase
-specifications. No trading, data, or model code has been implemented yet.
+specifications — and the first milestones of the implementation program built
+against them. The storage foundation and the BTC recorder are **accepted on
+live evidence**; no strategy, model, or execution code exists yet, and no real
+capital is reachable by design.
 
 ## What the system is
 
@@ -137,17 +140,27 @@ make accept            # the full M1/M2 acceptance — real stack, live venue, e
 make help              # all targets
 
 # Record from the live testnet feed without writing anything
-python -m services.market_data.cli --dry-run --minutes 5
+uv run python -m services.market_data.cli --dry-run --minutes 5
 
 # Record from the live feed and capture it as a replayable fixture
-python -m services.market_data.cli --dry-run --minutes 5 --capture session.jsonl
+uv run python -m services.market_data.cli --dry-run --minutes 5 --capture session.jsonl
 
 # Replay a session on its own clock and verify determinism
-python -m services.market_data.cli --replay session.jsonl --determinism
+uv run python -m services.market_data.cli --replay session.jsonl --determinism
 
 # Produce the replay, data-quality and gap-detection evidence artifacts
-python infrastructure/scripts/verify_replay.py session.jsonl --out docs/evidence/build-0.1
+uv run python infrastructure/scripts/verify_replay.py session.jsonl --out docs/evidence/build-0.1
+
+# Build a research dataset from recorded events, with identity and a manifest
+uv run python -m services.research.cli --hours 24
+
+# Measure what trading the recorded data actually costs
+uv run python -m services.research.calibrate_cli --hours 2
 ```
+
+Every command is prefixed `uv run` deliberately. It uses the project's locked
+environment rather than whatever `python` resolves to — which on a stock Ubuntu
+server is nothing at all, since only `python3` exists there.
 
 `make accept` is how M1 and M2 stop being claims. It starts the real stack,
 applies migrations, verifies every store, runs the integration tests, asserts
@@ -190,7 +203,8 @@ asset allowlist defaults to BTC only.
 | Specifications, phases 1–10 | Approved, in this repository |
 | Implementation program | Build 0.1 Rev.2 approved; Rev.1 superseded, retained |
 | Research candidates | TBIE v1.1 accepted as experimental feature family; predictive information supported, executable alpha unproven; no production authority |
-| Implementation code | **M0 Rev.2, M1, M2, M3 implemented** — foundation and safety configuration; storage, migrations, verification; BTC recorder; session capture, deterministic replay, monitor loop and gap registry. M1–M3 await verification against a live stack and the live venue |
+| Implementation code | **M0–M5 implemented.** M1 (storage) and M2 (BTC recorder) are **ACCEPTED** against a real stack and the live venue, 2026-09-14. M3 (capture, deterministic replay, monitor loop, gap registry) unblocked, its own acceptance still owed. M4 (research datasets with identity, checksum and manifest) and M5 (transaction cost model, measured from recorded data) implemented, unrun against a real dataset |
+| First research question | Open. A round trip costs 10 bps at the base fee tier — 60 on BTC at 60,000 — and whether any signal clears that after realistic costs is what M5–M6 exist to answer. `NO_EDGE_FOUND` remains a valid outcome |
 | Production | **Not approved.** Architecture approval is not production approval (Phase 10 §114) |
 | Provider contracts, coverage, licensing, pricing | Unverified — required before procurement (Phase 3 §36) |
 | Venue validation, security audit, penetration test, legal review | Outstanding (Phases 9, 10) |

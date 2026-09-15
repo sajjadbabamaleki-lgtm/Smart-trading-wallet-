@@ -12,16 +12,16 @@ CONNECT → SUBSCRIBE → CAPTURE RAW → TIMESTAMP → VALIDATE
 
 ```bash
 # Live feed, nothing written to a store
-python -m services.market_data.cli --dry-run --minutes 5
+uv run python -m services.market_data.cli --dry-run --minutes 5
 
 # Live feed, also captured to a replayable file
-python -m services.market_data.cli --dry-run --minutes 5 --capture session.jsonl
+uv run python -m services.market_data.cli --dry-run --minutes 5 --capture session.jsonl
 
 # Replay a capture on its own clock
-python -m services.market_data.cli --replay session.jsonl --determinism
+uv run python -m services.market_data.cli --replay session.jsonl --determinism
 
 # Verify determinism and write the evidence artifacts
-python infrastructure/scripts/verify_replay.py session.jsonl --out docs/evidence/build-0.1
+uv run python infrastructure/scripts/verify_replay.py session.jsonl --out docs/evidence/build-0.1
 ```
 
 Logs go to stderr and the report to stdout, so `--json` output pipes into a JSON

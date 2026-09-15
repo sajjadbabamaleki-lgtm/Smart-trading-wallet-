@@ -10,12 +10,26 @@ from services.execution_engine.orders import (
     IllegalTransitionError,
     OrderRecord,
 )
+from services.execution_engine.reconcile import (
+    Discrepancy,
+    DiscrepancyKind,
+    ReconciliationReport,
+    Severity,
+    believed_positions,
+    reconcile,
+)
 
 __all__ = [
     "ALLOWED",
+    "Discrepancy",
+    "DiscrepancyKind",
     "ExecutionEngine",
     "IllegalTransitionError",
     "IntentRefusedError",
     "OrderRecord",
+    "ReconciliationReport",
+    "Severity",
     "VenueTimeout",
+    "believed_positions",
+    "reconcile",
 ]

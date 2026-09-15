@@ -4,20 +4,23 @@
    platform's own actions, and green/red stay reserved for money moving. */
 
 :root {
-  --bg: #eceef1;
+  /* Warm cream page, white cards, one warm-grey tint for secondary cards —
+     and the lime the design is built around. */
+  --bg: #f4f0e9;
   --surface: #ffffff;
-  --ink: #101114;
-  --ink-card: #16181c;
-  --muted: #6b7078;
-  --dim: #9ba1a9;
-  --line: rgba(16, 17, 20, 0.07);
-  --fill: rgba(16, 17, 20, 0.045);
+  --tint: #eae4db;
+  --ink: #14161a;
+  --ink-card: #14161a;
+  --muted: #6e6a63;
+  --dim: #a09a91;
+  --line: rgba(20, 22, 26, 0.07);
+  --fill: rgba(20, 22, 26, 0.05);
 
-  --lime: #c8f135;
-  --lime-soft: #eefbc0;
-  --lime-ink: #33450a;
-  --purple: #6f5cf0;
-  --purple-soft: #ece9fe;
+  --lime: #d8e040;
+  --lime-soft: #edf2b4;
+  --lime-ink: #22290a;
+  --purple: #6d5bf5;
+  --purple-soft: #eae6fe;
 
   --up: #16a34a;
   --down: #e5484d;
@@ -46,11 +49,11 @@ body {
   background: var(--bg);
 }
 @media (min-width: 480px) {
-  body { background: #d9dbdf; padding: 24px 0; }
+  body { background: #ddd8d0; padding: 24px 0; }
   .phone { min-height: min(900px, calc(100dvh - 48px)); border-radius: 30px; overflow: hidden; }
 }
 
-main { flex: 1; padding: max(14px, env(safe-area-inset-top)) 16px 120px; }
+main { flex: 1; padding: max(14px, env(safe-area-inset-top)) 14px 120px; }
 
 /* ------------------------------------------------------------------ atoms */
 
@@ -72,14 +75,16 @@ main { flex: 1; padding: max(14px, env(safe-area-inset-top)) 16px 120px; }
   font-size: 11.5px;
   box-shadow: 0 1px 2px rgba(16, 17, 20, 0.04);
 }
-.mode .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--dim); flex: 0 0 auto; }
-.mode b { font-weight: 700; letter-spacing: 0.06em; color: var(--muted); }
+.mode .dot { width: 18px; height: 18px; border-radius: 50%; background: var(--ink-card); flex: 0 0 auto; }
+.mode b {
+  font-weight: 700; letter-spacing: 0.06em; color: var(--muted);
+  background: var(--fill); border-radius: 99px; padding: 6px 10px;
+}
 .mode .why {
   flex: 1; min-width: 0; text-align: right; color: var(--dim);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.mode.copilot .dot, .mode.autopilot .dot { background: var(--lime); }
-.mode.copilot b, .mode.autopilot b { color: var(--purple); }
+.mode.copilot b, .mode.autopilot b { background: var(--lime); color: var(--lime-ink); }
 
 /* The account the platform trades from is the dark card; the wallet you own
    is a white one. The two numbers never look alike. */
@@ -121,8 +126,8 @@ main { flex: 1; padding: max(14px, env(safe-area-inset-top)) 16px 120px; }
 
 .pct {
   display: inline-flex; align-items: center; gap: 5px;
-  background: var(--lime-soft); color: var(--lime-ink);
-  border-radius: 99px; padding: 5px 10px; font: 600 11.5px/1 var(--sans);
+  background: var(--lime); color: var(--lime-ink);
+  border-radius: 99px; padding: 6px 11px; font: 700 11.5px/1 var(--sans);
 }
 
 /* A card holds rows. Rows never hold cards. */
@@ -172,7 +177,7 @@ button.primary {
   margin-top: 18px;
 }
 button.primary.lime { background: var(--lime); color: var(--lime-ink); }
-button.primary:disabled { background: #dcdee2; color: #9ba1a9; cursor: not-allowed; }
+button.primary:disabled { background: var(--tint); color: #a09a91; cursor: not-allowed; }
 
 /* ------------------------------------------------------------------ marks */
 
@@ -189,10 +194,10 @@ button.primary:disabled { background: #dcdee2; color: #9ba1a9; cursor: not-allow
 /* §76: four figures, four cells, never summed. */
 .grid {
   display: grid; grid-template-columns: 1fr 1fr;
-  background: var(--surface); border-radius: var(--r);
+  background: var(--tint); border-radius: var(--r);
   padding: 4px 16px; margin-top: 10px;
 }
-.cell { padding: 14px 0; border-bottom: 1px solid var(--line); }
+.cell { padding: 14px 0; border-bottom: 1px solid rgba(20, 22, 26, 0.09); }
 .cell:nth-child(even) { padding-left: 16px; }
 .cell:nth-last-child(-n+2) { border-bottom: 0; }
 .cell .k { font-size: 12px; color: var(--muted); }
@@ -227,7 +232,7 @@ button.primary:disabled { background: #dcdee2; color: #9ba1a9; cursor: not-allow
   font: 600 30px/1.1 var(--sans); letter-spacing: -0.02em; outline: none;
   font-variant-numeric: tabular-nums;
 }
-.size input::placeholder { color: #c9ced4; }
+.size input::placeholder { color: #cbc5bc; }
 .size .unit { font-size: 14px; color: var(--muted); }
 
 .exits { background: var(--surface); border-radius: var(--r); padding: 0 16px; }
@@ -283,23 +288,25 @@ button.primary:disabled { background: #dcdee2; color: #9ba1a9; cursor: not-allow
 
 /* ----------------------------------------------------------------- tabbar */
 
-/* A white capsule floating over the page: rounded at both ends, the current
-   tab carried by a pill that is the only one with a label. */
+/* A white capsule floating over the page. It keeps the same 14px side margin
+   as the content above it, and the selected tab is a capsule too — a rounded
+   rectangle inside a fully rounded bar reads as a mistake. */
 .tabbar {
   position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
-  display: flex; align-items: center; gap: 2px;
+  width: calc(100% - 28px); max-width: 412px;
+  display: flex; align-items: center; justify-content: space-between;
   background: var(--surface); border-radius: 99px;
-  padding: 8px; z-index: 20;
-  box-shadow: 0 10px 30px rgba(16, 17, 20, 0.13), 0 1px 3px rgba(16, 17, 20, 0.06);
+  padding: 7px; z-index: 20;
+  box-shadow: 0 10px 30px rgba(20, 22, 26, 0.13), 0 1px 3px rgba(20, 22, 26, 0.06);
 }
 .tabbar a {
   display: flex; align-items: center; gap: 8px;
-  height: 46px; padding: 0 13px; border-radius: 17px;
-  color: #a8b0b6; text-decoration: none;
+  height: 46px; padding: 0 13px; border-radius: 99px;
+  color: #a7a29a; text-decoration: none;
   font: 700 14px/1 var(--sans);
 }
 .tabbar svg { width: 23px; height: 23px; flex: 0 0 auto; }
 .tabbar span { display: none; }
-.tabbar a.active { background: var(--lime-soft); color: var(--lime-ink); padding: 0 16px; }
+.tabbar a.active { background: var(--lime); color: var(--lime-ink); padding: 0 16px; }
 .tabbar a.active span { display: inline; }

@@ -15,7 +15,6 @@
   --fill: rgba(255, 255, 255, 0.06);
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
   --lime: #d8e040;
-  --lime-dim: rgba(216, 224, 64, 0.16);
   --purple: #a99bff;
   --up: #45d483;
   --up-dim: rgba(69, 212, 131, 0.15);
@@ -257,5 +256,5 @@ button.row.key .go { color: var(--lime); }
 /* The label's box matches the icon's, and the half pixel is what is left of
    the font's descender space once the two are centred. */
 .tabbar span { display: none; font: 700 11.2px/23px var(--sans); position: relative; top: 0.5px; }
-.tabbar a.active { background: var(--lime-dim); color: var(--lime); padding: 0 15px; }
+.tabbar a.active { background: rgba(255, 255, 255, 0.08); color: var(--lime); padding: 0 15px; }
 .tabbar a.active span { display: inline; }

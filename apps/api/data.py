@@ -1,8 +1,17 @@
 """What the app's screens read.
 
-Prices come from the recorder's own ClickHouse rows — the last two-sided quote
-it captured. Nothing here is generated for display, and a store that cannot be
-reached says so rather than returning a plausible number.
+Shaped by Phase 9 rather than by what is convenient to render:
+
+* §23 the operating mode is always present, so no screen has to guess whether
+  the system can place trades.
+* §76 wallet balance, trading equity, available margin and capital at risk are
+  four separate numbers and are never merged into one.
+* §51/§65 the health of the things trading depends on is part of the state.
+
+Prices come from the recorder's own ClickHouse rows. Nothing here is generated
+for display: a store that cannot be reached says so rather than returning a
+plausible number, and a figure that needs a trading account that does not exist
+is null with the reason attached.
 """
 
 from __future__ import annotations
@@ -14,6 +23,55 @@ from libs.observability.logging import get_logger
 from libs.storage import clickhouse as ch
 
 logger = get_logger("app")
+
+
+def operating_mode(settings: Settings) -> dict[str, Any]:
+    """Which of the three modes of §22 the build is actually in.
+
+    Derived from the same conjunction the executor obeys, so the banner cannot
+    disagree with what the system would really do. Autopilot never appears
+    here: §25 makes it a separate grant with nine preconditions, and no such
+    grant exists yet.
+    """
+    if not settings.may_submit_orders:
+        if settings.venue_endpoint is None:
+            reason = "This environment submits no orders"
+        elif not settings.testnet_api_wallet_private_key:
+            reason = "No signing credential is configured"
+        else:
+            reason = "Kill switch 0.1 is engaged"
+        return {"name": "research", "label": "RESEARCH ONLY", "reason": reason}
+    return {
+        "name": "copilot",
+        "label": "COPILOT",
+        "reason": "Every order needs your approval. Autopilot is a separate grant.",
+    }
+
+
+def account(settings: Settings) -> dict[str, Any]:  # noqa: ARG001
+    """§76: the four money figures, kept apart.
+
+    None of them exist before a trading account is authorized, and none of them
+    is the wallet balance. Returning zero here would read as a funded account
+    holding nothing.
+    """
+    return {
+        "trading_equity": None,
+        "available_margin": None,
+        "capital_at_risk": None,
+        "todays_pnl": None,
+        "reason": "No trading account is authorized yet",
+    }
+
+
+def health(settings: Settings, market_available: bool) -> dict[str, Any]:
+    """§51: what trading depends on, and whether it is actually up."""
+    return {
+        "market_data": "ok" if market_available else "unavailable",
+        "kill_switch": "released" if settings.trading_enabled else "engaged",
+        "credential": bool(settings.testnet_api_wallet_private_key),
+        "venue": "unknown",
+    }
 
 
 def market(settings: Settings) -> dict[str, Any]:
@@ -64,19 +122,35 @@ def market(settings: Settings) -> dict[str, Any]:
 
 
 def app_state(settings: Settings) -> dict[str, Any]:
-    """Everything the four screens need, in one read."""
+    """Everything the screens need, in one read."""
+    quote = market(settings)
     return {
+        "mode": operating_mode(settings),
         # No wallet adapter exists, so no wallet can be connected. This is the
         # ordinary pre-connection state every wallet app has, not a placeholder.
         "wallet": {
             "connected": False,
             "address": None,
+            "provider": None,
+            "balance_usd": None,
             "balances": [],
         },
+        "authorization": {
+            "granted": False,
+            "scope": None,
+            "expires": None,
+        },
+        "account": account(settings),
+        "positions": [],
         "network": settings.execution_environment.value,
         "trading_enabled": settings.trading_enabled,
         "can_submit_orders": settings.may_submit_orders,
         "assets": list(settings.asset_allowlist),
-        "max_order_notional": float(settings.max_order_notional),
-        "market": market(settings),
+        # §73: limits are stated as the concepts they are, not as a slider.
+        "limits": {
+            "max_order_notional": float(settings.max_order_notional),
+            "data_staleness_limit_seconds": settings.data_staleness_limit_seconds,
+        },
+        "health": health(settings, quote["available"]),
+        "market": quote,
     }

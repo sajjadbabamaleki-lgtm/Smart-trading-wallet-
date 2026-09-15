@@ -1,8 +1,9 @@
 """The mobile app's backing state.
 
-Five screens: Home, Wallet, Trade, Swap, Account. The rules that matter are
-that the API cannot move anything, and that balances are not invented while no
-wallet is connected.
+Five screens: Home, Trade, Positions, Wallet, Account. The rules come from
+Phase 9 rather than from taste: the mode is always stated (§23), the four money
+figures stay apart (§76), the health of what trading depends on is part of the
+state (§51), and the API cannot move anything (Invariant 4).
 """
 
 from __future__ import annotations
@@ -31,6 +32,12 @@ class TestWallet:
     def test_no_balances_are_invented(self, state: dict[str, Any]) -> None:
         """A disconnected wallet has no balances to show, not balances of zero."""
         assert state["wallet"]["balances"] == []
+        assert state["wallet"]["balance_usd"] is None
+
+    def test_no_trading_authorization_is_claimed(self, state: dict[str, Any]) -> None:
+        """§19: the scope of what the platform may do is not implied, it is stated."""
+        assert state["authorization"]["granted"] is False
+        assert state["authorization"]["scope"] is None
 
 
 class TestMarket:
@@ -46,10 +53,59 @@ class TestMarket:
             assert market["bid"] <= market["ask"]
 
 
+class TestMode:
+    def test_the_mode_is_always_stated(self, state: dict[str, Any]) -> None:
+        """§23: nobody should have to wonder whether the system can trade."""
+        mode = state["mode"]
+        assert mode["name"] in {"research", "copilot", "autopilot"}
+        assert mode["label"]
+        assert mode["reason"]
+
+    def test_a_build_that_cannot_submit_orders_is_research_only(
+        self, state: dict[str, Any]
+    ) -> None:
+        """The banner is derived from the same conjunction the executor obeys."""
+        settings = load_settings()
+        if not settings.may_submit_orders:
+            assert state["mode"]["name"] == "research"
+
+    def test_autopilot_is_never_claimed_without_a_grant(self, state: dict[str, Any]) -> None:
+        """§25: Autopilot is a separate grant with nine preconditions."""
+        assert state["mode"]["name"] != "autopilot"
+
+
+class TestMoneyFiguresStayApart:
+    def test_the_four_figures_are_separate_fields(self, state: dict[str, Any]) -> None:
+        """§76: wallet balance, equity, margin and capital at risk are not one number."""
+        account = state["account"]
+        for field in ("trading_equity", "available_margin", "capital_at_risk"):
+            assert field in account
+        assert "balance_usd" in state["wallet"]
+
+    def test_an_unauthorized_account_has_no_figures_not_zeroes(self, state: dict[str, Any]) -> None:
+        """Zero would read as a funded account holding nothing."""
+        account = state["account"]
+        assert account["trading_equity"] is None
+        assert account["available_margin"] is None
+        assert account["reason"]
+
+
+class TestHealth:
+    def test_health_reports_what_trading_depends_on(self, state: dict[str, Any]) -> None:
+        """§51: the state says whether the things trading needs are up."""
+        health = state["health"]
+        assert health["market_data"] in {"ok", "unavailable"}
+        assert health["kill_switch"] in {"engaged", "released"}
+
+    def test_the_kill_switch_reading_matches_settings(self, state: dict[str, Any]) -> None:
+        engaged = state["health"]["kill_switch"] == "engaged"
+        assert engaged is not load_settings().trading_enabled
+
+
 class TestLimits:
     def test_the_position_limit_is_the_configured_one(self, state: dict[str, Any]) -> None:
         """The screen shows a limit the engine actually enforces."""
-        assert state["max_order_notional"] == float(load_settings().max_order_notional)
+        assert state["limits"]["max_order_notional"] == float(load_settings().max_order_notional)
 
 
 class TestSafety:
@@ -78,7 +134,7 @@ class TestApi:
     def test_the_app_has_exactly_five_tabs(self) -> None:
         with TestClient(app) as client:
             page = client.get("/").text
-        for name in ("home", "wallet", "trade", "swap", "account"):
+        for name in ("home", "trade", "positions", "wallet", "account"):
             assert f'data-tab="{name}"' in page
         assert page.count("data-tab=") == 5
 

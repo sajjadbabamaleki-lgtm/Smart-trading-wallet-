@@ -1,13 +1,22 @@
-// Five screens: Home, Wallet, Trade, Swap, Account.
+// Five screens: Home, Trade, Positions, Wallet, Account.
 //
 // What the app is for: you connect Phantom or Trust Wallet, and the platform
-// opens the position for you with a stop loss and a take profit attached to
-// it. So the exits are not an advanced option — they are the middle of the
-// Trade screen, and the order is not sent without them.
+// opens the position itself with a stop loss and a take profit attached. So
+// the exits are the middle of the Trade screen, not an advanced option.
+//
+// Shaped by Phase 9, which decides several things that look like styling and
+// are not:
+//   §23 the operating mode is on every screen, so nobody has to wonder
+//       whether the system can place a trade right now.
+//   §54 the emergency controls are six separate actions, never one red button.
+//   §67 position, stop, liquidation, risk state and Autopilot state stay
+//       visible on a phone; mobile may simplify presentation, not safety.
+//   §76 wallet balance, trading equity, available margin and capital at risk
+//       are four different numbers and are never added together.
+//   §78 withdrawal is user-only and sits apart from the trading automation.
 //
 // Everything on screen comes from /api/app. No wallet adapter exists yet, so
-// the app is in the state every wallet app is in before you connect; balances
-// are not invented while it is in that state.
+// the app shows the ordinary pre-connect state instead of invented balances.
 
 let S = null;
 let side = "buy";
@@ -44,7 +53,7 @@ const usd = (n, digits = 2) =>
   n === null || n === undefined
     ? "—"
     : n.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
-
+const money = (n, digits = 2) => (n === null || n === undefined ? "—" : `$${usd(n, digits)}`);
 const signed = (n, digits = 2) => `${n >= 0 ? "+" : "−"}$${usd(Math.abs(n), digits)}`;
 const short = (a) => (a ? `${a.slice(0, 4)}…${a.slice(-4)}` : "—");
 
@@ -55,9 +64,7 @@ function topline(title, tag) {
   return bar;
 }
 
-function cap(text) {
-  return el("div", "cap", text);
-}
+const cap = (text) => el("div", "cap", text);
 
 function row(name, value, opts = {}) {
   const r = el("div", "row");
@@ -79,6 +86,28 @@ function rows(...children) {
   return box;
 }
 
+function action(name, sub, opts = {}) {
+  const b = el("button", `row act ${opts.danger ? "danger" : ""}`.trim());
+  b.type = "button";
+  b.disabled = opts.enabled !== true;
+  const n = el("div", "n");
+  n.append(document.createTextNode(name));
+  if (sub) n.append(el("small", null, sub));
+  b.append(n, html("span", "go", "&rsaquo;"));
+  return b;
+}
+
+// §23: the mode is not a setting buried in Account, it is a persistent line at
+// the top of every screen.
+function modeBanner() {
+  const m = S.mode;
+  const bar = el("div", `mode ${m.name}`);
+  bar.append(el("span", "dot"));
+  bar.append(el("b", null, m.label));
+  bar.append(el("span", "why", m.reason));
+  return bar;
+}
+
 // --------------------------------------------------------------- connecting
 
 const PHANTOM =
@@ -87,7 +116,7 @@ const PHANTOM =
 const TRUST = '<path d="M12 3l6.6 2.6v5.2c0 3.9-2.6 7.5-6.6 9.2-4-1.7-6.6-5.3-6.6-9.2V5.6z"/>';
 
 function walletRow(name, sub, cls, glyph) {
-  const b = el("button", "row tap");
+  const b = el("button", "row act");
   b.type = "button";
   b.disabled = true;
   const mark = el("span", `mark ${cls}`);
@@ -98,141 +127,68 @@ function walletRow(name, sub, cls, glyph) {
   return b;
 }
 
-function connectRows() {
-  return rows(
+const connectRows = () =>
+  rows(
     walletRow("Phantom", "Solana · browser & mobile", "phantom", PHANTOM),
     walletRow("Trust Wallet", "WalletConnect", "trust", TRUST),
   );
-}
 
 // ------------------------------------------------------------------ screens
 
 const SCREENS = {
+  // §32: equity, margin, P&L, capital at risk — then the market, then open
+  // risk, then whether the system is healthy. §33: no win rate, no streaks.
   home() {
     const frag = document.createDocumentFragment();
-    const w = S.wallet;
-    const m = S.market;
+    const a = S.account;
     frag.append(topline("Home", S.network));
 
     const hero = el("div", "hero");
-    hero.append(el("div", "cap", "Total balance"));
-    if (w.connected) {
-      hero.append(el("div", "big", `$${usd(w.total_usd)}`));
-      const open = (S.positions ?? []).reduce((t, p) => t + p.pnl_usd, 0);
-      const line = el("div", "sub");
-      line.append(document.createTextNode("Open P&L "));
-      line.append(el("span", open >= 0 ? "up" : "down", signed(open)));
-      hero.append(line);
-    } else {
-      hero.append(el("div", "big none", "$—"));
-      hero.append(el("div", "sub", "No wallet connected"));
-    }
+    hero.append(cap("Trading equity"));
+    hero.append(el("div", `big ${a.trading_equity === null ? "none" : ""}`.trim(),
+      a.trading_equity === null ? "$—" : money(a.trading_equity)));
+    hero.append(el("div", "sub", a.trading_equity === null
+      ? a.reason
+      : `Today ${signed(a.todays_pnl ?? 0)}`));
     frag.append(hero);
 
-    if (!w.connected) {
+    // §76: four numbers, side by side, never summed into one.
+    const grid = el("div", "grid");
+    grid.append(cell("Available margin", money(a.available_margin)));
+    grid.append(cell("Capital at risk", money(a.capital_at_risk)));
+    grid.append(cell("Wallet balance", money(S.wallet.balance_usd)));
+    grid.append(cell("Open positions", String((S.positions ?? []).length)));
+    frag.append(grid);
+
+    if (!S.wallet.connected) {
       const go = el("button", "primary", "Connect wallet");
       go.type = "button";
       go.onclick = () => { location.hash = "#/wallet"; };
       frag.append(go);
-    } else {
-      const pair = el("div", "pair");
-      for (const [name, href] of [["Trade", "#/trade"], ["Swap", "#/swap"]]) {
-        const b = el("button", "quiet", name);
-        b.type = "button";
-        b.onclick = () => { location.hash = href; };
-        pair.append(b);
-      }
-      frag.append(pair);
     }
 
     frag.append(cap("Market"));
-    const btc = el("div", "row");
-    btc.append(el("span", "mark btc", "B"));
-    const n = el("div", "n");
-    n.append(document.createTextNode("Bitcoin"), el("small", null, m.available ? m.symbol : "—"));
-    btc.append(n);
-    if (m.available) {
-      const v = el("div", "v strong", `$${usd(m.mid)}`);
-      const pct = m.change_24h_pct;
-      v.append(el("small", pct === null ? null : pct >= 0 ? "up" : "down",
-        pct === null ? "24h —" : `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`));
-      btc.append(v);
-    } else {
-      btc.append(el("div", "v", m.reason));
-    }
-    frag.append(rows(btc));
+    frag.append(rows(marketRow()));
 
-    frag.append(cap("Autopilot"));
-    frag.append(rows(
-      row("Trade for me", S.autopilot ? "On" : "Off",
-        { tone: S.autopilot ? "strong" : "", sub: "Opens and closes positions on its own" }),
-      row("Exits on every trade", `${slPct}% / ${tpPct}%`, { sub: "Stop loss / take profit" }),
-      row("Max position size", S.max_order_notional ? `$${usd(S.max_order_notional, 0)}` : "—"),
-    ));
-
-    frag.append(cap("Activity"));
-    frag.append(el("div", "empty", (S.positions ?? []).length
-      ? `${S.positions.length} position open. Its stop loss and take profit are on the Wallet tab.`
-      : "Nothing yet. Trades placed here, and by Autopilot, appear in this list."));
-    return frag;
-  },
-
-  wallet() {
-    const frag = document.createDocumentFragment();
-    const w = S.wallet;
-    frag.append(topline("Wallet", w.connected ? short(w.address) : S.network));
-
-    const hero = el("div", "hero");
-    hero.append(el("div", "cap", "Total balance"));
-    if (w.connected) {
-      hero.append(el("div", "big", `$${usd(w.total_usd)}`));
-      hero.append(el("div", "sub", `${w.provider} · ${S.network}`));
-    } else {
-      hero.append(el("div", "big none", "$—"));
-      hero.append(el("div", "sub", "Connect a wallet to see your balance"));
-    }
-    frag.append(hero);
-
-    if (!w.connected) {
-      frag.append(cap("Connect"));
-      frag.append(connectRows());
-      frag.append(el("p", "note",
-        "The platform trades from your wallet: it opens the position and places the stop loss and take profit with it. Your keys stay in your wallet — you grant permission to trade, never to withdraw."));
-    } else {
-      const pair = el("div", "pair");
-      for (const name of ["Deposit", "Withdraw", "History"]) {
-        const b = el("button", "quiet", name);
-        b.type = "button";
-        b.disabled = true;
-        pair.append(b);
-      }
-      frag.append(pair);
-    }
-
-    frag.append(cap("Open positions"));
+    frag.append(cap("Open risk"));
     const open = S.positions ?? [];
     if (open.length) {
-      for (const p of open) frag.append(position(p));
+      for (const p of open) frag.append(position(p, { compact: true }));
     } else {
-      frag.append(el("div", "empty",
-        "No open positions. What you open on the Trade tab shows up here with its stop loss and take profit."));
+      frag.append(el("div", "empty", "No open positions."));
     }
 
-    if (w.connected && w.balances.length) {
-      frag.append(cap("Assets"));
-      const list = el("div", "rows");
-      for (const b of w.balances) {
-        const r = el("div", "row");
-        r.append(el("span", `mark ${b.symbol === "BTC" ? "btc" : "plain"}`, b.symbol[0]));
-        const n = el("div", "n");
-        n.append(document.createTextNode(b.symbol), el("small", null, b.name));
-        const v = el("div", "v strong", `$${usd(b.usd)}`);
-        v.append(el("small", null, `${b.amount} ${b.symbol}`));
-        r.append(n, v);
-        list.append(r);
-      }
-      frag.append(list);
-    }
+    // §51 / §65: the health of what trading depends on is part of the screen,
+    // not a page you have to go looking for.
+    frag.append(cap("System health"));
+    frag.append(rows(
+      row("Market data", S.health.market_data === "ok" ? "Live" : "Unavailable",
+        { tone: S.health.market_data === "ok" ? "ok" : "bad" }),
+      row("Kill switch", S.health.kill_switch === "engaged" ? "Engaged" : "Released",
+        { tone: S.health.kill_switch === "engaged" ? "ok" : "" }),
+      row("Signing credential", S.health.credential ? "Configured" : "None"),
+      row("Venue", S.health.venue === "unknown" ? "Not checked" : S.health.venue),
+    ));
     return frag;
   },
 
@@ -277,54 +233,136 @@ const SCREENS = {
     field.append(box, el("span", "unit", "USD"));
     frag.append(field);
 
-    // The exits. Prices come off the live quote, so they are real levels; the
-    // P&L line stays a percentage until a size is entered, because a dollar
-    // figure without a size would be made up.
+    // Exit prices come off the live quote, so they are real levels. The money
+    // line stays a percentage until a size is entered, because a dollar figure
+    // without a size would be made up.
     frag.append(cap("Exits"));
     frag.append(exit(m, "tp"));
     frag.append(exit(m, "sl"));
 
     const entry = entryPrice(m);
     const notional = size();
+    const limit = S.limits.max_order_notional ?? null;
+    const risk = notional === null ? null : (notional * slPct) / 100;
+
+    // §73: the limit is stated as the concept it is — capital at risk against
+    // a ceiling — rather than as a number on a slider.
     frag.append(rows(
-      row("Risk / reward", `1 : ${(tpPct / slPct).toFixed(1)}`, { tone: "strong" }),
+      row("Capital at risk", money(risk),
+        { tone: risk === null ? "" : "strong", sub: "What the stop loss costs if it fills" }),
+      row("Position limit", money(limit, 0), { sub: "Enforced by the engine, not this screen" }),
+      row("Risk / reward", `1 : ${(tpPct / slPct).toFixed(1)}`),
       row("Entry", entry === null ? "Market" : `Market · $${usd(entry)}`),
-      row("Est. fee", notional === null ? "0.045%" : `$${usd((notional * 4.5) / 10000, 3)}`),
+      // §67: liquidation stays on screen. It is unknown until leverage exists,
+      // and saying so is different from leaving the row out.
+      row("Liquidation", "None at 1×", { sub: "No leverage on this build" }),
+      // §79: the fee is split, so a builder fee can never hide inside it.
+      row("Trading fee", notional === null ? "0.045%" : money((notional * 4.5) / 10000, 3)),
+      row("Builder fee", "None"),
     ));
 
-    const limit = S.max_order_notional ?? null;
     const over = limit !== null && notional !== null && notional > limit;
     const cta = el("button", "primary",
       side === "buy" ? "Open long with SL / TP" : "Open short with SL / TP");
     cta.type = "button";
     // Only an affordance: the limit, the kill switch and the authorization are
     // all enforced server-side (Invariant 4). Greying the button out early
-    // just saves a round trip that would be refused anyway.
+    // saves a round trip that would be refused anyway.
     cta.disabled = !S.wallet.connected || !S.can_submit_orders || notional === null || over;
     frag.append(cta);
     frag.append(el("p", "note center", hint(over, limit)));
     return frag;
   },
 
-  swap() {
+  positions() {
     const frag = document.createDocumentFragment();
-    const m = S.market;
-    frag.append(topline("Swap", S.network));
+    const open = S.positions ?? [];
+    frag.append(topline("Positions", open.length ? `${open.length} open` : "none open"));
 
-    frag.append(leg("From", "USDC", "U", "plain"));
-    frag.append(leg("To", "BTC", "B", "btc"));
+    if (open.length) {
+      for (const p of open) frag.append(position(p));
+    } else {
+      frag.append(el("div", "empty",
+        "No open positions. What you open on the Trade tab appears here with its stop loss, take profit and liquidation price."));
+    }
 
+    // §54: six separate controls. §56: risk-reducing actions stay quick to
+    // reach; §55: closing everything asks first.
+    frag.append(cap("Emergency controls"));
     frag.append(rows(
-      row("Rate", m.available ? `1 BTC ≈ $${usd(m.mid)}` : "—"),
-      row("Max slippage", "0.50%"),
-      row("Network", S.network),
+      action("Pause Autopilot", "Stops new exposure. Open positions stay managed."),
+      action("Cancel entry orders", "Working orders only. Positions untouched."),
+      action("Reduce exposure", "Cut position size, keep the position open."),
+      action("Close position", "Market exit for one position."),
+      action("Close all positions", "Asks for confirmation first.", { danger: true }),
+      action("Revoke trading access", "The platform can no longer trade for you.", { danger: true }),
+    ));
+    frag.append(el("p", "note",
+      "These are deliberately separate. One button that might pause, might close and might revoke is how the wrong thing gets pressed in a hurry."));
+    return frag;
+  },
+
+  // §3: Layer A is your wallet, Layer B is the permission you grant, Layer C
+  // is the trading account. The screen keeps them apart because the money in
+  // each behaves differently.
+  wallet() {
+    const frag = document.createDocumentFragment();
+    const w = S.wallet;
+    frag.append(topline("Wallet", w.connected ? short(w.address) : S.network));
+
+    const hero = el("div", "hero");
+    hero.append(cap("Wallet balance"));
+    hero.append(el("div", `big ${w.connected ? "" : "none"}`.trim(),
+      w.balance_usd === null ? "$—" : money(w.balance_usd)));
+    hero.append(el("div", "sub", w.connected
+      ? `${w.provider} · ${S.network}`
+      : "Connect a wallet to see your balance"));
+    frag.append(hero);
+    frag.append(el("p", "note",
+      "This is what is in your wallet. It is not your trading equity, and neither number is the other."));
+
+    if (!w.connected) {
+      frag.append(cap("Connect"));
+      frag.append(connectRows());
+      frag.append(el("p", "note",
+        "Your keys stay in your wallet. You grant permission to trade — never to withdraw."));
+    }
+
+    frag.append(cap("Trading authorization"));
+    frag.append(rows(
+      row("Status", S.authorization.granted ? "Active" : "Not granted",
+        { tone: S.authorization.granted ? "ok" : "" }),
+      row("Scope", S.authorization.scope ?? "—", { sub: "What the platform may do on your behalf" }),
+      row("Expires", S.authorization.expires ?? "—"),
     ));
 
-    const cta = el("button", "primary",
-      S.wallet.connected ? "Swap" : "Connect wallet to swap");
-    cta.type = "button";
-    cta.disabled = true;
-    frag.append(cta);
+    // §77: funding says where the money goes. §78: withdrawal is yours alone
+    // and does not sit next to the automation.
+    frag.append(cap("Trading account"));
+    frag.append(rows(
+      row("Equity", money(S.account.trading_equity)),
+      row("Available margin", money(S.account.available_margin)),
+      action("Fund trading account", "Source, network, asset and amount shown before you sign"),
+    ));
+
+    frag.append(cap("Withdrawals"));
+    frag.append(rows(action("Withdraw to your wallet", "You only. Automation never withdraws.")));
+
+    if (w.connected && w.balances.length) {
+      frag.append(cap("Assets"));
+      const list = el("div", "rows");
+      for (const b of w.balances) {
+        const r = el("div", "row");
+        r.append(el("span", `mark ${b.symbol === "BTC" ? "btc" : "plain"}`, b.symbol[0]));
+        const n = el("div", "n");
+        n.append(document.createTextNode(b.symbol), el("small", null, b.name));
+        const v = el("div", "v strong", money(b.usd));
+        v.append(el("small", null, `${b.amount} ${b.symbol}`));
+        r.append(n, v);
+        list.append(r);
+      }
+      frag.append(list);
+    }
     return frag;
   },
 
@@ -346,42 +384,66 @@ const SCREENS = {
       frag.append(connectRows());
     }
 
-    frag.append(cap("Autopilot"));
-    const auto = el("div", "rows");
-    const trade = el("div", "row");
-    const label = el("div", "n");
-    label.append(document.createTextNode("Trade for me"),
-      el("small", null, "Opens and closes positions on its own"));
-    const sw = el("div", `switch ${S.autopilot ? "on" : ""}`.trim());
-    sw.append(el("i"));
-    trade.append(label, sw);
-    auto.append(trade);
-    auto.append(row("Default stop loss", `${slPct}%`));
-    auto.append(row("Default take profit", `${tpPct}%`));
-    auto.append(row("Max position size",
-      S.max_order_notional ? `$${usd(S.max_order_notional, 0)}` : "—"));
-    auto.append(row("Assets", S.assets.length ? S.assets.join(", ") : "—"));
-    frag.append(auto);
-
-    frag.append(cap("Trading"));
+    // §24/§25: entering a more permissive mode is an activation with
+    // preconditions, not a switch you can brush with a thumb.
+    frag.append(cap("Mode"));
     frag.append(rows(
-      row("Network", S.network),
-      row("Venue", "Hyperliquid"),
-      row("Orders", S.trading_enabled ? "Enabled" : "Disabled",
-        { tone: S.trading_enabled ? "strong" : "" }),
+      row("Current", S.mode.label, { tone: "strong", sub: S.mode.reason }),
+      action("Activate Autopilot", "Nine checks must pass, and you confirm the summary"),
+      action("Switch to Copilot", "Every trade waits for your approval"),
     ));
+
+    // §72/§73: named, validated profiles and limits with an economic meaning.
+    frag.append(cap("Risk"));
+    frag.append(rows(
+      row("Profile", "Conservative", { sub: "A validated configuration, not a leverage dial" }),
+      row("Max position size", money(S.limits.max_order_notional, 0)),
+      row("Default stop loss", `${slPct}%`, { sub: "Capital at risk per trade" }),
+      row("Default take profit", `${tpPct}%`),
+      row("Assets", S.assets.length ? S.assets.join(", ") : "—"),
+    ));
+    frag.append(el("p", "note",
+      "You can set these below the system's ceiling, never above it."));
 
     frag.append(cap("Security"));
     frag.append(rows(
       row("Keys", "Never leave your wallet"),
-      row("Withdrawals", "Not permitted"),
-      row("Kill switch", S.trading_enabled ? "Released" : "Engaged"),
+      row("Withdrawals", "Not permitted to automation"),
+      row("Kill switch", S.trading_enabled ? "Released" : "Engaged",
+        { tone: S.trading_enabled ? "" : "ok" }),
+      action("Revoke trading access", "Ends the platform's permission immediately", { danger: true }),
     ));
     return frag;
   },
 };
 
-// -------------------------------------------------------------- trade parts
+// --------------------------------------------------------------- components
+
+function cell(name, value) {
+  const c = el("div", "cell");
+  c.append(el("div", "k", name));
+  c.append(el("div", "v", value));
+  return c;
+}
+
+function marketRow() {
+  const m = S.market;
+  const r = el("div", "row");
+  r.append(el("span", "mark btc", "B"));
+  const n = el("div", "n");
+  n.append(document.createTextNode("Bitcoin"), el("small", null, m.available ? m.symbol : "—"));
+  r.append(n);
+  if (m.available) {
+    const pct = m.change_24h_pct;
+    const v = el("div", "v strong", `$${usd(m.mid)}`);
+    v.append(el("small", pct === null ? null : pct >= 0 ? "up" : "down",
+      pct === null ? "24h —" : `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`));
+    r.append(v);
+  } else {
+    r.append(el("div", "v", m.reason));
+  }
+  return r;
+}
 
 function entryPrice(m) {
   if (!m.available) return null;
@@ -432,17 +494,19 @@ function exit(m, kind) {
 }
 
 function hint(over, limit) {
-  if (over) return `Over the $${usd(limit, 0)} position limit set on this account.`;
+  if (over) return `Over the ${money(limit, 0)} position limit set on this account.`;
   if (!S.wallet.connected) return "Connect Phantom or Trust Wallet to place this order.";
-  if (!S.can_submit_orders) return "Trading is disabled on this build. No order can be submitted.";
+  if (!S.can_submit_orders) return S.mode.reason;
   return "The stop loss and take profit are sent with the entry and held by the engine, not by this phone.";
 }
 
-function position(p) {
+// §67: a position is shown risk-first — what it can lose, where it stops, and
+// where it liquidates, before what it might make.
+function position(p, opts = {}) {
   const box = el("div", "pos");
   const head = el("div", "head");
   head.append(el("span", null, p.symbol));
-  head.append(el("span", "side", `${p.side === "long" ? "Long" : "Short"} · $${usd(p.size_usd, 0)}`));
+  head.append(el("span", "side", `${p.side === "long" ? "Long" : "Short"} · ${money(p.size_usd, 0)}`));
   box.append(head);
 
   const up = p.pnl_usd >= 0;
@@ -462,24 +526,15 @@ function position(p) {
   ends.append(html("span", "sl down", `<small>STOP LOSS</small>$${usd(p.stop_loss)}`));
   ends.append(html("span", "tp up", `<small>TAKE PROFIT</small>$${usd(p.take_profit)}`));
   box.append(ends);
-  return box;
-}
 
-function leg(k, symbol, letter, cls) {
-  const box = el("div", "leg");
-  box.append(el("div", "k", k));
-  const line = el("div", "row2");
-  const input = document.createElement("input");
-  input.type = "text";
-  input.inputMode = "decimal";
-  input.placeholder = "0";
-  input.disabled = true;
-  const picker = el("button", "picker");
-  picker.type = "button";
-  picker.disabled = true;
-  picker.append(el("span", `mark ${cls}`, letter), el("span", null, symbol));
-  line.append(input, picker);
-  box.append(line);
+  if (!opts.compact) {
+    box.append(rows(
+      row("At risk to the stop", money(p.risk_usd)),
+      row("Liquidation", p.liquidation === null || p.liquidation === undefined
+        ? "None at 1×" : `$${usd(p.liquidation)}`),
+      row("Opened", p.opened ?? "—"),
+    ));
+  }
   return box;
 }
 
@@ -492,7 +547,11 @@ function render(opts = {}) {
   }
   const target = $("screen");
   const scroll = window.scrollY;
-  target.replaceChildren(S ? SCREENS[name]() : el("div", "empty", "Loading…"));
+  if (!S) {
+    target.replaceChildren(el("div", "empty", "Loading…"));
+    return;
+  }
+  target.replaceChildren(modeBanner(), SCREENS[name]());
   if (opts.keepFocus) {
     window.scrollTo(0, scroll);
     const field = target.querySelector(".size input");
@@ -514,15 +573,22 @@ async function load() {
   try {
     S = await fetch("/api/app").then((r) => r.json());
   } catch {
-    // Without backend state the app cannot say what network it is on or
-    // whether trading is off, so it shows neither rather than the last value.
+    // Without backend state the app cannot say what mode it is in or whether
+    // trading is off, so it says that rather than showing the last value.
     S = {
+      mode: { name: "research", label: "OFFLINE", reason: "Cannot reach the server" },
       network: "offline",
       trading_enabled: false,
       can_submit_orders: false,
       assets: [],
+      limits: { max_order_notional: null },
+      health: { market_data: "unavailable", kill_switch: "engaged", credential: false, venue: "unknown" },
       market: { available: false, reason: "Cannot reach the server" },
-      wallet: { connected: false, balances: [] },
+      wallet: { connected: false, balance_usd: null, balances: [] },
+      authorization: { granted: false, scope: null, expires: null },
+      account: { trading_equity: null, available_margin: null, capital_at_risk: null,
+        todays_pnl: null, reason: "Cannot reach the server" },
+      positions: [],
     };
   }
   render();

@@ -39,7 +39,30 @@ body {
   .phone { min-height: min(900px, calc(100dvh - 48px)); border-radius: 26px; overflow: hidden; }
 }
 
-main { flex: 1; padding: max(20px, env(safe-area-inset-top)) 20px 92px; }
+main { flex: 1; padding: max(16px, env(safe-area-inset-top)) 20px 92px; }
+
+/* §23: the operating mode, on every screen, above everything else. */
+.mode {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 11px 0 13px; margin-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+  font-size: 11px; letter-spacing: 0.06em;
+}
+.mode .dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--dim);
+  align-self: center; flex: 0 0 auto;
+}
+.mode b { font-weight: 600; }
+.mode .why {
+  flex: 1; min-width: 0; text-align: right; color: var(--dim);
+  letter-spacing: 0; font-size: 11.5px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mode.research b { color: var(--muted); }
+.mode.copilot .dot { background: var(--up); }
+.mode.copilot b { color: var(--up); }
+.mode.autopilot .dot { background: var(--up); }
+.mode.autopilot b { color: var(--up); }
 
 /* ------------------------------------------------------------------ atoms */
 
@@ -75,6 +98,8 @@ main { flex: 1; padding: max(20px, env(safe-area-inset-top)) 20px 92px; }
 .row .v { color: var(--muted); font-size: 14px; text-align: right; }
 .row .v small { display: block; font-size: 12.5px; color: var(--dim); margin-top: 3px; }
 .row .v.strong { color: var(--fg); }
+.row .v.ok { color: var(--up); }
+.row .v.bad { color: var(--down); }
 .row.tap { cursor: pointer; }
 .row .go { color: var(--dim); font-size: 16px; }
 
@@ -111,6 +136,17 @@ button.quiet:disabled { color: var(--dim); cursor: not-allowed; }
 .mark.plain { background: var(--fill); color: var(--muted); font-size: 12px; font-weight: 600; }
 .mark.btc { background: rgba(247, 147, 26, 0.14); color: #f7931a; font-size: 12px; font-weight: 600; }
 
+/* §76: four money figures next to each other, none of them added up. */
+.grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+  background: var(--line); border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line); margin-top: 22px;
+}
+.cell { background: var(--bg); padding: 14px 0; }
+.cell:nth-child(even) { padding-left: 16px; }
+.cell .k { font-size: 11.5px; color: var(--dim); }
+.cell .v { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; margin-top: 5px; }
+
 button.row {
   appearance: none; width: 100%; background: none; border: 0; text-align: left;
   color: inherit; font: inherit; cursor: pointer;
@@ -118,6 +154,8 @@ button.row {
 }
 button.row:last-of-type { border-bottom: 0; }
 button.row:disabled { cursor: default; }
+button.row.act .n { font-size: 14.5px; }
+button.row.danger .n { color: var(--down); }
 
 /* ------------------------------------------------------------------ trade */
 
@@ -174,23 +212,6 @@ button.row:disabled { cursor: default; }
 .ends { display: flex; justify-content: space-between; font-size: 12px; }
 .ends small { display: block; font-size: 10.5px; color: var(--dim); letter-spacing: 0.06em; margin-bottom: 4px; }
 .ends .tp { text-align: right; }
-
-/* ------------------------------------------------------------------- swap */
-
-.leg { padding: 20px 0; border-bottom: 1px solid var(--line); }
-.leg .k { font-size: 12.5px; color: var(--muted); }
-.leg .row2 { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
-.leg input {
-  flex: 1; min-width: 0; border: 0; background: none; color: var(--fg);
-  font: 600 28px/1.1 var(--sans); letter-spacing: -0.02em; outline: none;
-}
-.leg input::placeholder { color: var(--dim); }
-.picker {
-  display: flex; align-items: center; gap: 8px; appearance: none; cursor: pointer;
-  background: var(--fill); border: 0; color: var(--fg);
-  border-radius: 99px; padding: 7px 14px 7px 7px; font: 500 14px/1 var(--sans);
-}
-.picker .mark { width: 24px; height: 24px; border-radius: 7px; font-size: 11px; }
 
 /* ---------------------------------------------------------------- account */
 

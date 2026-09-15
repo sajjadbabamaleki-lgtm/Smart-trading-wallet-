@@ -1,0 +1,222 @@
+/* Minimal by construction: one background, hairlines instead of cards, and
+   colour only where it means profit or loss. Nothing is nested in a box that
+   a line and some space cannot separate. */
+
+:root {
+  --bg: #0a0a0b;
+  --fg: #f2f2f3;
+  --muted: #8a8a91;
+  --dim: #56565d;
+  --line: rgba(255, 255, 255, 0.08);
+  --fill: rgba(255, 255, 255, 0.05);
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+  --up: #35c27a;
+  --down: #f2584d;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 15px/1.45 var(--sans);
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+
+.phone {
+  max-width: 440px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+@media (min-width: 480px) {
+  body { background: #000; padding: 24px 0; }
+  .phone { min-height: min(900px, calc(100dvh - 48px)); border-radius: 26px; overflow: hidden; }
+}
+
+main { flex: 1; padding: max(20px, env(safe-area-inset-top)) 20px 92px; }
+
+/* ------------------------------------------------------------------ atoms */
+
+.topline { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 26px; }
+.title { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+.tag { font-size: 12px; color: var(--dim); }
+
+.cap {
+  font-size: 11px; font-weight: 500; color: var(--dim);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  margin: 32px 0 6px;
+}
+.cap:first-child { margin-top: 0; }
+
+.hero { margin-bottom: 4px; }
+.hero .big { font-size: 38px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.15; }
+.hero .big.none { color: var(--dim); }
+.hero .sub { font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+.up { color: var(--up); }
+.down { color: var(--down); }
+
+/* Rows: the whole layout is rows and hairlines. */
+.rows { margin-top: 2px; }
+.row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 15px 0; border-bottom: 1px solid var(--line);
+  font-size: 14.5px;
+}
+.row:last-child { border-bottom: 0; }
+.row .n { flex: 1; min-width: 0; }
+.row .n small { display: block; font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+.row .v { color: var(--muted); font-size: 14px; text-align: right; }
+.row .v small { display: block; font-size: 12.5px; color: var(--dim); margin-top: 3px; }
+.row .v.strong { color: var(--fg); }
+.row.tap { cursor: pointer; }
+.row .go { color: var(--dim); font-size: 16px; }
+
+.note { font-size: 12.5px; color: var(--dim); line-height: 1.55; margin: 14px 0 0; }
+.note.center { text-align: center; }
+
+button.primary {
+  appearance: none; width: 100%; border: 0; cursor: pointer;
+  background: var(--fg); color: var(--bg);
+  font: 600 15px/1 var(--sans); padding: 16px; border-radius: 13px;
+  margin-top: 22px;
+}
+button.primary:disabled { background: var(--fill); color: var(--dim); cursor: not-allowed; }
+
+button.quiet {
+  appearance: none; flex: 1; cursor: pointer;
+  background: var(--fill); border: 0; color: var(--fg);
+  font: 500 14px/1 var(--sans); padding: 14px; border-radius: 12px;
+}
+button.quiet:disabled { color: var(--dim); cursor: not-allowed; }
+.pair { display: flex; gap: 8px; margin-top: 18px; }
+
+.empty { font-size: 13.5px; color: var(--dim); padding: 22px 0; line-height: 1.55; }
+
+/* ------------------------------------------------------------ wallet marks */
+
+.mark {
+  width: 30px; height: 30px; border-radius: 9px; flex: 0 0 auto;
+  display: grid; place-items: center;
+}
+.mark svg { width: 19px; height: 19px; }
+.mark.phantom { background: #ab9ff2; color: #4b3f93; }
+.mark.trust { background: #3375bb; color: #eaf2fd; }
+.mark.plain { background: var(--fill); color: var(--muted); font-size: 12px; font-weight: 600; }
+.mark.btc { background: rgba(247, 147, 26, 0.14); color: #f7931a; font-size: 12px; font-weight: 600; }
+
+button.row {
+  appearance: none; width: 100%; background: none; border: 0; text-align: left;
+  color: inherit; font: inherit; cursor: pointer;
+  border-bottom: 1px solid var(--line);
+}
+button.row:last-of-type { border-bottom: 0; }
+button.row:disabled { cursor: default; }
+
+/* ------------------------------------------------------------------ trade */
+
+.quote { display: flex; align-items: baseline; gap: 12px; }
+.quote .px { font-size: 34px; font-weight: 600; letter-spacing: -0.03em; }
+.quote .px.none { font-size: 17px; color: var(--dim); font-weight: 500; }
+.quote .delta { font-size: 14px; font-weight: 500; }
+.book { font-size: 12.5px; color: var(--dim); margin-top: 8px; }
+
+.seg { display: flex; gap: 8px; margin: 26px 0 4px; }
+.seg button {
+  appearance: none; flex: 1; border: 0; cursor: pointer;
+  background: var(--fill); color: var(--muted);
+  font: 500 14px/1 var(--sans); padding: 13px; border-radius: 12px;
+}
+.seg button.on.buy { background: rgba(53, 194, 122, 0.14); color: var(--up); }
+.seg button.on.sell { background: rgba(242, 88, 77, 0.14); color: var(--down); }
+
+/* The size field is a line, not a box. */
+.size { display: flex; align-items: baseline; gap: 10px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.size input {
+  flex: 1; min-width: 0; border: 0; background: none; color: var(--fg);
+  font: 600 30px/1.1 var(--sans); letter-spacing: -0.02em; outline: none;
+  font-variant-numeric: tabular-nums;
+}
+.size input::placeholder { color: var(--dim); }
+.size .unit { font-size: 14px; color: var(--muted); }
+
+.exit { padding: 16px 0; border-bottom: 1px solid var(--line); }
+.exit .head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.exit .head .k { font-size: 14.5px; }
+.exit .head .p { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
+.exit .steps { display: flex; gap: 6px; margin-top: 12px; }
+.exit .steps button {
+  appearance: none; cursor: pointer; flex: 1;
+  background: none; border: 0; color: var(--dim);
+  font: 500 12.5px/1 var(--sans); padding: 9px 0; border-radius: 9px;
+}
+.exit .steps button.on { background: var(--fill); color: var(--fg); }
+.exit .pnl { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
+
+/* ------------------------------------------------------------- positions */
+
+.pos { padding: 18px 0; border-bottom: 1px solid var(--line); }
+.pos .head { display: flex; align-items: baseline; gap: 9px; font-size: 14.5px; }
+.pos .head .side { font-size: 12px; color: var(--muted); flex: 1; }
+.pos .big { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin: 10px 0 3px; }
+.pos .meta { font-size: 12.5px; color: var(--dim); }
+.rail { position: relative; height: 2px; background: var(--line); margin: 20px 0 10px; }
+.rail i {
+  position: absolute; top: 50%; width: 9px; height: 9px; border-radius: 50%;
+  background: var(--fg); transform: translate(-50%, -50%);
+}
+.ends { display: flex; justify-content: space-between; font-size: 12px; }
+.ends small { display: block; font-size: 10.5px; color: var(--dim); letter-spacing: 0.06em; margin-bottom: 4px; }
+.ends .tp { text-align: right; }
+
+/* ------------------------------------------------------------------- swap */
+
+.leg { padding: 20px 0; border-bottom: 1px solid var(--line); }
+.leg .k { font-size: 12.5px; color: var(--muted); }
+.leg .row2 { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.leg input {
+  flex: 1; min-width: 0; border: 0; background: none; color: var(--fg);
+  font: 600 28px/1.1 var(--sans); letter-spacing: -0.02em; outline: none;
+}
+.leg input::placeholder { color: var(--dim); }
+.picker {
+  display: flex; align-items: center; gap: 8px; appearance: none; cursor: pointer;
+  background: var(--fill); border: 0; color: var(--fg);
+  border-radius: 99px; padding: 7px 14px 7px 7px; font: 500 14px/1 var(--sans);
+}
+.picker .mark { width: 24px; height: 24px; border-radius: 7px; font-size: 11px; }
+
+/* ---------------------------------------------------------------- account */
+
+.who { display: flex; align-items: center; gap: 13px; padding-bottom: 4px; }
+.who .mark { width: 42px; height: 42px; border-radius: 13px; font-size: 15px; }
+.who b { display: block; font-size: 16px; font-weight: 600; }
+.who span { font-size: 13px; color: var(--muted); }
+
+.switch { width: 42px; height: 25px; border-radius: 99px; background: var(--fill); position: relative; flex: 0 0 auto; }
+.switch i { position: absolute; top: 3px; left: 3px; width: 19px; height: 19px; border-radius: 50%; background: var(--dim); }
+.switch.on { background: rgba(53, 194, 122, 0.22); }
+.switch.on i { left: auto; right: 3px; background: var(--up); }
+
+/* ----------------------------------------------------------------- tabbar */
+
+.tabbar {
+  position: sticky; bottom: 0;
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--line);
+  padding: 9px 4px max(9px, env(safe-area-inset-bottom));
+}
+.tabbar a {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 4px 0; text-decoration: none; color: var(--dim); font-size: 10px;
+}
+.tabbar svg { width: 21px; height: 21px; fill: currentColor; }
+.tabbar a.active { color: var(--fg); }

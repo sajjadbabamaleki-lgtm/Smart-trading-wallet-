@@ -1,9 +1,8 @@
-"""What the product console is allowed to claim.
+"""The mobile app's backing state.
 
-`apps/README.md` argues that designing product screens before the decision
-object exists inverts the dependency and pressures the engine into producing
-whatever a mockup promised. These tests are the guard against that: the console
-may report that something does not exist, and may not render a value for it.
+Five screens: Home, Wallet, Trade, Swap, Account. The rules that matter are
+that the API cannot move anything, and that balances are not invented while no
+wallet is connected.
 """
 
 from __future__ import annotations
@@ -13,132 +12,82 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
+from apps.api.data import app_state
 from apps.api.main import app
-from apps.api.state import Availability, snapshot
 from libs.config import load_settings
 
 
 @pytest.fixture
 def state() -> dict[str, Any]:
-    return snapshot(load_settings())
+    return app_state(load_settings())
 
 
-class TestHonesty:
-    def test_unbuilt_subsystems_are_labelled_not_blank(self, state: dict[str, Any]) -> None:
-        """An empty positions table implies a system that could hold one."""
-        by_name = {item["name"]: item for item in state["capabilities"]}
-        assert by_name["Positions and P&L"]["availability"] == Availability.NOT_IMPLEMENTED
-        assert by_name["Strategy"]["availability"] == Availability.NOT_IMPLEMENTED
-        assert by_name["Risk Engine"]["availability"] == Availability.NOT_IMPLEMENTED
+class TestWallet:
+    def test_no_wallet_is_connected(self, state: dict[str, Any]) -> None:
+        """No adapter exists, so the app is in the ordinary pre-connect state."""
+        assert state["wallet"]["connected"] is False
+        assert state["wallet"]["address"] is None
 
-    def test_every_capability_explains_itself(self, state: dict[str, Any]) -> None:
-        """A status with no reason is a status nobody can act on."""
-        for item in state["capabilities"]:
-            assert item["detail"], f"{item['name']} has no explanation"
-
-    def test_no_capability_carries_a_fabricated_value(self, state: dict[str, Any]) -> None:
-        """The state exposes availability and prose, never a number to render.
-
-        A `pnl: 0` would be the exact failure this console exists to avoid: a
-        plausible value for something that does not exist.
-        """
-        for item in state["capabilities"]:
-            assert set(item) == {"name", "availability", "detail", "milestone"}
+    def test_no_balances_are_invented(self, state: dict[str, Any]) -> None:
+        """A disconnected wallet has no balances to show, not balances of zero."""
+        assert state["wallet"]["balances"] == []
 
 
-class TestSafetyReporting:
-    def test_safety_comes_from_settings(self, state: dict[str, Any]) -> None:
+class TestMarket:
+    def test_market_state_says_whether_it_is_available(self, state: dict[str, Any]) -> None:
+        """An unreachable store must not become a price."""
+        market = state["market"]
+        assert "available" in market
+        if not market["available"]:
+            assert market["reason"]
+            assert "mid" not in market
+        else:
+            assert market["mid"] > 0
+            assert market["bid"] <= market["ask"]
+
+
+class TestLimits:
+    def test_the_position_limit_is_the_configured_one(self, state: dict[str, Any]) -> None:
+        """The screen shows a limit the engine actually enforces."""
+        assert state["max_order_notional"] == float(load_settings().max_order_notional)
+
+
+class TestSafety:
+    def test_trading_state_comes_from_settings(self, state: dict[str, Any]) -> None:
         settings = load_settings()
-        assert state["safety"]["trading_enabled"] == settings.trading_enabled
-        assert state["safety"]["may_submit_orders"] == settings.may_submit_orders
-        assert state["safety"]["venue_endpoint"] == settings.venue_endpoint
+        assert state["trading_enabled"] == settings.trading_enabled
+        assert state["can_submit_orders"] == settings.may_submit_orders
 
-    def test_the_development_default_reaches_no_capital(self, state: dict[str, Any]) -> None:
-        assert state["safety"]["reaches_real_capital"] is False
-        assert state["safety"]["venue_endpoint"] is None
-        assert state["safety"]["may_submit_orders"] is False
-
-
-class TestModes:
-    def test_autopilot_is_unavailable_not_merely_off(self, state: dict[str, Any]) -> None:
-        """Off is a setting. Unavailable is the truth at this build stage."""
-        autopilot = next(mode for mode in state["modes"] if mode["name"] == "Autopilot")
-        assert autopilot["active"] is False
-        assert autopilot["available"] is False
-
-    def test_research_is_the_only_reachable_mode(self, state: dict[str, Any]) -> None:
-        available = [mode["name"] for mode in state["modes"] if mode["available"]]
-        assert available == ["Research"]
-
-
-class TestAccountModel:
-    def test_the_three_layers_stay_separate(self, state: dict[str, Any]) -> None:
-        """Phase 9 §3: never presented as one indistinguishable object."""
-        names = [layer["name"] for layer in state["account_layers"]]
-        assert len(names) == 3
-        assert any("User Wallet" in name for name in names)
-        assert any("Trading Authorization" in name for name in names)
-        assert any("Trading Account" in name for name in names)
-
-    def test_the_wallet_layer_states_that_keys_never_reach_the_backend(
-        self, state: dict[str, Any]
-    ) -> None:
-        """Invariant 18, stated where a user would look for it."""
-        wallet = next(layer for layer in state["account_layers"] if "Wallet" in layer["name"])
-        assert "never leave the wallet environment" in wallet["detail"]
-
-
-class TestEmergencyControls:
-    def test_the_controls_are_listed_even_while_inert(self, state: dict[str, Any]) -> None:
-        """§56: a control that appears only when needed is unpractised."""
-        names = [control["name"] for control in state["emergency_controls"]]
-        assert "PAUSE AUTOPILOT" in names
-        assert "CANCEL ENTRY ORDERS" in names
-        assert "REDUCE EXPOSURE" in names
-
-    def test_none_is_armed_because_none_has_anything_to_act_on(self, state: dict[str, Any]) -> None:
-        assert all(not control["enabled"] for control in state["emergency_controls"])
+    def test_the_default_build_cannot_submit_orders(self, state: dict[str, Any]) -> None:
+        assert state["can_submit_orders"] is False
 
 
 class TestApi:
     def test_state_is_served(self) -> None:
         with TestClient(app) as client:
-            response = client.get("/api/state")
+            response = client.get("/api/app")
         assert response.status_code == 200
-        assert response.json()["safety"]["may_submit_orders"] is False
+        assert response.json()["wallet"]["connected"] is False
 
-    def test_the_console_page_is_served(self) -> None:
+    def test_the_app_is_served(self) -> None:
         with TestClient(app) as client:
-            response = client.get("/")
-        assert response.status_code == 200
-        assert "Smart Trading Wallet" in response.text
+            page = client.get("/")
+        assert page.status_code == 200
+        assert "Smart Trading Wallet" in page.text
 
-    def test_the_shell_has_the_screens_a_trading_app_needs(self) -> None:
-        """Navigation is part of the product, not decoration.
-
-        The screens exist and say what is not built yet; that is different from
-        having no screens, which is what the first attempt at this console had.
-        """
+    def test_the_app_has_exactly_five_tabs(self) -> None:
         with TestClient(app) as client:
             page = client.get("/").text
-        for route in ("dashboard", "positions", "activity", "data", "research", "risk", "account"):
-            assert f'data-route="{route}"' in page, f"no {route} screen in the shell"
+        for name in ("home", "wallet", "trade", "swap", "account"):
+            assert f'data-tab="{name}"' in page
+        assert page.count("data-tab=") == 5
 
-    def test_the_data_endpoint_reports_unreachable_rather_than_zero(self) -> None:
-        """Zero rows and a dead database look identical and mean opposites."""
-        with TestClient(app) as client:
-            payload = client.get("/api/data").json()
-        assert "reachable" in payload
-        if not payload["reachable"]:
-            assert payload["error"]
-            assert "total_market_events" not in payload
+    def test_the_api_cannot_move_anything(self) -> None:
+        """Invariant 4: the frontend is not an authorization boundary.
 
-    def test_the_api_exposes_no_mutation(self) -> None:
-        """Structural, not a phase to grow out of.
-
-        The frontend is not an authorization boundary. An API with no endpoint
-        that could enable trading cannot be talked into it by a compromised
-        console.
+        There is no endpoint that could place an order, swap, or transfer, so a
+        compromised client cannot reach funds by asking. Those arrive as
+        separately authorized endpoints once the Risk Engine bounds them.
         """
         methods = {method for route in app.routes for method in getattr(route, "methods", set())}
-        assert methods <= {"GET", "HEAD"}, f"the console API accepts {methods}"
+        assert methods <= {"GET", "HEAD"}, f"the app API accepts {methods}"

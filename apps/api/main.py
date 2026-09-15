@@ -1,13 +1,11 @@
-"""The product console's HTTP boundary.
+"""The app's HTTP boundary.
 
-Read-only, and that is structural rather than a phase we will grow out of
-casually. Invariant 4: the frontend is not an authorization boundary and never
-infers critical state locally. This API therefore exposes no mutation at all —
-there is no endpoint that could enable trading, widen a limit, or authorize
-anything, so a compromised console cannot reach capital by asking nicely.
+Read-only. Invariant 4: the frontend is not an authorization boundary, so there
+is no endpoint here that could enable trading, move funds, or authorize
+anything. A compromised client cannot reach capital by asking.
 
-When the Risk Engine exists (M7) and controls become real, each one arrives as
-a deliberate endpoint with its own authorization, not by relaxing this.
+Trading and swap actions arrive as deliberate, separately authorized endpoints
+when the Risk Engine exists to bound them (M7), not by relaxing this.
 """
 
 from __future__ import annotations
@@ -19,35 +17,18 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from apps.api.data import recorder_stats
-from apps.api.state import snapshot
+from apps.api.data import app_state
 from libs.config import load_settings
 
 CONSOLE = Path(__file__).resolve().parents[1] / "console"
 
-app = FastAPI(
-    title="Smart Trading Wallet — Console",
-    description="Read-only view of real system state.",
-    version="0.1",
-)
+app = FastAPI(title="Smart Trading Wallet", version="0.1")
 
 
-@app.get("/api/state")
-def read_state() -> dict[str, Any]:
-    """Everything the console renders.
-
-    Settings are loaded per request rather than cached at import: a console
-    that keeps reporting `trading_enabled: false` after the configuration
-    changed would be showing a stale safety claim, which is the one kind of
-    staleness that matters here.
-    """
-    return snapshot(load_settings())
-
-
-@app.get("/api/data")
-def read_data() -> dict[str, Any]:
-    """What the stores hold. Unreachable is reported, never rendered as zero."""
-    return recorder_stats(load_settings())
+@app.get("/api/app")
+def read_app_state() -> dict[str, Any]:
+    """Wallet, network and market state for the four screens."""
+    return app_state(load_settings())
 
 
 @app.get("/api/health")

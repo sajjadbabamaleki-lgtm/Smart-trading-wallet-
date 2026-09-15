@@ -1,11 +1,8 @@
-"""Live figures for the console's data screens.
+"""What the app's screens read.
 
-Reads what the stores actually hold. Every number here was written by the
-recorder; none is generated for display.
-
-A store that cannot be reached is reported as unreachable rather than as zero.
-Zero rows and an unreachable database look identical on a dashboard and mean
-opposite things — one is a quiet market, the other is a broken deployment.
+Prices come from the recorder's own ClickHouse rows — the last two-sided quote
+it captured. Nothing here is generated for display, and a store that cannot be
+reached says so rather than returning a plausible number.
 """
 
 from __future__ import annotations
@@ -13,34 +10,73 @@ from __future__ import annotations
 from typing import Any
 
 from libs.config import Settings
+from libs.observability.logging import get_logger
 from libs.storage import clickhouse as ch
 
+logger = get_logger("app")
 
-def recorder_stats(settings: Settings) -> dict[str, Any]:
-    """Per-stream row counts and coverage, straight from ClickHouse."""
+
+def market(settings: Settings) -> dict[str, Any]:
+    """Latest BTC quote and 24h change, from what the recorder captured."""
     try:
         with ch.connect_from_settings(settings) as client:
-            rows = client.query(
-                "SELECT event_type, count(), min(local_receive_time), "
-                "max(local_receive_time) FROM market_events "
-                "GROUP BY event_type ORDER BY count() DESC"
+            latest = client.query(
+                "SELECT bid_price, ask_price, local_receive_time FROM market_events "
+                "WHERE asset = 'BTC' AND bid_price IS NOT NULL AND ask_price IS NOT NULL "
+                "ORDER BY local_receive_time DESC LIMIT 1"
             ).result_rows
-            total = client.query("SELECT count() FROM market_events").result_rows[0][0]
-            traders = client.query("SELECT count() FROM trader_events").result_rows[0][0]
-    except Exception as exc:  # noqa: BLE001 - surfaced to the UI, never hidden
-        return {"reachable": False, "error": str(exc)[:200]}
+            if not latest:
+                return {"available": False, "reason": "No price data yet"}
 
-    return {
-        "reachable": True,
-        "total_market_events": int(total),
-        "total_trader_events": int(traders),
-        "streams": [
-            {
-                "event_type": str(row[0]),
-                "count": int(row[1]),
-                "first": row[2].isoformat() if row[2] else None,
-                "last": row[3].isoformat() if row[3] else None,
+            bid, ask, moment = latest[0]
+            mid = (float(bid) + float(ask)) / 2
+
+            earlier = client.query(
+                "SELECT bid_price, ask_price FROM market_events "
+                "WHERE asset = 'BTC' AND bid_price IS NOT NULL AND ask_price IS NOT NULL "
+                "AND local_receive_time <= now() - INTERVAL 24 HOUR "
+                "ORDER BY local_receive_time DESC LIMIT 1"
+            ).result_rows
+            # No 24h-old quote means the recorder has not been running that
+            # long. A change figure would then be against an arbitrary
+            # starting point, so none is returned.
+            change = None
+            if earlier:
+                before = (float(earlier[0][0]) + float(earlier[0][1])) / 2
+                if before:
+                    change = (mid - before) / before * 100
+
+            return {
+                "available": True,
+                "symbol": "BTC-PERP",
+                "mid": mid,
+                "bid": float(bid),
+                "ask": float(ask),
+                "change_24h_pct": change,
+                "as_of": moment.isoformat(),
             }
-            for row in rows
-        ],
+    except Exception:
+        # The screen gets a short sentence; the driver's traceback goes to the
+        # log. Putting a connection error where a price belongs is unreadable
+        # on a phone and tells the user nothing they can act on.
+        logger.exception("market_data_unavailable")
+        return {"available": False, "reason": "Market data unavailable"}
+
+
+def app_state(settings: Settings) -> dict[str, Any]:
+    """Everything the four screens need, in one read."""
+    return {
+        # No wallet adapter exists, so no wallet can be connected. This is the
+        # ordinary pre-connection state every wallet app has, not a placeholder.
+        "wallet": {
+            "connected": False,
+            "address": None,
+            "balances": [],
+        },
+        "network": settings.execution_environment.value,
+        "trading_enabled": settings.trading_enabled,
+        "can_submit_orders": settings.may_submit_orders,
+        "assets": list(settings.asset_allowlist),
+        "max_order_notional": float(settings.max_order_notional),
+        "market": market(settings),
     }

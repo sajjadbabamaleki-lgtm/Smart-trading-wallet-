@@ -11,8 +11,17 @@ help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 
-setup: ## Create the virtualenv and install all dependencies
+setup: ## Create the virtualenv, install dependencies, and seed .env
 	$(UV) sync --extra dev
+	@# Without a .env the store credentials fall back to their defaults, which
+	@# are empty — so an application authenticates against a stack started with
+	@# real local passwords and gets AUTHENTICATION_FAILED. The example holds
+	@# development values that are deliberately visible, so copying it is safe;
+	@# an existing .env is never touched.
+	@if [ ! -f .env ]; then \
+		cp .env.example .env; \
+		echo "created .env from .env.example (local development values)"; \
+	fi
 
 format: ## Apply formatting
 	$(UV) run ruff format .

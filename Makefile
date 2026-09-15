@@ -5,7 +5,7 @@
 UV := uv
 
 .PHONY: help setup format lint typecheck test test-unit test-integration audit check \
-        stack-up stack-down stack-logs stack-verify migrate accept clean
+        stack-up stack-down stack-logs stack-verify migrate accept console clean
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -64,6 +64,9 @@ stack-verify: ## Check every store is reachable and correctly configured
 
 migrate: ## Verify the stack, then apply pending migrations
 	$(UV) run python infrastructure/scripts/verify_stack.py --migrate
+
+console: ## Serve the product console on http://localhost:8000
+	$(UV) run uvicorn apps.api.main:app --host 127.0.0.1 --port 8000 --reload
 
 accept: ## Run the full M1/M2 acceptance against the real stack and the live venue
 	@bash infrastructure/scripts/accept_m1_m2.sh $(ACCEPT_ARGS)

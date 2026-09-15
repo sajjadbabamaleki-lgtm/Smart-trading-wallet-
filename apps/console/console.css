@@ -1,0 +1,75 @@
+/* Deliberately plain. This is a status surface, and a polished one would be
+   making exactly the promise apps/README.md warns against. */
+:root {
+  color-scheme: light dark;
+  --bg: #fbfbfa; --fg: #1a1a18; --muted: #6b6b66;
+  --line: #e2e1dd; --card: #ffffff;
+  --ok: #1a7f46; --warn: #a66300; --off: #8a8a85; --stop: #b3261e;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17171a; --fg: #ececea; --muted: #9a9a95;
+    --line: #2e2e33; --card: #1e1e22;
+    --ok: #4ac47e; --warn: #e0a33c; --off: #77777b; --stop: #f2685c;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 15px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+header {
+  display: flex; flex-wrap: wrap; gap: 16px; align-items: center;
+  justify-content: space-between;
+  padding: 20px 16px; border-bottom: 1px solid var(--line);
+}
+h1 { font-size: 1.15rem; margin: 0; letter-spacing: -0.01em; }
+.build { margin: 2px 0 0; color: var(--muted); font-size: 0.82rem; }
+.banner {
+  padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 0.85rem;
+  border: 1px solid transparent;
+}
+.banner.safe { background: color-mix(in srgb, var(--ok) 12%, transparent); color: var(--ok);
+  border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+.banner.danger { background: color-mix(in srgb, var(--stop) 12%, transparent); color: var(--stop);
+  border-color: color-mix(in srgb, var(--stop) 40%, transparent); }
+main { max-width: 900px; margin: 0 auto; padding: 8px 16px 40px; }
+section { margin-top: 34px; }
+h2 { font-size: 0.95rem; margin: 0 0 6px; letter-spacing: 0.01em; }
+.note { margin: 0 0 14px; color: var(--muted); font-size: 0.85rem; max-width: 60ch; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px; margin: 0; }
+.grid > div {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 8px; padding: 10px 12px;
+}
+.grid dt { color: var(--muted); font-size: 0.75rem; text-transform: uppercase;
+  letter-spacing: 0.04em; }
+.grid dd { margin: 4px 0 0; font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88rem;
+  overflow-wrap: anywhere; }
+.cards, .controls { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.cards li, .controls li {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 8px; padding: 12px 14px;
+}
+.cards li.available { border-left: 3px solid var(--ok); }
+.cards li.unavailable { border-left: 3px solid var(--off); }
+.row { display: flex; gap: 10px; align-items: baseline; justify-content: space-between; }
+.name { font-weight: 600; font-size: 0.92rem; }
+.tag {
+  font-size: 0.68rem; letter-spacing: 0.05em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 99px; white-space: nowrap;
+  border: 1px solid var(--line); color: var(--muted);
+}
+.tag.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); }
+.tag.warn { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
+.detail { margin: 6px 0 0; color: var(--muted); font-size: 0.85rem; }
+.controls li { opacity: 0.6; }
+.controls .name::before { content: "■ "; color: var(--off); }
+footer {
+  border-top: 1px solid var(--line); padding: 18px 16px 40px;
+  color: var(--muted); font-size: 0.82rem;
+}
+footer p { max-width: 70ch; margin: 0 auto; }
+.error { color: var(--stop); }

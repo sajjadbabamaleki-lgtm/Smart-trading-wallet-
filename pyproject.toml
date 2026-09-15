@@ -16,6 +16,11 @@ dependencies = [
     # M4 research datasets. The declared analytical foundation
     # (Build 0.1 Rev.1 §8-9), used to write Parquet.
     "polars>=1.12,<2",
+    # The product console (apps/). A read-only HTTP boundary is the minimum
+    # a product interface needs, and these two are the smallest way to have
+    # one without a build step or a JavaScript toolchain.
+    "fastapi>=0.115,<1",
+    "uvicorn>=0.32,<1",
 ]
 
 # Production dependencies stay deliberately small (Build 0.1 Rev.1 §7).
@@ -32,6 +37,9 @@ dev = [
     "mypy>=1.11,<2",
     "pip-audit>=2.7,<3",
     "boto3-stubs[s3]>=1.35,<2",
+    # Starlette's TestClient needs it. Dev-only: the console API itself
+    # makes no outbound HTTP calls.
+    "httpx2>=2.13,<3",
 ]
 
 [build-system]

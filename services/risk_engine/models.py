@@ -49,6 +49,8 @@ class RejectionCode(StrEnum):
     SIZE_ABOVE_LIMIT = "SIZE_ABOVE_LIMIT"
     SIZE_BELOW_MINIMUM = "SIZE_BELOW_MINIMUM"
     DUPLICATE_PROPOSAL = "DUPLICATE_PROPOSAL"
+    # Raised on the execution side, where the intent is checked again.
+    INTENT_EXPIRED = "INTENT_EXPIRED"
 
 
 class TradeProposal(BaseModel):

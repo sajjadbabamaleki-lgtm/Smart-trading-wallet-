@@ -15,6 +15,7 @@
   --fill: rgba(255, 255, 255, 0.06);
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
   --lime: #d8e040;
+  --lime-dim: rgba(216, 224, 64, 0.16);
   --lime-ink: #22290a;
   --purple: #a99bff;
   --up: #45d483;
@@ -177,8 +178,8 @@ button.row.key .go { color: var(--lime); }
   background: var(--fill); color: var(--muted);
   font: 500 14px/1 var(--sans); padding: 13px; border-radius: 12px;
 }
-.seg button.on.buy { background: var(--lime); color: var(--lime-ink); }
-.seg button.on.sell { background: var(--fg); color: #14161a; }
+.seg button.on.buy { background: var(--lime-dim); color: var(--lime); }
+.seg button.on.sell { background: rgba(255, 255, 255, 0.1); color: var(--fg); }
 
 /* The size field is a line, not a box. */
 .size { display: flex; align-items: baseline; gap: 10px; padding: 14px 0; border-bottom: 1px solid var(--line); }
@@ -200,8 +201,8 @@ button.row.key .go { color: var(--lime); }
   background: none; border: 0; color: var(--dim);
   font: 500 12.5px/1 var(--sans); padding: 9px 0; border-radius: 9px;
 }
-.exit.tp .steps button.on { background: var(--lime); color: var(--lime-ink); }
-.exit.sl .steps button.on { background: var(--fg); color: #14161a; }
+.exit.tp .steps button.on { background: var(--lime-dim); color: var(--lime); }
+.exit.sl .steps button.on { background: rgba(255, 255, 255, 0.1); color: var(--fg); }
 .exit .pnl { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
 
 /* ------------------------------------------------------------- positions */
@@ -247,12 +248,11 @@ button.row.key .go { color: var(--lime); }
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), 0 0 0 1px var(--line);
 }
 .tabbar a {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 6px;
   height: 46px; padding: 0 13px; border-radius: 99px;
   color: #77746d; text-decoration: none;
-  font: 700 14px/1 var(--sans);
 }
 .tabbar svg { width: 23px; height: 23px; flex: 0 0 auto; }
-.tabbar span { display: none; }
-.tabbar a.active { background: var(--lime); color: var(--lime-ink); padding: 0 16px; }
+.tabbar span { display: none; font: 700 11.2px/23px var(--sans); }
+.tabbar a.active { background: var(--lime-dim); color: var(--lime); padding: 0 15px; }
 .tabbar a.active span { display: inline; }

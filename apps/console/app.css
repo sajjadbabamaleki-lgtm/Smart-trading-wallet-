@@ -16,10 +16,11 @@
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
   --lime: #d8e040;
   --lime-dim: rgba(216, 224, 64, 0.16);
-  --lime-ink: #22290a;
   --purple: #a99bff;
   --up: #45d483;
+  --up-dim: rgba(69, 212, 131, 0.15);
   --down: #ff6b63;
+  --down-dim: rgba(255, 107, 99, 0.15);
   color-scheme: dark;
 }
 
@@ -178,8 +179,8 @@ button.row.key .go { color: var(--lime); }
   background: var(--fill); color: var(--muted);
   font: 500 14px/1 var(--sans); padding: 13px; border-radius: 12px;
 }
-.seg button.on.buy { background: var(--lime-dim); color: var(--lime); }
-.seg button.on.sell { background: rgba(255, 255, 255, 0.1); color: var(--fg); }
+.seg button.on.buy { background: var(--up-dim); color: var(--up); }
+.seg button.on.sell { background: var(--down-dim); color: var(--down); }
 
 /* The size field is a line, not a box. */
 .size { display: flex; align-items: baseline; gap: 10px; padding: 14px 0; border-bottom: 1px solid var(--line); }
@@ -201,8 +202,8 @@ button.row.key .go { color: var(--lime); }
   background: none; border: 0; color: var(--dim);
   font: 500 12.5px/1 var(--sans); padding: 9px 0; border-radius: 9px;
 }
-.exit.tp .steps button.on { background: var(--lime-dim); color: var(--lime); }
-.exit.sl .steps button.on { background: rgba(255, 255, 255, 0.1); color: var(--fg); }
+.exit.tp .steps button.on { background: var(--up-dim); color: var(--up); }
+.exit.sl .steps button.on { background: var(--down-dim); color: var(--down); }
 .exit .pnl { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
 
 /* ------------------------------------------------------------- positions */
@@ -213,7 +214,7 @@ button.row.key .go { color: var(--lime); }
 .pos .big { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin: 10px 0 3px; }
 .pos .meta { font-size: 12.5px; color: var(--dim); }
 .rail { position: relative; height: 3px; border-radius: 99px; background: var(--fill); margin: 20px 0 10px; }
-.rail b { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 99px; background: var(--lime); }
+.rail b { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 99px; background: var(--up); }
 .rail i {
   position: absolute; top: 50%; width: 9px; height: 9px; border-radius: 50%;
   background: var(--fg); transform: translate(-50%, -50%);
@@ -236,12 +237,12 @@ button.row.key .go { color: var(--lime); }
 
 /* ----------------------------------------------------------------- tabbar */
 
-/* A capsule floating over the page, holding the same 14px side margin as the
-   content. The selected tab is a capsule too, and the only one with a label. */
+/* A capsule floating over the page, inset 12px from each side. The selected
+   tab is a capsule too, and the only one with a label. */
 .tabbar {
   position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
-  width: calc(100% - 28px); max-width: 412px;
+  width: calc(100% - 24px); max-width: 416px;
   display: flex; align-items: center; justify-content: space-between;
   background: #1b1d19; border-radius: 99px;
   padding: 7px; z-index: 20;

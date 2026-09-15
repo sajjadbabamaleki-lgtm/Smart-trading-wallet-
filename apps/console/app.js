@@ -19,6 +19,8 @@
 // the app shows the ordinary pre-connect state instead of invented balances.
 
 let S = null;
+let error = null;
+let seenAt = null;
 let side = "buy";
 let tab = "home";
 let amount = "";
@@ -65,11 +67,35 @@ function topline(title) {
   const bar = el("div", "topline");
   bar.append(el("h1", "title", title));
   const m = S.mode;
-  const chip = el("span", `modechip ${m.name}`);
+  const chip = el("button", `modechip ${m.name}`);
+  chip.type = "button";
   chip.append(el("i"), el("span", null, m.label));
-  chip.title = m.reason;
+  chip.onclick = () => openSheet(modeSheet());
   bar.append(chip);
   return bar;
+}
+
+// Tapping the mode opens what it actually means and what would change it —
+// §23 asks that nobody wonder whether the system can trade, and the honest
+// version of that is a sentence, not a colour.
+function modeSheet() {
+  const box = document.createDocumentFragment();
+  box.append(el("h2", "sheet-title", S.mode.label));
+  box.append(el("p", "sheet-lead", S.mode.reason));
+  const list = rows(
+    row("Places orders on its own", S.mode.name === "autopilot" ? "Yes" : "No"),
+    row("Needs your approval", S.mode.name === "copilot" ? "Every order" : "—"),
+    row("Kill switch", S.health.kill_switch === "engaged" ? "Engaged" : "Released",
+      { tone: S.health.kill_switch === "engaged" ? "ok" : "" }),
+    row("Signing credential", S.health.credential ? "Configured" : "None"),
+    row("Market data", S.health.market_data === "ok" ? "Live" : "Unavailable",
+      { tone: S.health.market_data === "ok" ? "ok" : "bad" }),
+  );
+  box.append(list);
+  box.append(el("p", "note", S.can_submit_orders
+    ? "Autopilot is a separate grant with nine checks of its own."
+    : "Every one of these has to be true before an order can be sent."));
+  return box;
 }
 
 const cap = (text) => el("div", "cap", text);
@@ -203,10 +229,22 @@ const SCREENS = {
     } else {
       quote.append(el("div", "px none", m.reason));
     }
+    if (m.available && m.stale) {
+      quote.append(el("span", "warn", `${Math.round(m.age_seconds)}s old`));
+    }
     frag.append(quote);
     if (m.available) {
       frag.append(el("div", "book",
         `Bid ${usd(m.bid)}  ·  Spread ${usd(m.ask - m.bid)}  ·  Ask ${usd(m.ask)}`));
+      frag.append(m.history
+        ? chart(m.history, {
+            window: "6h",
+            levels: [
+              { price: exitPrice(m, tpPct, true), color: "var(--up)", label: "TP" },
+              { price: exitPrice(m, slPct, false), color: "var(--down)", label: "SL" },
+            ],
+          })
+        : el("div", "nochart", "No price history yet — the recorder has not been running long enough."));
     }
 
     const seg = el("div", "seg");
@@ -291,7 +329,7 @@ const SCREENS = {
       action("Cancel entry orders", "Working orders only. Positions untouched."),
       action("Reduce exposure", "Cut position size, keep the position open."),
       action("Close position", "Market exit for one position."),
-      action("Close all positions", "Asks for confirmation first.", { danger: true }),
+      closeAllAction(),
       action("Revoke trading access", "The platform can no longer trade for you.", { danger: true }),
     ));
     frag.append(el("p", "note",
@@ -414,7 +452,141 @@ const SCREENS = {
   },
 };
 
+// ------------------------------------------------------------------- chart
+
+// A line through what the recorder actually captured. The exits are drawn on
+// the same axis when they fall inside it, and as an edge marker when they do
+// not — seeing that a stop sits far below anything the last six hours did is
+// the point of putting both on one picture.
+function chart(series, opts = {}) {
+  const W = 320;
+  const H = opts.height ?? 132;
+  const lo0 = Math.min(...series);
+  const hi0 = Math.max(...series);
+  const pad = (hi0 - lo0) * 0.18 || Math.max(hi0 * 0.0005, 1);
+  const lo = lo0 - pad;
+  const hi = hi0 + pad;
+  const x = (i) => (i / (series.length - 1)) * W;
+  const y = (v) => H - ((v - lo) / (hi - lo)) * H;
+  const rising = series[series.length - 1] >= series[0];
+  const stroke = rising ? "var(--up)" : "var(--down)";
+  const line = series
+    .map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(v).toFixed(1)}`)
+    .join(" ");
+  const id = `g${Math.random().toString(36).slice(2, 8)}`;
+
+  const marks = (opts.levels ?? [])
+    .filter((l) => l.price !== null && l.price !== undefined)
+    .map((l) => {
+      const inside = l.price > lo && l.price < hi;
+      const at = inside ? y(l.price) : l.price >= hi ? 7 : H - 7;
+      const text = (at + (at < 16 ? 13 : -6)).toFixed(1);
+      return `<line x1="0" y1="${at.toFixed(1)}" x2="${W}" y2="${at.toFixed(1)}"
+          stroke="${l.color}" stroke-width="1" vector-effect="non-scaling-stroke"
+          stroke-dasharray="${inside ? "4 4" : "2 5"}" opacity="${inside ? 0.85 : 0.4}"/>
+        <text x="3" y="${text}" text-anchor="start" fill="${l.color}"
+          font-size="9" opacity="0.95">${l.label}</text>`;
+    })
+    .join("");
+
+  const svg = html("div", "chart", `
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${stroke}" stop-opacity="0.22"/>
+          <stop offset="100%" stop-color="${stroke}" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d="${line} L${W} ${H} L0 ${H} Z" fill="url(#${id})"/>
+      <path d="${line}" fill="none" stroke="${stroke}" stroke-width="1.6"
+        stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+      ${marks}
+      <circle cx="${(W - 2).toFixed(1)}" cy="${y(series[series.length - 1]).toFixed(1)}"
+        r="2.6" fill="${stroke}"/>
+    </svg>`);
+
+  const axis = el("div", "axis");
+  axis.append(el("span", null, opts.window ?? "6h"), el("span", null, "now"));
+  const wrap = el("div");
+  wrap.append(svg, axis);
+  return wrap;
+}
+
+function spark(series) {
+  const W = 64;
+  const H = 22;
+  const lo = Math.min(...series);
+  const hi = Math.max(...series);
+  const span = hi - lo || 1;
+  const d = series
+    .map((v, i) =>
+      `${i ? "L" : "M"}${((i / (series.length - 1)) * W).toFixed(1)} ` +
+      `${(H - ((v - lo) / span) * H).toFixed(1)}`)
+    .join(" ");
+  const rising = series[series.length - 1] >= series[0];
+  return html("span", "spark", `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <path d="${d}" fill="none" stroke="${rising ? "var(--up)" : "var(--down)"}"
+      stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"
+      vector-effect="non-scaling-stroke"/></svg>`);
+}
+
+// -------------------------------------------------------------------- sheet
+
+function closeSheet() {
+  const open = document.querySelector(".scrim");
+  if (open) open.remove();
+}
+
+function openSheet(content) {
+  closeSheet();
+  const scrim = el("div", "scrim");
+  const panel = el("div", "sheet");
+  panel.append(el("div", "grip"));
+  panel.append(content);
+  const done = el("button", "primary ghost", "Close");
+  done.type = "button";
+  done.onclick = closeSheet;
+  panel.append(done);
+  scrim.append(panel);
+  scrim.onclick = (e) => { if (e.target === scrim) closeSheet(); };
+  document.body.append(scrim);
+}
+
+window.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSheet(); });
+
 // --------------------------------------------------------------- components
+
+// §55: the confirmation names the number of positions, the exposure and
+// whether working orders go with them — before anything is closed.
+function closeAllAction() {
+  const open = S.positions ?? [];
+  const b = action("Close all positions", "Asks for confirmation first.", { danger: true });
+  b.disabled = false;
+  b.onclick = () => {
+    const box = document.createDocumentFragment();
+    box.append(el("h2", "sheet-title", "Close all positions?"));
+    box.append(el("p", "sheet-lead",
+      "Every open position is closed at market. This cannot be undone."));
+    const exposure = open.reduce((t2, p) => t2 + p.size_usd, 0);
+    const risk = open.reduce((t2, p) => t2 + (p.risk_usd ?? 0), 0);
+    box.append(rows(
+      row("Positions", String(open.length)),
+      row("Exposure", money(exposure, 0)),
+      row("At risk to the stops", money(risk)),
+      row("Working orders", "Cancelled with them"),
+      row("Execution", "Market", { sub: "The fill is not the price above" }),
+    ));
+    const go = el("button", "primary danger", `Close ${open.length} position${open.length === 1 ? "" : "s"}`);
+    go.type = "button";
+    go.disabled = true;
+    box.append(go);
+    box.append(el("p", "note center", S.can_submit_orders
+      ? "Not wired yet: the Risk Engine has to own this action before it exists."
+      : S.mode.reason));
+    openSheet(box);
+  };
+  return b;
+}
 
 function cell(name, value) {
   const c = el("div", "cell");
@@ -432,6 +604,7 @@ function marketRow() {
   r.append(n);
   if (m.available) {
     const pct = m.change_24h_pct;
+    if (m.history) r.append(spark(m.history));
     const v = el("div", "v strong", `$${usd(m.mid)}`);
     v.append(el("small", pct === null ? null : pct >= 0 ? "up" : "down",
       pct === null ? "24h —" : `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`));
@@ -547,10 +720,10 @@ function render(opts = {}) {
   const target = $("screen");
   const scroll = window.scrollY;
   if (!S) {
-    target.replaceChildren(el("div", "empty", "Loading…"));
+    target.replaceChildren(error ? errorScreen() : skeleton());
     return;
   }
-  target.replaceChildren(SCREENS[name]());
+  target.replaceChildren(...(error ? [offlineStrip(), SCREENS[name]()] : [SCREENS[name]()]));
   if (opts.keepFocus) {
     window.scrollTo(0, scroll);
     const field = target.querySelector(".size input");
@@ -564,33 +737,62 @@ function render(opts = {}) {
 }
 
 function route() {
+  // A sheet belongs to the screen that opened it; changing tabs behind it
+  // leaves a panel describing something you are no longer looking at.
+  closeSheet();
   tab = (location.hash.replace("#/", "") || "home").trim();
   render();
 }
 
+// The last state that really arrived is kept and labelled with when it
+// arrived. Inventing an "offline" state would replace real numbers with
+// made-up ones at exactly the moment the user most needs to know which is
+// which.
 async function load() {
   try {
-    S = await fetch("/api/app").then((r) => r.json());
+    const response = await fetch("/api/app");
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    S = await response.json();
+    seenAt = new Date();
+    error = null;
   } catch {
-    // Without backend state the app cannot say what mode it is in or whether
-    // trading is off, so it says that rather than showing the last value.
-    S = {
-      mode: { name: "research", label: "OFFLINE", reason: "Cannot reach the server" },
-      network: "offline",
-      trading_enabled: false,
-      can_submit_orders: false,
-      assets: [],
-      limits: { max_order_notional: null },
-      health: { market_data: "unavailable", kill_switch: "engaged", credential: false, venue: "unknown" },
-      market: { available: false, reason: "Cannot reach the server" },
-      wallet: { connected: false, balance_usd: null, balances: [] },
-      authorization: { granted: false, scope: null, expires: null },
-      account: { trading_equity: null, available_margin: null, capital_at_risk: null,
-        todays_pnl: null, reason: "Cannot reach the server" },
-      positions: [],
-    };
+    error = "Cannot reach the server";
   }
   render();
+}
+
+function skeleton() {
+  const box = el("div", "skeleton");
+  box.append(el("div", "sk title"));
+  box.append(el("div", "sk hero"));
+  box.append(el("div", "sk tiles"));
+  for (let i = 0; i < 4; i += 1) box.append(el("div", "sk line"));
+  return box;
+}
+
+function errorScreen() {
+  const box = el("div", "failure");
+  box.append(el("h2", null, "Can't reach the server"));
+  box.append(el("p", null,
+    "Nothing is shown rather than something out of date, because there is no earlier state to show yet."));
+  const retry = el("button", "primary", "Try again");
+  retry.type = "button";
+  retry.onclick = () => { error = null; render(); load(); };
+  box.append(retry);
+  return box;
+}
+
+function offlineStrip() {
+  const bar = el("div", "offline");
+  const when = seenAt
+    ? seenAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+    : "—";
+  bar.append(el("span", null, `Offline · last received ${when}`));
+  const retry = el("button", null, "Retry");
+  retry.type = "button";
+  retry.onclick = () => load();
+  bar.append(retry);
+  return bar;
 }
 
 window.addEventListener("hashchange", route);

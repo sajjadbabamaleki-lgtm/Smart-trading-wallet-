@@ -16,6 +16,7 @@ is null with the reason attached.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 
 from libs.config import Settings
@@ -23,6 +24,9 @@ from libs.observability.logging import get_logger
 from libs.storage import clickhouse as ch
 
 logger = get_logger("app")
+
+# A chart through one observation is a flat line claiming the market held still.
+MIN_CHART_POINTS = 2
 
 
 def operating_mode(settings: Settings) -> dict[str, Any]:
@@ -74,6 +78,24 @@ def health(settings: Settings, market_available: bool) -> dict[str, Any]:
     }
 
 
+def history(client: Any, hours: int = 6, bucket_minutes: int = 5) -> list[float] | None:
+    """Mid price over the last few hours, one point per bucket.
+
+    Returned only when there are at least two points: a chart drawn through a
+    single observation is a straight line that claims the market did not move.
+    """
+    rows = client.query(
+        "SELECT avg((bid_price + ask_price) / 2) AS mid FROM market_events "
+        "WHERE asset = 'BTC' AND bid_price IS NOT NULL AND ask_price IS NOT NULL "
+        "AND local_receive_time >= now() - INTERVAL %(hours)s HOUR "
+        "GROUP BY toStartOfInterval(local_receive_time, INTERVAL %(bucket)s MINUTE) AS t "
+        "ORDER BY t",
+        parameters={"hours": hours, "bucket": bucket_minutes},
+    ).result_rows
+    points = [float(r[0]) for r in rows if r[0] is not None]
+    return points if len(points) >= MIN_CHART_POINTS else None
+
+
 def market(settings: Settings) -> dict[str, Any]:
     """Latest BTC quote and 24h change, from what the recorder captured."""
     try:
@@ -104,6 +126,12 @@ def market(settings: Settings) -> dict[str, Any]:
                 if before:
                     change = (mid - before) / before * 100
 
+            # A price the recorder captured minutes ago is not the market.
+            # The screen is told how old this one is and decides what to say;
+            # the limit is the same one the executor refuses to trade past.
+            seen = moment if moment.tzinfo else moment.replace(tzinfo=UTC)
+            age = (datetime.now(UTC) - seen).total_seconds()
+
             return {
                 "available": True,
                 "symbol": "BTC-PERP",
@@ -111,7 +139,10 @@ def market(settings: Settings) -> dict[str, Any]:
                 "bid": float(bid),
                 "ask": float(ask),
                 "change_24h_pct": change,
-                "as_of": moment.isoformat(),
+                "as_of": seen.isoformat(),
+                "age_seconds": age,
+                "stale": age > settings.data_staleness_limit_seconds,
+                "history": history(client),
             }
     except Exception:
         # The screen gets a short sentence; the driver's traceback goes to the

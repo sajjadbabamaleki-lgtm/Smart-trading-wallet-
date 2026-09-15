@@ -13,7 +13,7 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from apps.api.data import app_state
+from apps.api.data import app_state, history
 from apps.api.main import app
 from libs.config import load_settings
 
@@ -51,6 +51,50 @@ class TestMarket:
         else:
             assert market["mid"] > 0
             assert market["bid"] <= market["ask"]
+            # §67-adjacent: a price the recorder caught minutes ago is not the
+            # market, and the screen is told which it is holding.
+            assert isinstance(market["stale"], bool)
+            assert market["age_seconds"] >= 0
+
+
+class FakeQuery:
+    def __init__(self, rows: list[tuple[object, ...]]) -> None:
+        self.result_rows = rows
+
+
+class FakeClient:
+    """Stands in for ClickHouse so the chart's rules can be tested without it."""
+
+    def __init__(self, rows: list[tuple[object, ...]]) -> None:
+        self.rows = rows
+        self.parameters: dict[str, object] | None = None
+
+    def query(self, sql: str, parameters: dict[str, object] | None = None) -> FakeQuery:  # noqa: ARG002
+        self.parameters = parameters
+        return FakeQuery(self.rows)
+
+
+class TestPriceHistory:
+    def test_a_series_is_returned_when_there_is_something_to_draw(self) -> None:
+        client = FakeClient([(60_000.0,), (60_100.0,), (59_900.0,)])
+        assert history(client) == [60_000.0, 60_100.0, 59_900.0]
+
+    def test_one_point_is_not_a_chart(self) -> None:
+        """A line through a single observation claims the market held still."""
+        assert history(FakeClient([(60_000.0,)])) is None
+
+    def test_no_points_is_not_a_chart(self) -> None:
+        assert history(FakeClient([])) is None
+
+    def test_empty_buckets_are_dropped(self) -> None:
+        client = FakeClient([(60_000.0,), (None,), (60_050.0,)])
+        assert history(client) == [60_000.0, 60_050.0]
+
+    def test_the_window_is_bound_not_interpolated(self) -> None:
+        """The hours and bucket size go to the server as parameters."""
+        client = FakeClient([(1.0,), (2.0,)])
+        history(client, hours=3, bucket_minutes=10)
+        assert client.parameters == {"hours": 3, "bucket": 10}
 
 
 class TestMode:

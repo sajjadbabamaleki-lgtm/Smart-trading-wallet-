@@ -123,6 +123,11 @@ class Recorder:
     # verdicts. Everything the venue timestamps before this is history it
     # replayed to us on subscribing, not data that arrived late.
     stream_start: datetime | None = None
+    # The receipt time of the most recent frame. With stream_start it bounds
+    # exactly what this run observed, which is what a reconciliation against
+    # the store has to ask about — a wall-clock window would include rows
+    # another run wrote and rows this one never saw.
+    stream_end: datetime | None = None
     staleness_limit: timedelta = timedelta(seconds=30)
 
     async def run(self) -> RecorderMetrics:
@@ -147,6 +152,7 @@ class Recorder:
         self.metrics.messages_received += 1
         received_at = frame.receipt.local_receive_time
         self.heartbeat.record_data(received_at)
+        self.stream_end = received_at
         if self.stream_start is None:
             # The first frame we ever see fixes the boundary. Anything the
             # venue stamped earlier than this happened while we were not

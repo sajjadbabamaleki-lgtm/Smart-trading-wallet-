@@ -26,7 +26,7 @@ from contextlib import ExitStack
 from dataclasses import dataclass, field
 from datetime import timedelta
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
@@ -46,7 +46,8 @@ from services.market_data.capture import (  # noqa: E402
     load_session,
 )
 from services.market_data.monitor import Monitor  # noqa: E402
-from services.market_data.recorder import Recorder  # noqa: E402
+from services.market_data.reconcile import reconcile  # noqa: E402
+from services.market_data.recorder import Recorder, RecorderMetrics  # noqa: E402
 from services.market_data.registry import InMemoryGapRegistry  # noqa: E402
 from services.market_data.replay import (  # noqa: E402
     ReplayEngine,
@@ -56,6 +57,9 @@ from services.market_data.replay import (  # noqa: E402
 from services.market_data.sinks import InMemorySink, RawFrame, Sink  # noqa: E402
 from services.market_data.source import MessageSource  # noqa: E402
 from services.market_data.store_sinks import StoreSink  # noqa: E402
+
+if TYPE_CHECKING:  # pragma: no cover - import only for type checking
+    from clickhouse_connect.driver.client import Client
 
 logger = get_logger("recorder")
 
@@ -120,9 +124,21 @@ class _ChannelWatcher:
         await self.inner.flush()
 
 
-def _open_sink(
-    settings: Settings, *, clock: SystemClock, dry_run: bool
-) -> tuple[Sink, ExitStack | None]:
+@dataclass(frozen=True)
+class _Destination:
+    """Where a run writes, and what it needs to check itself afterwards.
+
+    The ClickHouse client is carried alongside the sink rather than dug back
+    out of it: the reconciliation has to read from the same connection the run
+    wrote through, and a sink's job is to write, not to be queried.
+    """
+
+    sink: Sink
+    stack: ExitStack | None
+    clickhouse: Client | None
+
+
+def _open_sink(settings: Settings, *, clock: SystemClock, dry_run: bool) -> _Destination:
     """The recorder's destination, and the connections it owns.
 
     Persisting or not is the only difference between the two modes: both run the
@@ -135,18 +151,48 @@ def _open_sink(
     after the sink is flushed.
     """
     if dry_run:
-        return InMemorySink(), None
+        return _Destination(sink=InMemorySink(), stack=None, clickhouse=None)
     stack = ExitStack()
-    return (
-        StoreSink(
-            clickhouse=stack.enter_context(ch.connect_from_settings(settings)),
+    client = stack.enter_context(ch.connect_from_settings(settings))
+    return _Destination(
+        sink=StoreSink(
+            clickhouse=client,
             object_store=stack.enter_context(obj.connect_from_settings(settings)),
             postgres=stack.enter_context(pg.connect(settings.postgres_dsn)),
             bucket=settings.object_store_bucket,
             clock=clock,
         ),
-        stack,
+        stack=stack,
+        clickhouse=client,
     )
+
+
+def _reconcile_against_store(
+    destination: _Destination, recorder: Recorder, metrics: RecorderMetrics
+) -> dict[str, object] | None:
+    """Ask the store whether it holds what the run reported writing.
+
+    Returns None for a dry run, which wrote nothing and has nothing to check.
+
+    A failure to run the check is recorded rather than swallowed: "could not
+    check" and "checked and agreed" are different states, and collapsing them
+    is how a recorder that loses rows stays green.
+    """
+    if destination.clickhouse is None or not recorder.stream_start or not recorder.stream_end:
+        return None
+    try:
+        checked = reconcile(
+            destination.clickhouse,
+            reported=metrics.market_events_written,
+            range_start=recorder.stream_start,
+            range_end=recorder.stream_end,
+        )
+    except Exception as exc:
+        logger.exception("reconciliation_failed")
+        return {"checked": False, "error": str(exc)}
+    if not checked.agrees:
+        logger.error("reconciliation_mismatch", extra=checked.as_dict())
+    return {"checked": True, **checked.as_dict()}
 
 
 def websocket_url(settings: Settings) -> str:
@@ -226,7 +272,9 @@ async def run(args: argparse.Namespace) -> int:
         clock=clock,
     )
 
-    sink, stack = _open_sink(settings, clock=clock, dry_run=args.dry_run)
+    destination = _open_sink(settings, clock=clock, dry_run=args.dry_run)
+    sink, stack = destination.sink, destination.stack
+    reconciliation: dict[str, object] | None = None
 
     capture_writer: SessionWriter | None = None
     if args.capture:
@@ -295,6 +343,11 @@ async def run(args: argparse.Namespace) -> int:
         await recording_sink.flush()
         if capture_writer is not None:
             capture_writer.__exit__()
+        # Reconcile before the connections close, and before the exit code is
+        # decided. A run that persisted must be able to say that what it
+        # reported writing is what the store actually holds; without it, a
+        # recorder losing rows is indistinguishable from a quiet market.
+        reconciliation = _reconcile_against_store(destination, recorder, metrics)
         if stack is not None:
             stack.close()
 
@@ -310,6 +363,7 @@ async def run(args: argparse.Namespace) -> int:
         },
         "streams": [f"{asset}/{event_type}" for asset, event_type in recorder.gaps.streams],
         "persisted": not args.dry_run,
+        "reconciliation": reconciliation,
         "channels_seen": sorted(watcher.channels),
     }
     if capture_writer is not None:

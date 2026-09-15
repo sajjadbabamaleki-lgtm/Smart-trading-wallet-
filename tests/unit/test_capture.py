@@ -210,9 +210,10 @@ class TestRecorderSinkSelection:
 
     def test_a_dry_run_keeps_everything_in_memory(self) -> None:
 
-        sink, stack = _open_sink(load_settings(), clock=SystemClock(), dry_run=True)
-        assert isinstance(sink, InMemorySink)
-        assert stack is None, "a dry run opens no connections, so it owns none to close"
+        destination = _open_sink(load_settings(), clock=SystemClock(), dry_run=True)
+        assert isinstance(destination.sink, InMemorySink)
+        assert destination.stack is None, "a dry run opens no connections to close"
+        assert destination.clickhouse is None, "and has nothing to reconcile against"
 
     def test_the_cli_no_longer_refuses_to_persist(self) -> None:
         """Guards the removal of the refusal, not the wiring behind it.

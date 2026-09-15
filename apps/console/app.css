@@ -47,7 +47,7 @@ body {
   .phone { min-height: min(900px, calc(100dvh - 48px)); border-radius: 26px; overflow: hidden; }
 }
 
-main { flex: 1; padding: max(16px, env(safe-area-inset-top)) 14px 108px; }
+main { flex: 1; padding: max(16px, env(safe-area-inset-top)) 16px 108px; }
 
 /* §23: the operating mode, on every screen, above everything else. */
 .mode {

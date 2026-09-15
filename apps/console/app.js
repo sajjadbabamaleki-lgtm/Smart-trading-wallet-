@@ -57,10 +57,18 @@ const money = (n, digits = 2) => (n === null || n === undefined ? "—" : `$${us
 const signed = (n, digits = 2) => `${n >= 0 ? "+" : "−"}$${usd(Math.abs(n), digits)}`;
 const short = (a) => (a ? `${a.slice(0, 4)}…${a.slice(-4)}` : "—");
 
-function topline(title, tag) {
+// §23 still applies — the mode has to be on every screen — but it does not
+// need a banner across the top to do it. It rides in the corner of the title
+// row, where the per-screen tag used to sit; each screen's own tag was
+// repeating something already visible a line or two below it.
+function topline(title) {
   const bar = el("div", "topline");
   bar.append(el("h1", "title", title));
-  if (tag) bar.append(el("span", "tag", tag));
+  const m = S.mode;
+  const chip = el("span", `modechip ${m.name}`);
+  chip.append(el("i"), el("span", null, m.label));
+  chip.title = m.reason;
+  bar.append(chip);
   return bar;
 }
 
@@ -97,17 +105,6 @@ function action(name, sub, opts = {}) {
   return b;
 }
 
-// §23: the mode is not a setting buried in Account, it is a persistent line at
-// the top of every screen.
-function modeBanner() {
-  const m = S.mode;
-  const bar = el("div", `mode ${m.name}`);
-  bar.append(el("span", "dot"));
-  bar.append(el("b", null, m.label));
-  bar.append(el("span", "why", m.reason));
-  return bar;
-}
-
 // --------------------------------------------------------------- connecting
 
 const PHANTOM =
@@ -141,7 +138,7 @@ const SCREENS = {
   home() {
     const frag = document.createDocumentFragment();
     const a = S.account;
-    frag.append(topline("Home", S.network));
+    frag.append(topline("Home"));
 
     const hero = el("div", "hero");
     hero.append(cap("Trading equity"));
@@ -195,7 +192,7 @@ const SCREENS = {
   trade() {
     const frag = document.createDocumentFragment();
     const m = S.market;
-    frag.append(topline("Trade", m.available ? m.symbol : "offline"));
+    frag.append(topline("Trade"));
 
     const quote = el("div", "quote");
     if (m.available) {
@@ -277,7 +274,7 @@ const SCREENS = {
   positions() {
     const frag = document.createDocumentFragment();
     const open = S.positions ?? [];
-    frag.append(topline("Positions", open.length ? `${open.length} open` : "none open"));
+    frag.append(topline("Positions"));
 
     if (open.length) {
       for (const p of open) frag.append(position(p));
@@ -308,7 +305,7 @@ const SCREENS = {
   wallet() {
     const frag = document.createDocumentFragment();
     const w = S.wallet;
-    frag.append(topline("Wallet", w.connected ? short(w.address) : S.network));
+    frag.append(topline("Wallet"));
 
     const hero = el("div", "hero");
     hero.append(cap("Wallet balance"));
@@ -553,7 +550,7 @@ function render(opts = {}) {
     target.replaceChildren(el("div", "empty", "Loading…"));
     return;
   }
-  target.replaceChildren(modeBanner(), SCREENS[name]());
+  target.replaceChildren(SCREENS[name]());
   if (opts.keepFocus) {
     window.scrollTo(0, scroll);
     const field = target.querySelector(".size input");

@@ -49,32 +49,18 @@ body {
 
 main { flex: 1; padding: max(16px, env(safe-area-inset-top)) 16px 108px; }
 
-/* §23: the operating mode, on every screen, above everything else. */
-.mode {
-  display: flex; align-items: baseline; gap: 8px;
-  padding: 11px 0 13px; margin-bottom: 4px;
-  border-bottom: 1px solid var(--line);
-  font-size: 11px; letter-spacing: 0.06em;
-}
-.mode .dot {
-  width: 7px; height: 7px; border-radius: 50%; background: var(--dim);
-  align-self: center; flex: 0 0 auto;
-}
-.mode b { font-weight: 600; }
-.mode .why {
-  flex: 1; min-width: 0; text-align: right; color: var(--dim);
-  letter-spacing: 0; font-size: 11.5px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.mode.research b { color: var(--muted); }
-.mode.copilot .dot, .mode.autopilot .dot { background: var(--lime); }
-.mode.copilot b, .mode.autopilot b { color: var(--purple); }
-
 /* ------------------------------------------------------------------ atoms */
 
 .topline { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 26px; }
 .title { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
-.tag { font-size: 12px; color: var(--dim); }
+/* §23: the mode, in the corner of every title row. */
+.modechip {
+  display: flex; align-items: center; gap: 6px;
+  font: 600 10.5px/1 var(--sans); letter-spacing: 0.07em; color: var(--muted);
+}
+.modechip i { width: 6px; height: 6px; border-radius: 50%; background: var(--dim); }
+.modechip.copilot i, .modechip.autopilot i { background: var(--lime); }
+.modechip.copilot, .modechip.autopilot { color: var(--purple); }
 
 .cap {
   font-size: 11px; font-weight: 500; color: var(--dim);

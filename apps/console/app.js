@@ -87,8 +87,7 @@ function rows(...children) {
 }
 
 function action(name, sub, opts = {}) {
-  const b = el("button",
-    `row act ${opts.danger ? "danger" : ""} ${opts.key ? "key" : ""}`.replace(/\s+/g, " ").trim());
+  const b = el("button", `row act ${opts.danger ? "danger" : ""}`.trim());
   b.type = "button";
   b.disabled = opts.enabled !== true;
   const n = el("div", "n");
@@ -144,20 +143,13 @@ const SCREENS = {
     const a = S.account;
     frag.append(topline("Home", S.network));
 
-    const hero = el("div", "herocard");
-    hero.append(el("div", "k", "Trading equity"));
+    const hero = el("div", "hero");
+    hero.append(cap("Trading equity"));
     hero.append(el("div", `big ${a.trading_equity === null ? "none" : ""}`.trim(),
       a.trading_equity === null ? "$—" : money(a.trading_equity)));
     hero.append(el("div", "sub", a.trading_equity === null
       ? a.reason
       : `Today ${signed(a.todays_pnl ?? 0)}`));
-    const acts = el("div", "acts");
-    // §56: the risk-reducing action is in the hero, not three taps down.
-    acts.append(heroAct("Fund", ICON.plus, "#/wallet", { key: true }));
-    acts.append(heroAct("Trade", ICON.chart, "#/trade"));
-    acts.append(heroAct("Positions", ICON.bag, "#/positions"));
-    acts.append(heroAct("Pause", ICON.pause, "#/positions"));
-    hero.append(acts);
     frag.append(hero);
 
     // §76: four numbers, side by side, never summed into one.
@@ -214,13 +206,11 @@ const SCREENS = {
     } else {
       quote.append(el("div", "px none", m.reason));
     }
-    const qcard = el("div", "quotecard");
-    qcard.append(quote);
+    frag.append(quote);
     if (m.available) {
-      qcard.append(el("div", "book",
+      frag.append(el("div", "book",
         `Bid ${usd(m.bid)}  ·  Spread ${usd(m.ask - m.bid)}  ·  Ask ${usd(m.ask)}`));
     }
-    frag.append(qcard);
 
     const seg = el("div", "seg");
     for (const name of ["buy", "sell"]) {
@@ -247,9 +237,8 @@ const SCREENS = {
     // line stays a percentage until a size is entered, because a dollar figure
     // without a size would be made up.
     frag.append(cap("Exits"));
-    const exits = el("div", "exits");
-    exits.append(exit(m, "tp"), exit(m, "sl"));
-    frag.append(exits);
+    frag.append(exit(m, "tp"));
+    frag.append(exit(m, "sl"));
 
     const entry = entryPrice(m);
     const notional = size();
@@ -322,7 +311,7 @@ const SCREENS = {
     frag.append(topline("Wallet", w.connected ? short(w.address) : S.network));
 
     const hero = el("div", "hero");
-    hero.append(el("div", "k", "Wallet balance"));
+    hero.append(cap("Wallet balance"));
     hero.append(el("div", `big ${w.connected ? "" : "none"}`.trim(),
       w.balance_usd === null ? "$—" : money(w.balance_usd)));
     hero.append(el("div", "sub", w.connected
@@ -353,8 +342,7 @@ const SCREENS = {
     frag.append(rows(
       row("Equity", money(S.account.trading_equity)),
       row("Available margin", money(S.account.available_margin)),
-      action("Fund trading account", "Source, network, asset and amount shown before you sign",
-        { key: true }),
+      action("Fund trading account", "Source, network, asset and amount shown before you sign"),
     ));
 
     frag.append(cap("Withdrawals"));
@@ -430,23 +418,6 @@ const SCREENS = {
 };
 
 // --------------------------------------------------------------- components
-
-const ICON = {
-  plus: '<path d="M11 5h2v14h-2z"/><path d="M5 11h14v2H5z"/>',
-  chart: '<path d="M4 18V11h3v7zm6.5 0V6h3v12zM17 18v-5h3v5z"/>',
-  bag: '<path d="M9 3h6a2 2 0 0 1 2 2v1h2.5A1.5 1.5 0 0 1 21 7.5v11a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5v-11A1.5 1.5 0 0 1 4.5 6H7V5a2 2 0 0 1 2-2zm0 3h6V5H9z"/>',
-  pause: '<path d="M8 5h3v14H8zm5 0h3v14h-3z"/>',
-};
-
-function heroAct(name, glyph, href, opts = {}) {
-  const b = el("button", opts.key ? "go" : null);
-  b.type = "button";
-  b.onclick = () => { location.hash = href; };
-  const ring = el("span", "ring");
-  ring.append(svg(glyph));
-  b.append(ring, el("span", null, name));
-  return b;
-}
 
 function cell(name, value) {
   const c = el("div", "cell");
@@ -534,18 +505,14 @@ function hint(over, limit) {
 function position(p, opts = {}) {
   const box = el("div", "pos");
   const head = el("div", "head");
-  head.append(el("span", "mark btc", "B"));
-  const title = el("div", "sym");
-  title.append(document.createTextNode(p.symbol));
-  title.append(el("small", null, `${p.side === "long" ? "Long" : "Short"} · ${money(p.size_usd, 0)}`));
-  head.append(title);
-  head.append(el("span", `pct ${p.pnl_usd >= 0 ? "" : "neg"}`.trim(),
-    `${p.pnl_usd >= 0 ? "↑" : "↓"} ${Math.abs(p.pnl_pct).toFixed(2)}%`));
+  head.append(el("span", null, p.symbol));
+  head.append(el("span", "side", `${p.side === "long" ? "Long" : "Short"} · ${money(p.size_usd, 0)}`));
   box.append(head);
 
   const up = p.pnl_usd >= 0;
   box.append(el("div", `big ${up ? "up" : "down"}`, signed(p.pnl_usd)));
-  box.append(el("div", "meta", `Entry $${usd(p.entry)}  ·  now $${usd(p.mark)}`));
+  box.append(el("div", "meta",
+    `${up ? "+" : "−"}${Math.abs(p.pnl_pct).toFixed(2)}%  ·  entry $${usd(p.entry)}  ·  now $${usd(p.mark)}`));
 
   const span = p.take_profit - p.stop_loss;
   const at = span === 0 ? 50 : ((p.mark - p.stop_loss) / span) * 100;

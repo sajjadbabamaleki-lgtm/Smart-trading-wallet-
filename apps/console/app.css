@@ -1,32 +1,25 @@
-/* Light, card-based, capsule navigation.
-   One level of cards only: a card holds rows, never another card. Colour is
-   structural — lime marks progress and what is allowed, purple marks the
-   platform's own actions, and green/red stay reserved for money moving. */
+/* Minimal by construction: one background, hairlines instead of cards, and
+   colour only where it means something. Nothing is nested in a box that a
+   line and some space cannot separate. The one floating object is the tab
+   bar, which has to float to stay reachable.
+
+   Lime marks the choice that is currently taken; purple marks the platform
+   acting as itself; green and red stay reserved for money. */
 
 :root {
-  /* Warm cream page, white cards, one warm-grey tint for secondary cards —
-     and the lime the design is built around. */
-  --bg: #f4f0e9;
-  --surface: #ffffff;
-  --tint: #eae4db;
-  --ink: #14161a;
-  --ink-card: #14161a;
-  --muted: #6e6a63;
-  --dim: #a09a91;
-  --line: rgba(20, 22, 26, 0.07);
-  --fill: rgba(20, 22, 26, 0.05);
-
-  --lime: #d8e040;
-  --lime-soft: #edf2b4;
-  --lime-ink: #22290a;
-  --purple: #6d5bf5;
-  --purple-soft: #eae6fe;
-
-  --up: #16a34a;
-  --down: #e5484d;
+  --bg: #0e0f0d;
+  --fg: #f3f1ea;
+  --muted: #918d84;
+  --dim: #63605a;
+  --line: rgba(255, 255, 255, 0.09);
+  --fill: rgba(255, 255, 255, 0.06);
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
-  --r: 22px;
-  color-scheme: light;
+  --lime: #d8e040;
+  --lime-ink: #22290a;
+  --purple: #a99bff;
+  --up: #45d483;
+  --down: #ff6b63;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -34,7 +27,7 @@ html, body { height: 100%; }
 body {
   margin: 0;
   background: var(--bg);
-  color: var(--ink);
+  color: var(--fg);
   font: 15px/1.45 var(--sans);
   -webkit-font-smoothing: antialiased;
   font-variant-numeric: tabular-nums;
@@ -49,261 +42,214 @@ body {
   background: var(--bg);
 }
 @media (min-width: 480px) {
-  body { background: #ddd8d0; padding: 24px 0; }
-  .phone { min-height: min(900px, calc(100dvh - 48px)); border-radius: 30px; overflow: hidden; }
+  body { background: #000; padding: 24px 0; }
+  .phone { min-height: min(900px, calc(100dvh - 48px)); border-radius: 26px; overflow: hidden; }
 }
 
-main { flex: 1; padding: max(14px, env(safe-area-inset-top)) 14px 120px; }
+main { flex: 1; padding: max(16px, env(safe-area-inset-top)) 14px 108px; }
+
+/* §23: the operating mode, on every screen, above everything else. */
+.mode {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 11px 0 13px; margin-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+  font-size: 11px; letter-spacing: 0.06em;
+}
+.mode .dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--dim);
+  align-self: center; flex: 0 0 auto;
+}
+.mode b { font-weight: 600; }
+.mode .why {
+  flex: 1; min-width: 0; text-align: right; color: var(--dim);
+  letter-spacing: 0; font-size: 11.5px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mode.research b { color: var(--muted); }
+.mode.copilot .dot, .mode.autopilot .dot { background: var(--lime); }
+.mode.copilot b, .mode.autopilot b { color: var(--purple); }
 
 /* ------------------------------------------------------------------ atoms */
 
-.topline { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-.title { font-size: 23px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
-.tag { font-size: 12.5px; color: var(--muted); }
+.topline { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 26px; }
+.title { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+.tag { font-size: 12px; color: var(--dim); }
 
 .cap {
-  font-size: 13px; font-weight: 600; color: var(--muted);
-  margin: 22px 0 9px; padding-left: 4px;
+  font-size: 11px; font-weight: 500; color: var(--dim);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  margin: 32px 0 6px;
 }
 .cap:first-child { margin-top: 0; }
 
-/* §23: the mode, as a pill at the very top of every screen. */
-.mode {
-  display: flex; align-items: center; gap: 8px;
-  background: var(--surface); border-radius: 99px;
-  padding: 9px 14px; margin-bottom: 14px;
-  font-size: 11.5px;
-  box-shadow: 0 1px 2px rgba(16, 17, 20, 0.04);
-}
-.mode .dot { width: 18px; height: 18px; border-radius: 50%; background: var(--ink-card); flex: 0 0 auto; }
-.mode b {
-  font-weight: 700; letter-spacing: 0.06em; color: var(--muted);
-  background: var(--fill); border-radius: 99px; padding: 6px 10px;
-}
-.mode .why {
-  flex: 1; min-width: 0; text-align: right; color: var(--dim);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.mode.copilot b, .mode.autopilot b { background: var(--lime); color: var(--lime-ink); }
-
-/* The account the platform trades from is the dark card; the wallet you own
-   is a white one. The two numbers never look alike. */
-.herocard {
-  background: var(--ink-card); color: #fff;
-  border-radius: 26px; padding: 22px 20px 18px; text-align: center;
-}
-.herocard .k { font-size: 12.5px; color: rgba(255, 255, 255, 0.55); }
-.herocard .big {
-  font-size: 36px; font-weight: 600; letter-spacing: -0.03em; margin: 8px 0 5px;
-}
-.herocard .big.none { color: rgba(255, 255, 255, 0.35); }
-.herocard .sub { font-size: 12.5px; color: rgba(255, 255, 255, 0.5); }
-.herocard .acts { display: flex; justify-content: space-between; gap: 8px; margin-top: 20px; }
-.herocard .acts button {
-  appearance: none; border: 0; background: none; cursor: pointer; flex: 1;
-  display: flex; flex-direction: column; align-items: center; gap: 7px;
-  color: rgba(255, 255, 255, 0.72); font: 500 11px/1 var(--sans);
-}
-.herocard .acts .ring {
-  width: 44px; height: 44px; border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  display: grid; place-items: center; color: #fff;
-}
-.herocard .acts .ring svg { width: 19px; height: 19px; fill: currentColor; }
-.herocard .acts button.go .ring { background: var(--lime); color: var(--lime-ink); }
-.herocard .acts button:disabled { opacity: 0.45; cursor: not-allowed; }
-
-.hero {
-  background: var(--surface); border-radius: var(--r); padding: 20px;
-}
-.hero .k { font-size: 12.5px; color: var(--muted); }
-.hero .big { font-size: 32px; font-weight: 600; letter-spacing: -0.03em; margin: 7px 0 4px; }
+.hero { margin-bottom: 4px; }
+.hero .big { font-size: 38px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.15; }
 .hero .big.none { color: var(--dim); }
-.hero .sub { font-size: 12.5px; color: var(--muted); }
+.hero .sub { font-size: 13px; color: var(--muted); margin-top: 6px; }
 
 .up { color: var(--up); }
 .down { color: var(--down); }
 
-.pct {
-  display: inline-flex; align-items: center; gap: 5px;
-  background: var(--lime); color: var(--lime-ink);
-  border-radius: 99px; padding: 6px 11px; font: 700 11.5px/1 var(--sans);
-}
-
-/* A card holds rows. Rows never hold cards. */
-.rows {
-  background: var(--surface); border-radius: var(--r); padding: 0 16px;
-}
+/* Rows: the whole layout is rows and hairlines. */
+.rows { margin-top: 2px; }
 .row {
-  display: flex; align-items: center; gap: 13px;
+  display: flex; align-items: center; gap: 14px;
   padding: 15px 0; border-bottom: 1px solid var(--line);
   font-size: 14.5px;
 }
-.rows > *:last-child, .row:last-child { border-bottom: 0; }
+.row:last-child { border-bottom: 0; }
 .row .n { flex: 1; min-width: 0; }
 .row .n small { display: block; font-size: 12.5px; color: var(--muted); margin-top: 3px; }
 .row .v { color: var(--muted); font-size: 14px; text-align: right; }
 .row .v small { display: block; font-size: 12.5px; color: var(--dim); margin-top: 3px; }
-.row .v.strong { color: var(--ink); font-weight: 500; }
+.row .v.strong { color: var(--fg); }
 .row .v.ok { color: var(--up); }
 .row .v.bad { color: var(--down); }
-.row .go {
-  width: 27px; height: 27px; border-radius: 50%; background: var(--fill);
-  display: grid; place-items: center; color: var(--muted); font-size: 14px; flex: 0 0 auto;
+.row.tap { cursor: pointer; }
+.row .go { color: var(--dim); font-size: 16px; }
+
+.note { font-size: 12.5px; color: var(--dim); line-height: 1.55; margin: 14px 0 0; }
+.note.center { text-align: center; }
+
+button.primary {
+  appearance: none; width: 100%; border: 0; cursor: pointer;
+  background: var(--fg); color: var(--bg);
+  font: 600 15px/1 var(--sans); padding: 16px; border-radius: 13px;
+  margin-top: 22px;
 }
+button.primary:disabled { background: var(--fill); color: var(--dim); cursor: not-allowed; }
+
+button.quiet {
+  appearance: none; flex: 1; cursor: pointer;
+  background: var(--fill); border: 0; color: var(--fg);
+  font: 500 14px/1 var(--sans); padding: 14px; border-radius: 12px;
+}
+button.quiet:disabled { color: var(--dim); cursor: not-allowed; }
+.pair { display: flex; gap: 8px; margin-top: 18px; }
+
+.empty { font-size: 13.5px; color: var(--dim); padding: 22px 0; line-height: 1.55; }
+
+/* ------------------------------------------------------------ wallet marks */
+
+.mark {
+  width: 30px; height: 30px; border-radius: 9px; flex: 0 0 auto;
+  display: grid; place-items: center;
+}
+.mark svg { width: 19px; height: 19px; }
+.mark.phantom { background: #ab9ff2; color: #4b3f93; }
+.mark.trust { background: #3375bb; color: #eaf2fd; }
+.mark.plain { background: var(--fill); color: var(--muted); font-size: 12px; font-weight: 600; }
+.mark.btc { background: rgba(247, 147, 26, 0.14); color: #f7931a; font-size: 12px; font-weight: 600; }
+
+/* §76: four money figures next to each other, none of them added up. */
+.grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+  background: var(--line); border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line); margin-top: 22px;
+}
+.cell { background: var(--bg); padding: 14px 0; }
+.cell:nth-child(even) { padding-left: 16px; }
+.cell .k { font-size: 11.5px; color: var(--dim); }
+.cell .v { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; margin-top: 5px; }
 
 button.row {
   appearance: none; width: 100%; background: none; border: 0; text-align: left;
   color: inherit; font: inherit; cursor: pointer;
   border-bottom: 1px solid var(--line);
 }
+button.row:last-of-type { border-bottom: 0; }
 button.row:disabled { cursor: default; }
-button.row.act .n { font-size: 14.5px; font-weight: 500; }
+button.row.act .n { font-size: 14.5px; }
 button.row.danger .n { color: var(--down); }
-button.row.danger .go { background: #fdecec; color: var(--down); }
-button.row.key .go { background: var(--lime); color: var(--lime-ink); }
-
-.note { font-size: 12.5px; color: var(--muted); line-height: 1.55; margin: 11px 4px 0; }
-.note.center { text-align: center; }
-.empty {
-  background: var(--surface); border-radius: var(--r); padding: 22px 18px;
-  font-size: 13.5px; color: var(--muted); line-height: 1.55;
-}
-
-button.primary {
-  appearance: none; width: 100%; border: 0; cursor: pointer;
-  background: var(--ink-card); color: #fff;
-  font: 600 15px/1 var(--sans); padding: 17px; border-radius: 99px;
-  margin-top: 18px;
-}
-button.primary.lime { background: var(--lime); color: var(--lime-ink); }
-button.primary:disabled { background: var(--tint); color: #a09a91; cursor: not-allowed; }
-
-/* ------------------------------------------------------------------ marks */
-
-.mark {
-  width: 38px; height: 38px; border-radius: 12px; flex: 0 0 auto;
-  display: grid; place-items: center;
-}
-.mark svg { width: 20px; height: 20px; }
-.mark.phantom { background: #ab9ff2; color: #3d3480; }
-.mark.trust { background: #3375bb; color: #fff; }
-.mark.plain { background: var(--purple-soft); color: var(--purple); font-size: 13px; font-weight: 700; }
-.mark.btc { background: #fff1de; color: #c9760a; font-size: 12.5px; font-weight: 700; }
-
-/* §76: four figures, four cells, never summed. */
-.grid {
-  display: grid; grid-template-columns: 1fr 1fr;
-  background: var(--tint); border-radius: var(--r);
-  padding: 4px 16px; margin-top: 10px;
-}
-.cell { padding: 14px 0; border-bottom: 1px solid rgba(20, 22, 26, 0.09); }
-.cell:nth-child(even) { padding-left: 16px; }
-.cell:nth-last-child(-n+2) { border-bottom: 0; }
-.cell .k { font-size: 12px; color: var(--muted); }
-.cell .v { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; margin-top: 5px; }
+button.row.key .go { color: var(--lime); }
 
 /* ------------------------------------------------------------------ trade */
 
-.quotecard { background: var(--surface); border-radius: var(--r); padding: 20px; }
 .quote { display: flex; align-items: baseline; gap: 12px; }
-.quote .px { font-size: 31px; font-weight: 600; letter-spacing: -0.03em; }
-.quote .px.none { font-size: 16px; color: var(--dim); font-weight: 500; }
-.book { font-size: 12.5px; color: var(--muted); margin-top: 9px; }
+.quote .px { font-size: 34px; font-weight: 600; letter-spacing: -0.03em; }
+.quote .px.none { font-size: 17px; color: var(--dim); font-weight: 500; }
+.quote .delta { font-size: 14px; font-weight: 500; }
+.book { font-size: 12.5px; color: var(--dim); margin-top: 8px; }
 
-.seg {
-  display: flex; gap: 6px; margin: 14px 0 0;
-  background: var(--surface); border-radius: 99px; padding: 6px;
-}
+.seg { display: flex; gap: 8px; margin: 26px 0 4px; }
 .seg button {
   appearance: none; flex: 1; border: 0; cursor: pointer;
-  background: none; color: var(--muted);
-  font: 600 14px/1 var(--sans); padding: 13px; border-radius: 99px;
+  background: var(--fill); color: var(--muted);
+  font: 500 14px/1 var(--sans); padding: 13px; border-radius: 12px;
 }
 .seg button.on.buy { background: var(--lime); color: var(--lime-ink); }
-.seg button.on.sell { background: var(--ink-card); color: #fff; }
+.seg button.on.sell { background: var(--fg); color: #14161a; }
 
-.size {
-  display: flex; align-items: baseline; gap: 10px;
-  background: var(--surface); border-radius: var(--r); padding: 18px 20px;
-}
+/* The size field is a line, not a box. */
+.size { display: flex; align-items: baseline; gap: 10px; padding: 14px 0; border-bottom: 1px solid var(--line); }
 .size input {
-  flex: 1; min-width: 0; border: 0; background: none; color: var(--ink);
+  flex: 1; min-width: 0; border: 0; background: none; color: var(--fg);
   font: 600 30px/1.1 var(--sans); letter-spacing: -0.02em; outline: none;
   font-variant-numeric: tabular-nums;
 }
-.size input::placeholder { color: #cbc5bc; }
+.size input::placeholder { color: var(--dim); }
 .size .unit { font-size: 14px; color: var(--muted); }
 
-.exits { background: var(--surface); border-radius: var(--r); padding: 0 16px; }
 .exit { padding: 16px 0; border-bottom: 1px solid var(--line); }
-.exit:last-child { border-bottom: 0; }
-.exit .head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.exit .head .k { font-size: 14.5px; font-weight: 500; }
+.exit .head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.exit .head .k { font-size: 14.5px; }
 .exit .head .p { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
 .exit .steps { display: flex; gap: 6px; margin-top: 12px; }
 .exit .steps button {
   appearance: none; cursor: pointer; flex: 1;
-  background: var(--fill); border: 0; color: var(--muted);
-  font: 600 12.5px/1 var(--sans); padding: 10px 0; border-radius: 99px;
+  background: none; border: 0; color: var(--dim);
+  font: 500 12.5px/1 var(--sans); padding: 9px 0; border-radius: 9px;
 }
 .exit.tp .steps button.on { background: var(--lime); color: var(--lime-ink); }
-.exit.sl .steps button.on { background: var(--ink-card); color: #fff; }
+.exit.sl .steps button.on { background: var(--fg); color: #14161a; }
 .exit .pnl { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
 
-/* -------------------------------------------------------------- positions */
+/* ------------------------------------------------------------- positions */
 
-.pos { background: var(--surface); border-radius: var(--r); padding: 18px 16px; }
-.pos + .pos { margin-top: 10px; }
-.pos .head { display: flex; align-items: center; gap: 11px; }
-.pos .head .sym { font-size: 14.5px; font-weight: 600; flex: 1; min-width: 0; }
-.pos .head .sym small { display: block; font-size: 12.5px; font-weight: 400; color: var(--muted); margin-top: 3px; }
-.pct.neg { background: #fdecec; color: #a4262c; }
-.pos .big { font-size: 25px; font-weight: 600; letter-spacing: -0.02em; margin: 14px 0 3px; }
-.pos .meta { font-size: 12.5px; color: var(--muted); }
-.rail {
-  position: relative; height: 6px; border-radius: 99px;
-  background: var(--fill); margin: 18px 0 10px;
-}
+.pos { padding: 18px 0; border-bottom: 1px solid var(--line); }
+.pos .head { display: flex; align-items: baseline; gap: 9px; font-size: 14.5px; }
+.pos .head .side { font-size: 12px; color: var(--muted); flex: 1; }
+.pos .big { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin: 10px 0 3px; }
+.pos .meta { font-size: 12.5px; color: var(--dim); }
+.rail { position: relative; height: 3px; border-radius: 99px; background: var(--fill); margin: 20px 0 10px; }
 .rail b { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 99px; background: var(--lime); }
 .rail i {
-  position: absolute; top: 50%; width: 12px; height: 12px; border-radius: 50%;
-  background: var(--ink-card); border: 2px solid var(--surface);
-  transform: translate(-50%, -50%);
+  position: absolute; top: 50%; width: 9px; height: 9px; border-radius: 50%;
+  background: var(--fg); transform: translate(-50%, -50%);
 }
-.ends { display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 500; }
-.ends small { display: block; font-size: 10.5px; color: var(--dim); letter-spacing: 0.05em; margin-bottom: 4px; font-weight: 400; }
+.ends { display: flex; justify-content: space-between; font-size: 12px; }
+.ends small { display: block; font-size: 10.5px; color: var(--dim); letter-spacing: 0.06em; margin-bottom: 4px; }
 .ends .tp { text-align: right; }
-.pos .rows { padding: 0; margin-top: 4px; }
 
 /* ---------------------------------------------------------------- account */
 
-.who {
-  display: flex; align-items: center; gap: 13px;
-  background: var(--surface); border-radius: var(--r); padding: 16px;
-}
-.who .mark { width: 46px; height: 46px; border-radius: 15px; font-size: 16px; }
+.who { display: flex; align-items: center; gap: 13px; padding-bottom: 4px; }
+.who .mark { width: 42px; height: 42px; border-radius: 13px; font-size: 15px; }
 .who b { display: block; font-size: 16px; font-weight: 600; }
 .who span { font-size: 13px; color: var(--muted); }
 
+.switch { width: 42px; height: 25px; border-radius: 99px; background: var(--fill); position: relative; flex: 0 0 auto; }
+.switch i { position: absolute; top: 3px; left: 3px; width: 19px; height: 19px; border-radius: 50%; background: var(--dim); }
+.switch.on { background: rgba(53, 194, 122, 0.22); }
+.switch.on i { left: auto; right: 3px; background: var(--up); }
+
 /* ----------------------------------------------------------------- tabbar */
 
-/* A white capsule floating over the page. It keeps the same 14px side margin
-   as the content above it, and the selected tab is a capsule too — a rounded
-   rectangle inside a fully rounded bar reads as a mistake. */
+/* A capsule floating over the page, holding the same 14px side margin as the
+   content. The selected tab is a capsule too, and the only one with a label. */
 .tabbar {
   position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   width: calc(100% - 28px); max-width: 412px;
   display: flex; align-items: center; justify-content: space-between;
-  background: var(--surface); border-radius: 99px;
+  background: #1b1d19; border-radius: 99px;
   padding: 7px; z-index: 20;
-  box-shadow: 0 10px 30px rgba(20, 22, 26, 0.13), 0 1px 3px rgba(20, 22, 26, 0.06);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), 0 0 0 1px var(--line);
 }
 .tabbar a {
   display: flex; align-items: center; gap: 8px;
   height: 46px; padding: 0 13px; border-radius: 99px;
-  color: #a7a29a; text-decoration: none;
+  color: #77746d; text-decoration: none;
   font: 700 14px/1 var(--sans);
 }
 .tabbar svg { width: 23px; height: 23px; flex: 0 0 auto; }

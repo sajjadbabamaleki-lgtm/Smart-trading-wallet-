@@ -149,7 +149,8 @@ button.quiet:disabled { color: var(--dim); cursor: not-allowed; }
 }
 .cell {
   min-width: 0; padding: 15px 16px 16px;
-  background: var(--fill); border: 1px solid var(--line); border-radius: 18px;
+  background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 18px;
 }
 .cell .k { font-size: 12px; color: var(--muted); }
 .cell .v { font-size: 19px; font-weight: 600; letter-spacing: -0.02em; margin-top: 7px; }

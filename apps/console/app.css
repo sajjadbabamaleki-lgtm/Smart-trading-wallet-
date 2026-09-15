@@ -249,11 +249,13 @@ button.row.key .go { color: var(--lime); }
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), 0 0 0 1px var(--line);
 }
 .tabbar a {
-  display: flex; align-items: center; gap: 6px;
+  display: flex; align-items: center; gap: 4px;
   height: 46px; padding: 0 13px; border-radius: 99px;
   color: #77746d; text-decoration: none;
 }
 .tabbar svg { width: 23px; height: 23px; flex: 0 0 auto; }
-.tabbar span { display: none; font: 700 11.2px/23px var(--sans); }
+/* The label's box matches the icon's, and the half pixel is what is left of
+   the font's descender space once the two are centred. */
+.tabbar span { display: none; font: 700 11.2px/23px var(--sans); position: relative; top: 0.5px; }
 .tabbar a.active { background: var(--lime-dim); color: var(--lime); padding: 0 15px; }
 .tabbar a.active span { display: inline; }

@@ -3,82 +3,60 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Smart Trading Wallet — Console</title>
+<title>Smart Trading Wallet</title>
 <link rel="stylesheet" href="/static/console.css">
 </head>
 <body>
 
-<header>
-  <div class="brand">
-    <h1>Smart Trading Wallet</h1>
-    <p class="build">Build <span id="build-stage">…</span> · console</p>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="logo">
+      <span class="mark">STW</span>
+      <span class="wordmark">Smart Trading Wallet</span>
+    </div>
+
+    <nav>
+      <a href="#/dashboard" data-route="dashboard"><i>▤</i>Dashboard</a>
+      <a href="#/positions" data-route="positions"><i>◧</i>Positions</a>
+      <a href="#/activity"  data-route="activity"><i>≡</i>Activity</a>
+      <a href="#/data"      data-route="data"><i>◈</i>Market data</a>
+      <a href="#/research"  data-route="research"><i>∿</i>Research</a>
+      <a href="#/risk"      data-route="risk"><i>⬡</i>Risk</a>
+      <a href="#/account"   data-route="account"><i>◉</i>Account</a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="killswitch" id="killswitch">
+        <span class="dot"></span>
+        <div>
+          <strong>Kill switch</strong>
+          <small id="killswitch-state">…</small>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+
+    <header class="topbar">
+      <div class="modes" id="modes" role="tablist" aria-label="Operating mode"></div>
+      <div class="topbar-right">
+        <span class="env" id="env-badge">…</span>
+        <button class="wallet" id="wallet-btn" type="button" disabled>Connect wallet</button>
+      </div>
+    </header>
+
+    <div class="scroll">
+      <div id="screen"></div>
+      <footer>
+        <span id="generated-at">…</span> · every value is read from the backend;
+        nothing on this screen is simulated
+      </footer>
+    </div>
+
   </div>
-  <div id="capital-banner" class="banner">…</div>
-</header>
-
-<main>
-
-  <!--
-    Safety first, and not for decoration. Phase 9 §56: emergency and safety
-    state must never be somewhere the reader has to go looking for.
-  -->
-  <section aria-labelledby="safety-heading">
-    <h2 id="safety-heading">Safety</h2>
-    <p class="note">
-      Read from the backend, which is the only source of truth for it. This page
-      is not an authorization boundary and can change none of these.
-    </p>
-    <dl id="safety" class="grid"></dl>
-  </section>
-
-  <section aria-labelledby="modes-heading">
-    <h2 id="modes-heading">Operating mode</h2>
-    <p class="note">
-      Autopilot is off by default and requires trading authorization, which is a
-      separate grant from signing in.
-    </p>
-    <ul id="modes" class="cards"></ul>
-  </section>
-
-  <section aria-labelledby="account-heading">
-    <h2 id="account-heading">Account</h2>
-    <p class="note">
-      Three separate things, never presented as one: the wallet that owns and
-      authorizes, the authorization itself, and the venue account where
-      collateral and positions live.
-    </p>
-    <ul id="account-layers" class="cards"></ul>
-  </section>
-
-  <section aria-labelledby="controls-heading">
-    <h2 id="controls-heading">Emergency controls</h2>
-    <p class="note">
-      Listed even though every one is currently inert. A control that only
-      appears once it is needed is a control nobody has practised.
-    </p>
-    <ul id="emergency" class="controls"></ul>
-  </section>
-
-  <section aria-labelledby="capabilities-heading">
-    <h2 id="capabilities-heading">What exists</h2>
-    <p class="note">
-      Where a subsystem has not been built, this says so. It does not render an
-      empty table, because an empty positions table implies a system that could
-      hold a position and does not — and this is not that system yet.
-    </p>
-    <ul id="capabilities" class="cards"></ul>
-  </section>
-
-</main>
-
-<footer>
-  <p>
-    Generated <span id="generated-at">…</span>. No strategy, no position and no
-    order has ever existed in this system. Nothing on this page is simulated:
-    every value is read from configuration or from the stores, and anything not
-    built is labelled as such.
-  </p>
-</footer>
+</div>
 
 <script src="/static/console.js"></script>
 </body>

@@ -113,6 +113,26 @@ class TestApi:
         assert response.status_code == 200
         assert "Smart Trading Wallet" in response.text
 
+    def test_the_shell_has_the_screens_a_trading_app_needs(self) -> None:
+        """Navigation is part of the product, not decoration.
+
+        The screens exist and say what is not built yet; that is different from
+        having no screens, which is what the first attempt at this console had.
+        """
+        with TestClient(app) as client:
+            page = client.get("/").text
+        for route in ("dashboard", "positions", "activity", "data", "research", "risk", "account"):
+            assert f'data-route="{route}"' in page, f"no {route} screen in the shell"
+
+    def test_the_data_endpoint_reports_unreachable_rather_than_zero(self) -> None:
+        """Zero rows and a dead database look identical and mean opposites."""
+        with TestClient(app) as client:
+            payload = client.get("/api/data").json()
+        assert "reachable" in payload
+        if not payload["reachable"]:
+            assert payload["error"]
+            assert "total_market_events" not in payload
+
     def test_the_api_exposes_no_mutation(self) -> None:
         """Structural, not a phase to grow out of.
 

@@ -19,6 +19,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from apps.api.data import recorder_stats
 from apps.api.state import snapshot
 from libs.config import load_settings
 
@@ -41,6 +42,12 @@ def read_state() -> dict[str, Any]:
     staleness that matters here.
     """
     return snapshot(load_settings())
+
+
+@app.get("/api/data")
+def read_data() -> dict[str, Any]:
+    """What the stores hold. Unreachable is reported, never rendered as zero."""
+    return recorder_stats(load_settings())
 
 
 @app.get("/api/health")

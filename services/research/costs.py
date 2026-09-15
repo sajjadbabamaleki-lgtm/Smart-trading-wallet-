@@ -144,6 +144,18 @@ class CostModel:
                 raise ValueError(f"{name} cannot be negative; a cost is not a rebate")
 
     @property
+    def fee_only_bps(self) -> Decimal:
+        """The fee alone, for a caller that already pays the spread in its price.
+
+        The event-driven backtester fills at the touch, so crossing is in the
+        fill price; adding `half_spread_bps` there would charge it twice and
+        overstate the cost of a round trip by roughly a factor of two. This
+        exists so that choice is explicit at the call site rather than an
+        omission someone later "fixes".
+        """
+        return self.taker_fee_bps + self.slippage_bps
+
+    @property
     def one_way_bps(self) -> Decimal:
         """Cost of getting into, or out of, a position once."""
         return self.taker_fee_bps + self.half_spread_bps + self.slippage_bps

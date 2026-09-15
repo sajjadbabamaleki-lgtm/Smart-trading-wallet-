@@ -22,7 +22,8 @@ import argparse
 import asyncio
 import json
 import sys
-from dataclasses import dataclass
+from contextlib import ExitStack
+from dataclasses import dataclass, field
 from datetime import timedelta
 from pathlib import Path
 from typing import Any
@@ -36,6 +37,9 @@ from libs.domain.clock import SystemClock  # noqa: E402
 from libs.exchange.hyperliquid.subscriptions import RECORDED_CHANNELS  # noqa: E402
 from libs.exchange.hyperliquid.websocket import HyperliquidWebSocketSource  # noqa: E402
 from libs.observability.logging import configure_logging, get_logger  # noqa: E402
+from libs.storage import clickhouse as ch  # noqa: E402
+from libs.storage import object_store as obj  # noqa: E402
+from libs.storage import postgres as pg  # noqa: E402
 from services.market_data.capture import (  # noqa: E402
     CaptureHeader,
     SessionWriter,
@@ -51,6 +55,7 @@ from services.market_data.replay import (  # noqa: E402
 )
 from services.market_data.sinks import InMemorySink, RawFrame, Sink  # noqa: E402
 from services.market_data.source import MessageSource  # noqa: E402
+from services.market_data.store_sinks import StoreSink  # noqa: E402
 
 logger = get_logger("recorder")
 
@@ -83,6 +88,65 @@ class _CapturingSink:
 
     async def flush(self) -> None:
         await self.inner.flush()
+
+
+@dataclass
+class _ChannelWatcher:
+    """Wraps a sink and notes which channels delivered anything.
+
+    The report used to derive this by reading the frames back out of the
+    in-memory sink. A sink that writes to a store does not keep them — nor
+    should it — so the fact is observed on the way past instead, and the report
+    means the same thing whether the run persisted or not.
+    """
+
+    inner: Sink
+    channels: set[str] = field(default_factory=set)
+
+    async def write_raw(self, frame: RawFrame) -> None:
+        self.channels.add(frame.channel)
+        await self.inner.write_raw(frame)
+
+    async def write_market_events(self, events: tuple[Any, ...]) -> None:
+        await self.inner.write_market_events(events)
+
+    async def write_trader_events(self, events: tuple[Any, ...]) -> None:
+        await self.inner.write_trader_events(events)
+
+    async def write_gap(self, gap: Any) -> None:
+        await self.inner.write_gap(gap)
+
+    async def flush(self) -> None:
+        await self.inner.flush()
+
+
+def _open_sink(
+    settings: Settings, *, clock: SystemClock, dry_run: bool
+) -> tuple[Sink, ExitStack | None]:
+    """The recorder's destination, and the connections it owns.
+
+    Persisting or not is the only difference between the two modes: both run the
+    same recorder over the same source, so a --dry-run proves nothing about the
+    store path and never did. Until this existed the recorder had never written
+    a row anywhere and `store_sinks.py` had no caller at all, which is why M2's
+    acceptance covered parsing, normalization and latency but not persistence.
+
+    The returned stack owns three connections and must be closed by the caller,
+    after the sink is flushed.
+    """
+    if dry_run:
+        return InMemorySink(), None
+    stack = ExitStack()
+    return (
+        StoreSink(
+            clickhouse=stack.enter_context(ch.connect_from_settings(settings)),
+            object_store=stack.enter_context(obj.connect_from_settings(settings)),
+            postgres=stack.enter_context(pg.connect(settings.postgres_dsn)),
+            bucket=settings.object_store_bucket,
+            clock=clock,
+        ),
+        stack,
+    )
 
 
 def websocket_url(settings: Settings) -> str:
@@ -162,13 +226,7 @@ async def run(args: argparse.Namespace) -> int:
         clock=clock,
     )
 
-    sink = InMemorySink()
-    if not args.dry_run:
-        print(
-            "writing to the stores is not wired into the CLI yet; use --dry-run or --replay",
-            file=sys.stderr,
-        )
-        return 2
+    sink, stack = _open_sink(settings, clock=clock, dry_run=args.dry_run)
 
     capture_writer: SessionWriter | None = None
     if args.capture:
@@ -185,7 +243,10 @@ async def run(args: argparse.Namespace) -> int:
         )
 
     registry = InMemoryGapRegistry()
-    recording_sink: Sink = sink if capture_writer is None else _CapturingSink(sink, capture_writer)
+    watcher = _ChannelWatcher(
+        sink if capture_writer is None else _CapturingSink(sink, capture_writer)
+    )
+    recording_sink: Sink = watcher
     recorder = Recorder(source=source, sink=recording_sink, clock=clock)
     monitor = Monitor(
         clock=clock,
@@ -205,7 +266,7 @@ async def run(args: argparse.Namespace) -> int:
             "execution_enabled": settings.may_submit_orders,
             "assets": list(settings.asset_allowlist),
             "source": source.name,
-            "sink": "memory",
+            "sink": "memory" if args.dry_run else "stores",
         },
     )
 
@@ -226,8 +287,16 @@ async def run(args: argparse.Namespace) -> int:
     finally:
         stop.set()
         await monitor_task
+        # Flush before the connections close. Batched writes are the point of
+        # StoreSink, and an unflushed batch is data the recorder observed,
+        # reported in its metrics, and never persisted — the exact discrepancy
+        # this project would otherwise discover much later from a dataset that
+        # is short of what the run claims to have seen.
+        await recording_sink.flush()
         if capture_writer is not None:
             capture_writer.__exit__()
+        if stack is not None:
+            stack.close()
 
     report: dict[str, Any] = {
         "settings": settings.describe(),
@@ -240,7 +309,8 @@ async def run(args: argparse.Namespace) -> int:
             "duplicates": recorder.dedup.stats.duplicates,
         },
         "streams": [f"{asset}/{event_type}" for asset, event_type in recorder.gaps.streams],
-        "channels_seen": sorted({frame.channel for frame in sink.raw}),
+        "persisted": not args.dry_run,
+        "channels_seen": sorted(watcher.channels),
     }
     if capture_writer is not None:
         report["capture"] = {

@@ -8,6 +8,8 @@ from pathlib import Path
 
 import pytest
 
+from libs.config import load_settings
+from libs.domain.clock import SystemClock
 from services.market_data.capture import (
     SYNTHETIC_FALLBACK_BASE,
     CaptureError,
@@ -15,7 +17,8 @@ from services.market_data.capture import (
     SessionWriter,
     load_session,
 )
-from services.market_data.sinks import RawFrame
+from services.market_data.cli import _open_sink
+from services.market_data.sinks import InMemorySink, RawFrame
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures/hyperliquid"
 NOW = datetime(2026, 9, 14, 12, 0, 0, tzinfo=UTC)
@@ -193,3 +196,31 @@ class TestLoaderRobustness:
         moment = load_session(path).frames[0].receipt.local_receive_time
         assert moment.tzinfo is not None
         assert moment == NOW
+
+
+class TestRecorderSinkSelection:
+    """Which destination the recorder CLI opens, and when.
+
+    Until this was wired the CLI refused any non-dry run with "writing to the
+    stores is not wired into the CLI yet", so `store_sinks.py` had no caller and
+    the recorder had never written a row to any store. M2's acceptance covered
+    parsing, normalization and latency; it did not cover persistence, because
+    nothing exercised it.
+    """
+
+    def test_a_dry_run_keeps_everything_in_memory(self) -> None:
+
+        sink, stack = _open_sink(load_settings(), clock=SystemClock(), dry_run=True)
+        assert isinstance(sink, InMemorySink)
+        assert stack is None, "a dry run opens no connections, so it owns none to close"
+
+    def test_the_cli_no_longer_refuses_to_persist(self) -> None:
+        """Guards the removal of the refusal, not the wiring behind it.
+
+        The wiring itself needs a real stack and is covered by the integration
+        suite; what this holds is that the message cannot come back without a
+        test failing.
+        """
+
+        source = Path(__file__).resolve().parents[2] / "services" / "market_data" / "cli.py"
+        assert "not wired into the CLI yet" not in source.read_text()

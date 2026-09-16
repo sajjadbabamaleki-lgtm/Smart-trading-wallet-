@@ -77,6 +77,20 @@ accept: ## Run the full M1/M2 acceptance against the real stack and the live ven
 inspect: ## Report what the store actually holds from the last HOURS (default 24)
 	$(UV) run python infrastructure/scripts/inspect_recording.py --hours $(or $(HOURS),24)
 
+testnet-account: ## What the testnet account holds: equity, positions, open orders
+	$(UV) run python -m services.execution_engine.cli --account
+
+testnet-check: ## Decide an order and show it, without sending anything (SIDE, NOTIONAL)
+	$(UV) run python -m services.execution_engine.cli --check \
+		--side $(or $(SIDE),BUY) --notional $(or $(NOTIONAL),20)
+
+testnet-order: ## Actually place one test order on testnet (SIDE, NOTIONAL)
+	$(UV) run python -m services.execution_engine.cli \
+		--side $(or $(SIDE),BUY) --notional $(or $(NOTIONAL),20)
+
+testnet-cancel: ## Cancel a test order by its client order id (ID=...)
+	$(UV) run python -m services.execution_engine.cli --cancel $(ID)
+
 report: ## Write what the store holds into the repo and push it (HOURS=24, PUSH=1)
 	@HOURS=$(or $(HOURS),24) PUSH=$(or $(PUSH),1) UV=$(UV) bash infrastructure/scripts/publish_recording_report.sh
 

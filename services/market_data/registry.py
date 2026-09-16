@@ -20,13 +20,14 @@ bounded API history means public trade data usually cannot be refetched
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
 
 from libs.observability.logging import get_logger
 from services.market_data.gaps import GapReport
+from services.market_data.sinks import Sink
 
 logger = get_logger(__name__)
 
@@ -296,3 +297,77 @@ class InMemoryGapRegistry:
         if gap_id not in self._gaps:
             raise KeyError(f"gap {gap_id} is not registered")
         return self._gaps[gap_id]
+
+
+@dataclass
+class PersistingGapRegistry:
+    """A registry that writes each gap to the store the moment it opens.
+
+    Silence is the only kind of gap that a stopped stream can produce, and the
+    monitor loop is the only component that can see it — nothing arrives for
+    the recorder's on-arrival detectors to react to. Until this existed the
+    monitor handed those silences to `InMemoryGapRegistry` alone, so they were
+    stated exactly once: in the JSON report the run prints when it finishes.
+
+    A recording that is killed rather than stopped never prints that report.
+    That is how this project's first long run ended, and it is why a
+    twenty-six-minute outage was visible in ClickHouse as an absence of rows
+    and invisible in `data_gaps`, which exists to say the outage was noticed at
+    the time. Asking the registry whether it saw the hole could only ever
+    return "no rows" — not because the monitor missed it, but because nothing
+    wrote it down.
+
+    Writing through at detection time removes that whole class of answer. The
+    row reaches PostgreSQL before the process can die, which is the same reason
+    `StoreSink.write_gap` refuses to batch.
+
+    Closure is delegated unchanged: nothing in the live path closes a silence
+    gap yet, so persisting a closure that never happens would be inventing a
+    capability rather than recording one. An open row with no end is the honest
+    shape — the extent of the outage is read back out of the data.
+    """
+
+    sink: Sink
+    inner: GapRegistry = field(default_factory=InMemoryGapRegistry)
+
+    persist_failures: int = field(default=0, init=False)
+    """Gaps detected and registered in memory that the store refused.
+
+    Counted rather than raised, and reported by the run: a detector that dies
+    because its write failed leaves the rest of the recording unmonitored,
+    which costs more than the row it was trying to save. Counting keeps the
+    failure from being silent, which is the part that matters.
+    """
+
+    async def register(self, gap: GapReport) -> RegisteredGap:
+        registered = await self.inner.register(gap)
+        try:
+            await self.sink.write_gap(gap)
+        except Exception as exc:
+            self.persist_failures += 1
+            logger.exception(
+                "gap_persist_failed",
+                extra={
+                    "gap_id": gap.gap_id,
+                    "asset": gap.asset,
+                    "event_type": gap.event_type,
+                    "error": str(exc),
+                },
+            )
+        return registered
+
+    async def close(
+        self, gap_id: str, *, ended_at: datetime, status: BackfillStatus, resolution: str
+    ) -> RegisteredGap:
+        return await self.inner.close(
+            gap_id, ended_at=ended_at, status=status, resolution=resolution
+        )
+
+    async def record_attempt(self, gap_id: str, *, outcome: str) -> RegisteredGap:
+        return await self.inner.record_attempt(gap_id, outcome=outcome)
+
+    async def open_gaps(self) -> tuple[RegisteredGap, ...]:
+        return await self.inner.open_gaps()
+
+    async def summary(self) -> GapSummary:
+        return await self.inner.summary()

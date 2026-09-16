@@ -13,8 +13,10 @@ from services.market_data.monitor import Monitor
 from services.market_data.registry import (
     BackfillStatus,
     InMemoryGapRegistry,
+    PersistingGapRegistry,
     QualityImpact,
 )
+from services.market_data.sinks import InMemorySink
 from services.market_data.state import RecorderState, StateMachine
 
 NOW = datetime(2026, 9, 14, 12, 0, 0, tzinfo=UTC)
@@ -350,3 +352,76 @@ class TestGapRegistry:
             resolution="recovered",
         )
         assert not (await registry.summary()).has_missing_data
+
+
+class TestPersistingGapRegistry:
+    """The monitor's silences have to reach the store, not just the report.
+
+    A run that is killed never prints its report, and that is how a
+    twenty-six-minute outage ended up recorded nowhere: the data showed the
+    hole and `data_gaps` was empty, so "did the monitor notice?" had no
+    answer either way.
+    """
+
+    def silence_gap(self, *, asset: str = "BTC") -> GapReport:
+        return GapReport(
+            gap_id=f"gap-{asset}",
+            kind=GapKind.SILENCE,
+            asset=asset,
+            event_type="TRADE",
+            gap_start=NOW,
+            gap_end=None,
+            detection_reason="no message for 1560s, threshold 30s",
+            suspected=True,
+        )
+
+    async def test_registering_writes_the_gap_to_the_sink(self) -> None:
+        sink = InMemorySink()
+        registry = PersistingGapRegistry(sink=sink)
+        await registry.register(self.silence_gap())
+        assert [gap.gap_id for gap in sink.gaps] == ["gap-BTC"]
+        assert registry.persist_failures == 0
+
+    async def test_the_gap_is_still_registered_when_the_store_refuses(self) -> None:
+        """Losing the row is bad; losing the monitor with it is worse."""
+
+        class RefusingSink(InMemorySink):
+            async def write_gap(self, gap: GapReport) -> None:
+                raise OSError(f"simulated gap registry failure for {gap.gap_id}")
+
+        registry = PersistingGapRegistry(sink=RefusingSink())
+        registered = await registry.register(self.silence_gap())
+        assert registered.is_open
+        assert registry.persist_failures == 1
+        assert (await registry.summary()).total == 1
+
+    async def test_the_monitor_persists_the_silence_it_detects(self) -> None:
+        """End to end: a quiet stream becomes a row without the run ending."""
+        sink = InMemorySink()
+        registry = PersistingGapRegistry(sink=sink)
+        monitor, clock, gaps, heartbeat, _ = build_monitor(silence=timedelta(seconds=10))
+        monitor.on_gap = registry.register
+        gaps.observe(asset="BTC", event_type="TRADE", sequence=1, seen_at=NOW)
+        heartbeat.record_data(NOW)
+        clock.advance_seconds(1560)
+
+        await monitor.check()
+
+        assert len(sink.gaps) == 1
+        assert sink.gaps[0].kind is GapKind.SILENCE
+        assert sink.gaps[0].gap_start == NOW
+        assert sink.gaps[0].gap_end is None
+
+    async def test_one_outage_is_one_row_however_long_it_lasts(self) -> None:
+        sink = InMemorySink()
+        registry = PersistingGapRegistry(sink=sink)
+        monitor, clock, gaps, heartbeat, _ = build_monitor(silence=timedelta(seconds=10))
+        monitor.on_gap = registry.register
+        gaps.observe(asset="BTC", event_type="TRADE", sequence=1, seen_at=NOW)
+        heartbeat.record_data(NOW)
+
+        for _ in range(26):
+            clock.advance_seconds(60)
+            await monitor.check()
+
+        assert len(sink.gaps) == 1

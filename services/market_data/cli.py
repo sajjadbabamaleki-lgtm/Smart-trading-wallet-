@@ -48,7 +48,7 @@ from services.market_data.capture import (  # noqa: E402
 from services.market_data.monitor import Monitor  # noqa: E402
 from services.market_data.reconcile import reconcile  # noqa: E402
 from services.market_data.recorder import Recorder, RecorderMetrics  # noqa: E402
-from services.market_data.registry import InMemoryGapRegistry  # noqa: E402
+from services.market_data.registry import PersistingGapRegistry  # noqa: E402
 from services.market_data.replay import (  # noqa: E402
     ReplayEngine,
     ReplayReport,
@@ -290,11 +290,15 @@ async def run(args: argparse.Namespace) -> int:
             ),
         )
 
-    registry = InMemoryGapRegistry()
     watcher = _ChannelWatcher(
         sink if capture_writer is None else _CapturingSink(sink, capture_writer)
     )
     recording_sink: Sink = watcher
+    # Through the same sink the recorder writes to, so a silence the monitor
+    # notices lands in `data_gaps` while the run is still going. The monitor is
+    # the only thing that can see a stopped stream, and a gap it only held in
+    # memory was lost with every run that was killed rather than stopped.
+    registry = PersistingGapRegistry(sink=recording_sink)
     recorder = Recorder(source=source, sink=recording_sink, clock=clock)
     monitor = Monitor(
         clock=clock,
@@ -356,7 +360,12 @@ async def run(args: argparse.Namespace) -> int:
         "state": recorder.machine.state.value,
         "metrics": metrics.as_dict(),
         "freshness": None if monitor.last_check is None else monitor.last_check.freshness.as_dict(),
-        "gaps": (await registry.summary()).as_dict(),
+        "gaps": {
+            **(await registry.summary()).as_dict(),
+            # Detected and held, but refused by the store. Non-zero means the
+            # registry in PostgreSQL is short of what this run actually saw.
+            "persist_failures": registry.persist_failures,
+        },
         "dedup": {
             "tracked": recorder.dedup.tracked,
             "duplicates": recorder.dedup.stats.duplicates,

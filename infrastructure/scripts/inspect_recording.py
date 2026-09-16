@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -37,6 +38,9 @@ from clickhouse_connect.driver.client import Client  # noqa: E402
 
 from libs.config import ConfigurationError, load_settings  # noqa: E402
 from libs.storage import clickhouse as ch  # noqa: E402
+from libs.storage import postgres as pg  # noqa: E402
+
+SHOWN_QUIET_MINUTES = 20
 
 
 def rows(client: Client, sql: str, **parameters: object) -> list[tuple[Any, ...]]:
@@ -134,6 +138,59 @@ def silences(client: Client, hours: int, top: int = 10) -> list[dict[str, Any]]:
         }
         for asset, event_type, longest, mean in result
     ]
+
+
+def timeline(client: Client, hours: int, quiet_under: int = 5) -> list[dict[str, Any]]:
+    """Events per minute, and which minutes were quiet.
+
+    A summary can say a stream was silent for twenty-six minutes without
+    saying when — and when is the whole question, because a silence at the
+    start is a slow connect, one in the middle is a stall, and one at the end
+    is a process that died before anyone noticed.
+    """
+    result = rows(
+        client,
+        "SELECT toStartOfMinute(local_receive_time) AS m, count() FROM market_events "
+        "WHERE local_receive_time >= now() - INTERVAL %(hours)s HOUR "
+        "GROUP BY m ORDER BY m",
+        hours=hours,
+    )
+    return [
+        {"minute": minute.isoformat(), "events": int(count), "quiet": int(count) < quiet_under}
+        for minute, count in result
+    ]
+
+
+def registered_gaps(dsn: str, hours: int) -> list[dict[str, Any]] | str:
+    """What the recorder's own gap registry noticed.
+
+    The point of asking is not the list. It is whether the silences visible in
+    the data were detected at the time: a monitor that misses a
+    twenty-six-minute outage is a monitor that will miss the next one, and
+    that is a finding about the recorder rather than about the market.
+    """
+    try:
+        with pg.connect(dsn) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT asset, event_type, gap_start, gap_end, detection_reason, "
+                "backfill_status FROM data_gaps "
+                "WHERE gap_start >= now() - make_interval(hours => %s) "
+                "ORDER BY gap_start",
+                (hours,),
+            )
+            return [
+                {
+                    "asset": asset,
+                    "event_type": event_type,
+                    "start": start.isoformat(),
+                    "end": None if end is None else end.isoformat(),
+                    "reason": reason,
+                    "backfill": status,
+                }
+                for asset, event_type, start, end, reason, status in cursor.fetchall()
+            ]
+    except Exception as exc:  # noqa: BLE001 - reported, not raised: this is a report
+        return f"could not read the gap registry: {exc}"
 
 
 def arrival_latency(client: Client, hours: int) -> dict[str, Any]:
@@ -256,9 +313,61 @@ def inspect(hours: int) -> dict[str, Any]:
             "streams": by_stream(client, hours),
             "hourly": hourly(client, hours),
             "silences": silences(client, hours),
+            "timeline": timeline(client, hours),
+            "registered_gaps": registered_gaps(settings.postgres_dsn, hours),
             "arrival_latency": arrival_latency(client, hours),
             "integrity": integrity(client, hours),
         }
+
+
+def missing_minutes(entries: list[dict[str, Any]]) -> list[str]:
+    """Minutes between the first and last event that produced no row at all."""
+    if not entries:
+        return []
+    seen = {entry["minute"] for entry in entries}
+    first = datetime.fromisoformat(entries[0]["minute"])
+    last = datetime.fromisoformat(entries[-1]["minute"])
+    gone: list[str] = []
+    cursor = first
+    while cursor <= last:
+        stamp = cursor.isoformat()
+        if stamp not in seen:
+            gone.append(stamp)
+        cursor += timedelta(minutes=1)
+    return gone
+
+
+def continuity(report: dict[str, Any]) -> list[str]:
+    """When the stream was quiet, and whether the recorder noticed at the time."""
+    lines: list[str] = []
+    quiet = [entry for entry in report["timeline"] if entry["quiet"]]
+    if quiet:
+        lines.append(f"\nQuiet minutes ({len(quiet)} of {len(report['timeline'])})")
+        for entry in quiet[:SHOWN_QUIET_MINUTES]:
+            lines.append(f"  {entry['minute'][:16]}  {entry['events']:>6} events")
+        if len(quiet) > SHOWN_QUIET_MINUTES:
+            lines.append(f"  ... and {len(quiet) - SHOWN_QUIET_MINUTES} more")
+
+    missing = missing_minutes(report["timeline"])
+    if missing:
+        lines.append(f"\nMinutes with no events at all: {len(missing)}")
+        lines.append(f"  from {missing[0][:16]} to {missing[-1][:16]}")
+
+    registered = report["registered_gaps"]
+    lines.append("\nGap registry")
+    if isinstance(registered, str):
+        lines.append(f"  {registered}")
+    elif not registered:
+        # The silence above was real; a registry that says nothing about it is
+        # a finding of its own.
+        lines.append("  nothing registered in this window")
+    else:
+        for gap in registered:
+            lines.append(
+                f"  {gap['asset']:<5} {gap['event_type']:<14} {gap['start'][:19]} -> "
+                f"{(gap['end'] or 'open')[:19]}  {gap['reason']}"
+            )
+    return lines
 
 
 def render(report: dict[str, Any]) -> str:
@@ -316,6 +425,8 @@ def render(report: dict[str, Any]) -> str:
     lines.append(f"  duplicate event ids        {integrity_report['duplicate_event_ids']}")
     lines.append(f"  duplicate venue event ids  {integrity_report['duplicate_venue_event_ids']}")
     lines.append(f"  raw messages retained      {integrity_report['raw_messages']:,}")
+
+    lines.extend(continuity(report))
 
     lines.append("\nEvents per hour")
     per_hour: dict[str, dict[str, int]] = {}

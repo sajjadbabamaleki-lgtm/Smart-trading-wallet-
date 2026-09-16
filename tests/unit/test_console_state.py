@@ -8,6 +8,7 @@ state (§51), and the API cannot move anything (Invariant 4).
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 
 import pytest
@@ -90,11 +91,19 @@ class TestPriceHistory:
         client = FakeClient([(60_000.0,), (None,), (60_050.0,)])
         assert history(client) == [60_000.0, 60_050.0]
 
-    def test_the_window_is_bound_not_interpolated(self) -> None:
-        """The hours and bucket size go to the server as parameters."""
+    def test_the_window_comes_from_our_clock_not_the_store_s(self) -> None:
+        """`now()` is the store's clock, and on the recording host it runs two
+        hours ahead of the timestamps the recorder writes — which emptied every
+        window. The cutoff is a value we compute and send."""
         client = FakeClient([(1.0,), (2.0,)])
         history(client, hours=3, bucket_minutes=10)
-        assert client.parameters == {"hours": 3, "bucket": 10}
+        assert client.parameters is not None
+        assert client.parameters["bucket"] == 10
+        cutoff = client.parameters["cutoff"]
+        assert isinstance(cutoff, datetime)
+        assert cutoff.tzinfo is not None
+        elapsed = (datetime.now(UTC) - cutoff).total_seconds()
+        assert 3 * 3600 - 5 < elapsed < 3 * 3600 + 5
 
 
 class TestMode:

@@ -16,7 +16,7 @@ is null with the reason attached.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from libs.config import Settings
@@ -83,14 +83,23 @@ def history(client: Any, hours: int = 6, bucket_minutes: int = 5) -> list[float]
 
     Returned only when there are at least two points: a chart drawn through a
     single observation is a straight line that claims the market did not move.
+
+    The window is anchored on our clock, not the store's. `now()` is evaluated
+    by ClickHouse against the server's own clock; on the recording host that
+    runs two hours ahead of the UTC timestamps the recorder writes, which
+    silently emptied every window — a store that had just been written to
+    reported nothing in the last hour.
     """
     rows = client.query(
         "SELECT avg((bid_price + ask_price) / 2) AS mid FROM market_events "
         "WHERE asset = 'BTC' AND bid_price IS NOT NULL AND ask_price IS NOT NULL "
-        "AND local_receive_time >= now() - INTERVAL %(hours)s HOUR "
+        "AND local_receive_time >= %(cutoff)s "
         "GROUP BY toStartOfInterval(local_receive_time, INTERVAL %(bucket)s MINUTE) AS t "
         "ORDER BY t",
-        parameters={"hours": hours, "bucket": bucket_minutes},
+        parameters={
+            "cutoff": datetime.now(UTC) - timedelta(hours=hours),
+            "bucket": bucket_minutes,
+        },
     ).result_rows
     points = [float(r[0]) for r in rows if r[0] is not None]
     return points if len(points) >= MIN_CHART_POINTS else None
@@ -114,8 +123,9 @@ def market(settings: Settings) -> dict[str, Any]:
             earlier = client.query(
                 "SELECT bid_price, ask_price FROM market_events "
                 "WHERE asset = 'BTC' AND bid_price IS NOT NULL AND ask_price IS NOT NULL "
-                "AND local_receive_time <= now() - INTERVAL 24 HOUR "
-                "ORDER BY local_receive_time DESC LIMIT 1"
+                "AND local_receive_time <= %(cutoff)s "
+                "ORDER BY local_receive_time DESC LIMIT 1",
+                parameters={"cutoff": datetime.now(UTC) - timedelta(hours=24)},
             ).result_rows
             # No 24h-old quote means the recorder has not been running that
             # long. A change figure would then be against an arbitrary

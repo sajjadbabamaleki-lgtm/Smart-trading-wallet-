@@ -26,7 +26,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -41,18 +41,44 @@ from libs.storage import clickhouse as ch  # noqa: E402
 from libs.storage import postgres as pg  # noqa: E402
 
 SHOWN_QUIET_MINUTES = 20
+# Below this the two clocks are close enough that saying so would be noise.
+NOTABLE_SKEW_SECONDS = 60
 
 
 def rows(client: Client, sql: str, **parameters: object) -> list[tuple[Any, ...]]:
     return list(client.query(sql, parameters=parameters or None).result_rows)
 
 
+def cutoff_for(hours: int) -> datetime:
+    """The start of the window, from our clock rather than the store's.
+
+    `now()` is evaluated by ClickHouse against the server's own clock, and the
+    rows were stamped by the recorder against ours. On the recording host those
+    two disagree by two hours, which silently emptied every window: a run that
+    had just written events reported none in the last hour. Passing the cutoff
+    as a value removes the store's clock from the question entirely.
+    """
+    return datetime.now(UTC) - timedelta(hours=hours)
+
+
+def clock_skew(client: Client) -> dict[str, Any]:
+    """How far the store's clock is from ours, stated rather than assumed."""
+    ours = datetime.now(UTC)
+    theirs = rows(client, "SELECT toDateTime64(now(), 3, 'UTC')")[0][0]
+    stamped = theirs if theirs.tzinfo else theirs.replace(tzinfo=UTC)
+    return {
+        "ours": ours.isoformat(),
+        "store": stamped.isoformat(),
+        "skew_seconds": round((stamped - ours).total_seconds(), 1),
+    }
+
+
 def window(client: Client, hours: int) -> dict[str, Any]:
     result = rows(
         client,
         "SELECT min(local_receive_time), max(local_receive_time), count() "
-        "FROM market_events WHERE local_receive_time >= now() - INTERVAL %(hours)s HOUR",
-        hours=hours,
+        "FROM market_events WHERE local_receive_time >= %(cutoff)s",
+        cutoff=cutoff_for(hours),
     )
     first, last, total = result[0]
     if total == 0:
@@ -71,9 +97,9 @@ def by_stream(client: Client, hours: int) -> list[dict[str, Any]]:
     result = rows(
         client,
         "SELECT asset, event_type, count(), min(local_receive_time), max(local_receive_time) "
-        "FROM market_events WHERE local_receive_time >= now() - INTERVAL %(hours)s HOUR "
+        "FROM market_events WHERE local_receive_time >= %(cutoff)s "
         "GROUP BY asset, event_type ORDER BY count() DESC",
-        hours=hours,
+        cutoff=cutoff_for(hours),
     )
     return [
         {
@@ -92,9 +118,9 @@ def hourly(client: Client, hours: int) -> list[dict[str, Any]]:
     result = rows(
         client,
         "SELECT toStartOfHour(local_receive_time) AS h, event_type, count() "
-        "FROM market_events WHERE local_receive_time >= now() - INTERVAL %(hours)s HOUR "
+        "FROM market_events WHERE local_receive_time >= %(cutoff)s "
         "GROUP BY h, event_type ORDER BY h, event_type",
-        hours=hours,
+        cutoff=cutoff_for(hours),
     )
     return [
         {"hour": h.isoformat(), "event_type": event_type, "events": int(count)}
@@ -123,10 +149,10 @@ def silences(client: Client, hours: int, top: int = 10) -> list[dict[str, Any]]:
         "             PARTITION BY asset, event_type ORDER BY local_receive_time"
         "           ) AS prev"
         "    FROM market_events"
-        "    WHERE local_receive_time >= now() - INTERVAL %(hours)s HOUR"
+        "    WHERE local_receive_time >= %(cutoff)s"
         "  ) WHERE toUnixTimestamp64Milli(prev) > 0"
         ") GROUP BY asset, event_type ORDER BY longest DESC LIMIT %(top)s",
-        hours=hours,
+        cutoff=cutoff_for(hours),
         top=top,
     )
     return [
@@ -151,9 +177,9 @@ def timeline(client: Client, hours: int, quiet_under: int = 5) -> list[dict[str,
     result = rows(
         client,
         "SELECT toStartOfMinute(local_receive_time) AS m, count() FROM market_events "
-        "WHERE local_receive_time >= now() - INTERVAL %(hours)s HOUR "
+        "WHERE local_receive_time >= %(cutoff)s "
         "GROUP BY m ORDER BY m",
-        hours=hours,
+        cutoff=cutoff_for(hours),
     )
     return [
         {"minute": minute.isoformat(), "events": int(count), "quiet": int(count) < quiet_under}
@@ -174,9 +200,8 @@ def registered_gaps(dsn: str, hours: int) -> list[dict[str, Any]] | str:
             cursor.execute(
                 "SELECT asset, event_type, gap_start, gap_end, detection_reason, "
                 "backfill_status FROM data_gaps "
-                "WHERE gap_start >= now() - make_interval(hours => %s) "
-                "ORDER BY gap_start",
-                (hours,),
+                "WHERE gap_start >= %s ORDER BY gap_start",
+                (cutoff_for(hours),),
             )
             return [
                 {
@@ -200,9 +225,9 @@ def arrival_latency(client: Client, hours: int) -> dict[str, Any]:
         "SELECT count(), quantile(0.50)(source_to_receive_ms), "
         "quantile(0.90)(source_to_receive_ms), quantile(0.99)(source_to_receive_ms), "
         "min(source_to_receive_ms), max(source_to_receive_ms) "
-        "FROM market_events WHERE local_receive_time >= now() - INTERVAL %(hours)s HOUR "
+        "FROM market_events WHERE local_receive_time >= %(cutoff)s "
         "AND source_to_receive_ms IS NOT NULL",
-        hours=hours,
+        cutoff=cutoff_for(hours),
     )
     count, p50, p90, p99, low, high = result[0]
     if count == 0:
@@ -233,15 +258,15 @@ def integrity(client: Client, hours: int) -> dict[str, Any]:
     quality = rows(
         client,
         "SELECT quality_status, count() FROM market_events "
-        "WHERE local_receive_time >= now() - INTERVAL %(hours)s HOUR GROUP BY quality_status",
-        hours=hours,
+        "WHERE local_receive_time >= %(cutoff)s GROUP BY quality_status",
+        cutoff=cutoff_for(hours),
     )
     duplicate_ids = rows(
         client,
         "SELECT count() FROM (SELECT event_id FROM market_events "
-        "WHERE local_receive_time >= now() - INTERVAL %(hours)s HOUR "
+        "WHERE local_receive_time >= %(cutoff)s "
         "GROUP BY event_id HAVING count() > 1)",
-        hours=hours,
+        cutoff=cutoff_for(hours),
     )
     report: dict[str, Any] = {
         "quality": {status: int(count) for status, count in quality},
@@ -254,10 +279,10 @@ def integrity(client: Client, hours: int) -> dict[str, Any]:
         duplicate_venue_ids = rows(
             client,
             "SELECT count() FROM (SELECT venue_event_id FROM market_events "
-            "WHERE local_receive_time >= now() - INTERVAL %(hours)s HOUR "
+            "WHERE local_receive_time >= %(cutoff)s "
             "AND venue_event_id IS NOT NULL AND venue_event_id != '' "
             "GROUP BY venue_event_id HAVING count() > 1)",
-            hours=hours,
+            cutoff=cutoff_for(hours),
         )
         report["duplicate_venue_event_ids"] = int(duplicate_venue_ids[0][0])
     else:
@@ -265,9 +290,8 @@ def integrity(client: Client, hours: int) -> dict[str, Any]:
 
     raw = rows(
         client,
-        "SELECT count() FROM raw_messages "
-        "WHERE local_receive_time >= now() - INTERVAL %(hours)s HOUR",
-        hours=hours,
+        "SELECT count() FROM raw_messages WHERE local_receive_time >= %(cutoff)s",
+        cutoff=cutoff_for(hours),
     )
     report["raw_messages"] = int(raw[0][0])
     return report
@@ -304,11 +328,13 @@ def inspect(hours: int) -> dict[str, Any]:
         if summary["events"] == 0:
             return {
                 "window_hours": hours,
+                "clock": clock_skew(client),
                 "summary": summary,
                 "whole_store": whole_store(client),
             }
         return {
             "window_hours": hours,
+            "clock": clock_skew(client),
             "summary": summary,
             "streams": by_stream(client, hours),
             "hourly": hourly(client, hours),
@@ -398,6 +424,12 @@ def render(report: dict[str, Any]) -> str:
         f"({summary['events_per_second']}/s)"
     )
     lines.append(f"  {summary['first']}  ->  {summary['last']}")
+    skew = report["clock"]["skew_seconds"]
+    if abs(skew) > NOTABLE_SKEW_SECONDS:
+        lines.append(
+            f"  note: the store's clock is {skew / 3600:+.1f} h from ours "
+            "— windows are taken from ours"
+        )
 
     lines.append("\nStreams")
     for stream in report["streams"]:

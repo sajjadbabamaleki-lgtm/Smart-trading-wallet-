@@ -67,7 +67,11 @@ if [ "$PUSH" != "1" ]; then
   exit 0
 fi
 
-if git push origin "$BRANCH"; then
+# Never prompt. A host without a credential helper otherwise stops on
+# "Username for 'https://github.com':" and waits forever - which is worse than
+# failing, because the run looks like it is still working and the report it
+# already wrote goes unmentioned.
+if GIT_TERMINAL_PROMPT=0 git push origin "$BRANCH"; then
   echo
   echo "pushed to origin/$BRANCH — the report is readable from the repository now."
 else
@@ -75,7 +79,8 @@ else
   # normal way for this to end. Saying so beats a stack trace, and the report
   # is already committed either way.
   echo
-  echo "push failed. The report is committed locally at $DIR."
+  echo "push failed (most likely this host has no credential for GitHub)."
+  echo "The report is committed locally at $DIR — nothing was lost."
   echo "Either give this host push access, or copy the file out:"
   echo "  cat $DIR/report.txt"
   exit 1

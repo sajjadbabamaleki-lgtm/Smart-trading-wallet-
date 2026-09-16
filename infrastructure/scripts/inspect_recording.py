@@ -224,23 +224,70 @@ def arrival_latency(client: Client, hours: int) -> dict[str, Any]:
     Per type because the overall tail is not one phenomenon. A funding message
     carries the timestamp of the funding period, not of its own emission, and
     the first frames after a subscribe describe state that last changed
-    minutes ago — both arrive "late" by this measure without anything being
+    minutes ago - both arrive "late" by this measure without anything being
     slow. Splitting the distribution is what tells those apart from a feed
     that is genuinely behind.
+
+    The replay is separated rather than described. Hyperliquid sends recent
+    trades when you subscribe to `trades`, and their venue timestamps predate
+    the subscription, so they enter this measure as arrivals two minutes late.
+    They set `max_ms` and nothing else, which makes the single worst number in
+    the report the one that says least about the feed. Quantiles and per-type
+    figures below are taken over live arrivals only.
+
+    "Predates our first receipt in this window" is how the replay is
+    identified, and it is exact only when the window contains the start of the
+    recording. Ask for a window that begins mid-run and a genuinely late event
+    from before it is counted as a replay, so `replayed.exact` says which case
+    this is rather than leaving the caller to assume.
     """
     cutoff = cutoff_for(hours)
+    bounds = rows(
+        client,
+        "SELECT min(local_receive_time) FROM market_events WHERE local_receive_time >= %(cutoff)s",
+        cutoff=cutoff,
+    )
+    first_receipt = bounds[0][0]
+    if first_receipt is None:
+        return {"events_with_venue_time": 0, "by_type": []}
+
+    store_first = rows(client, "SELECT min(local_receive_time) FROM market_events")[0][0]
+
+    # Everything, so the report can still state the worst arrival it saw.
     overall = rows(
+        client,
+        "SELECT count(), min(source_to_receive_ms), max(source_to_receive_ms) "
+        "FROM market_events WHERE local_receive_time >= %(cutoff)s "
+        "AND source_to_receive_ms IS NOT NULL",
+        cutoff=cutoff,
+    )
+    count, low, high = overall[0]
+    if count == 0:
+        return {"events_with_venue_time": 0, "by_type": []}
+
+    quantiles = rows(
         client,
         "SELECT count(), quantile(0.50)(source_to_receive_ms), "
         "quantile(0.90)(source_to_receive_ms), quantile(0.99)(source_to_receive_ms), "
         "min(source_to_receive_ms), max(source_to_receive_ms) "
         "FROM market_events WHERE local_receive_time >= %(cutoff)s "
-        "AND source_to_receive_ms IS NOT NULL",
+        "AND source_to_receive_ms IS NOT NULL "
+        "AND coalesce(consensus_time, exchange_time) >= %(first)s",
         cutoff=cutoff,
+        first=first_receipt,
     )
-    count, p50, p90, p99, low, high = overall[0]
-    if count == 0:
-        return {"events_with_venue_time": 0, "by_type": []}
+    live_count, p50, p90, p99, live_low, live_high = quantiles[0]
+
+    replayed = rows(
+        client,
+        "SELECT event_type, count(), max(source_to_receive_ms) "
+        "FROM market_events WHERE local_receive_time >= %(cutoff)s "
+        "AND source_to_receive_ms IS NOT NULL "
+        "AND coalesce(consensus_time, exchange_time) < %(first)s "
+        "GROUP BY event_type ORDER BY max(source_to_receive_ms) DESC",
+        cutoff=cutoff,
+        first=first_receipt,
+    )
 
     per_type = rows(
         client,
@@ -249,16 +296,32 @@ def arrival_latency(client: Client, hours: int) -> dict[str, Any]:
         "max(source_to_receive_ms) "
         "FROM market_events WHERE local_receive_time >= %(cutoff)s "
         "AND source_to_receive_ms IS NOT NULL "
+        "AND coalesce(consensus_time, exchange_time) >= %(first)s "
         "GROUP BY event_type ORDER BY quantile(0.99)(source_to_receive_ms) DESC",
         cutoff=cutoff,
+        first=first_receipt,
     )
     return {
         "events_with_venue_time": int(count),
-        "p50_ms": round(float(p50), 1),
-        "p90_ms": round(float(p90), 1),
-        "p99_ms": round(float(p99), 1),
-        "min_ms": int(low),
-        "max_ms": int(high),
+        "max_ms_including_replay": int(high),
+        "min_ms_including_replay": int(low),
+        "live_events": int(live_count),
+        "p50_ms": round(float(p50), 1) if live_count else None,
+        "p90_ms": round(float(p90), 1) if live_count else None,
+        "p99_ms": round(float(p99), 1) if live_count else None,
+        "min_ms": int(live_low) if live_count else None,
+        "max_ms": int(live_high) if live_count else None,
+        "replayed": {
+            "events": sum(int(n) for _, n, _ in replayed),
+            "max_ms": max((int(worst) for _, _, worst in replayed), default=0),
+            # False when the window starts after the recording did, in which
+            # case some of these are late arrivals rather than replays.
+            "exact": store_first is not None and first_receipt <= store_first,
+            "by_type": [
+                {"event_type": event_type, "events": int(n), "max_ms": int(worst)}
+                for event_type, n, worst in replayed
+            ],
+        },
         "by_type": [
             {
                 "event_type": event_type,
@@ -427,6 +490,44 @@ def continuity(report: dict[str, Any]) -> list[str]:
     return lines
 
 
+def latency_section(report: dict[str, Any]) -> list[str]:
+    """Arrival latency, with the venue's subscribe replay held apart from it.
+
+    Its own function because the replay needs three of these lines to state
+    honestly, and folding that into `render` made one function responsible for
+    every section of the report.
+    """
+    latency = report["arrival_latency"]
+    if not latency.get("events_with_venue_time"):
+        return []
+
+    replayed = latency.get("replayed", {"events": 0})
+    lines = [
+        "\nArrival latency (venue time -> our receipt)",
+        f"  p50 {latency['p50_ms']}ms   p90 {latency['p90_ms']}ms   "
+        f"p99 {latency['p99_ms']}ms   min {latency['min_ms']}ms   "
+        f"max {latency['max_ms']:,}ms",
+    ]
+    if replayed["events"]:
+        qualifier = "" if replayed["exact"] else " (window starts mid-run - some may be late)"
+        lines.append(
+            f"  excludes {replayed['events']:,} event(s) the venue replayed on subscribe, "
+            f"worst {replayed['max_ms'] / 1000:.1f}s{qualifier}:"
+        )
+        lines.extend(
+            f"    {entry['event_type']:<14} {entry['events']:>6,} replayed   "
+            f"oldest {entry['max_ms'] / 1000:>8.1f}s"
+            for entry in replayed["by_type"]
+        )
+    lines.extend(
+        f"    {entry['event_type']:<14} p50 {entry['p50_ms']:>9.1f}   "
+        f"p90 {entry['p90_ms']:>9.1f}   p99 {entry['p99_ms']:>10.1f}   "
+        f"max {entry['max_ms']:>10,}"
+        for entry in latency["by_type"]
+    )
+    return lines
+
+
 def render(report: dict[str, Any]) -> str:
     lines: list[str] = []
     summary = report["summary"]
@@ -473,19 +574,7 @@ def render(report: dict[str, Any]) -> str:
             f"longest {gap['longest_gap_seconds']:>8.2f}s   mean {gap['mean_gap_ms']:>8.1f}ms"
         )
 
-    latency = report["arrival_latency"]
-    if latency.get("events_with_venue_time"):
-        lines.append("\nArrival latency (venue time -> our receipt)")
-        lines.append(
-            f"  p50 {latency['p50_ms']}ms   p90 {latency['p90_ms']}ms   "
-            f"p99 {latency['p99_ms']}ms   min {latency['min_ms']}ms"
-        )
-        for entry in latency["by_type"]:
-            lines.append(
-                f"    {entry['event_type']:<14} p50 {entry['p50_ms']:>9.1f}   "
-                f"p90 {entry['p90_ms']:>9.1f}   p99 {entry['p99_ms']:>10.1f}   "
-                f"max {entry['max_ms']:>10,}"
-            )
+    lines.extend(latency_section(report))
 
     integrity_report = report["integrity"]
     lines.append("\nIntegrity")

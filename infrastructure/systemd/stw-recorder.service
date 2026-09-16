@@ -1,0 +1,54 @@
+# A 24-hour recording that survives the SSH session that started it.
+#
+# The first attempt at a day-long run produced 51 minutes: the recorder was
+# started from a login shell and went away with it. A long recording is not a
+# long command — it is a service, and it needs something that owns it, restarts
+# it, and keeps its output.
+#
+# Install (as root, on the recording host):
+#
+#   cp infrastructure/systemd/stw-recorder.service /etc/systemd/system/
+#   systemctl daemon-reload
+#   systemctl enable --now stw-recorder
+#
+# Watch it:
+#
+#   systemctl status stw-recorder
+#   journalctl -u stw-recorder -f
+#
+# Stop it:
+#
+#   systemctl disable --now stw-recorder
+
+[Unit]
+Description=Smart Trading Wallet — BTC market data recorder
+# The stores have to be up first: a recorder that starts before ClickHouse
+# spends its first minutes failing to write what it is receiving.
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/Smart-trading-wallet-
+Environment=PATH=/root/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# No --minutes: the run ends when it is stopped, not when a timer someone
+# guessed at expires.
+ExecStart=/root/.local/bin/uv run python -m services.market_data.cli
+
+# A recorder that dies at 3 a.m. and stays dead produces a gap nobody notices
+# until the dataset is short. Restarting is not hiding the failure — the gap
+# registry still records the silence, and journalctl still holds the reason.
+Restart=always
+RestartSec=10s
+
+# The venue is the one thing this process cannot do without, so give up slowly
+# rather than in a tight loop.
+StartLimitIntervalSec=300
+StartLimitBurst=10
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=stw-recorder
+
+[Install]
+WantedBy=multi-user.target

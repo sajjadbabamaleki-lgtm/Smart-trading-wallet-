@@ -5,7 +5,8 @@
 UV := uv
 
 .PHONY: help setup format lint typecheck test test-unit test-integration audit check \
-        stack-up stack-down stack-logs stack-verify migrate accept console inspect clean
+        stack-up stack-down stack-logs stack-verify migrate accept console inspect \
+        record-install record-status clean
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -73,6 +74,17 @@ accept: ## Run the full M1/M2 acceptance against the real stack and the live ven
 
 inspect: ## Report what the store actually holds from the last HOURS (default 24)
 	$(UV) run python infrastructure/scripts/inspect_recording.py --hours $(or $(HOURS),24)
+
+record-install: ## Install and start the recorder as a service that outlives the shell
+	sudo cp infrastructure/systemd/stw-recorder.service /etc/systemd/system/
+	sudo systemctl daemon-reload
+	sudo systemctl enable --now stw-recorder
+	@sleep 3 && sudo systemctl --no-pager status stw-recorder | head -20
+
+record-status: ## Is the recorder alive, and what has it said lately?
+	@sudo systemctl --no-pager status stw-recorder | head -12
+	@echo
+	@sudo journalctl -u stw-recorder -n 20 --no-pager
 
 clean: ## Remove caches and build artifacts
 	rm -rf .mypy_cache .ruff_cache .pytest_cache htmlcov .coverage coverage.xml requirements-audit.txt

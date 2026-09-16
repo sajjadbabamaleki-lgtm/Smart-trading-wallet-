@@ -33,7 +33,10 @@ WorkingDirectory=/root/Smart-trading-wallet-
 Environment=PATH=/root/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 # No --minutes: the run ends when it is stopped, not when a timer someone
 # guessed at expires.
-ExecStart=/root/.local/bin/uv run python -m services.market_data.cli
+# `env` rather than a hard path: uv installs to ~/.local/bin for root and to
+# /usr/local/bin from some installers, and a unit that works on one machine
+# and not the other is a unit nobody trusts.
+ExecStart=/usr/bin/env uv run python -m services.market_data.cli
 
 # A recorder that dies at 3 a.m. and stays dead produces a gap nobody notices
 # until the dataset is short. Restarting is not hiding the failure — the gap

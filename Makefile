@@ -3,10 +3,12 @@
 
 .DEFAULT_GOAL := help
 UV := uv
+# Root needs no sudo, and on a minimal server sudo may not be installed at all.
+SUDO := $(shell [ "$$(id -u)" = 0 ] || echo sudo)
 
 .PHONY: help setup format lint typecheck test test-unit test-integration audit check \
         stack-up stack-down stack-logs stack-verify migrate accept console inspect \
-        record-install record-status clean
+        record-install record-status record-stop clean
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -76,15 +78,21 @@ inspect: ## Report what the store actually holds from the last HOURS (default 24
 	$(UV) run python infrastructure/scripts/inspect_recording.py --hours $(or $(HOURS),24)
 
 record-install: ## Install and start the recorder as a service that outlives the shell
-	sudo cp infrastructure/systemd/stw-recorder.service /etc/systemd/system/
-	sudo systemctl daemon-reload
-	sudo systemctl enable --now stw-recorder
-	@sleep 3 && sudo systemctl --no-pager status stw-recorder | head -20
+	$(SUDO) cp infrastructure/systemd/stw-recorder.service /etc/systemd/system/
+	$(SUDO) systemctl daemon-reload
+	$(SUDO) systemctl enable --now stw-recorder
+	@sleep 5
+	@$(SUDO) systemctl --no-pager --lines=0 status stw-recorder | head -6
+	@echo
+	@$(MAKE) --no-print-directory inspect HOURS=1
 
 record-status: ## Is the recorder alive, and what has it said lately?
-	@sudo systemctl --no-pager status stw-recorder | head -12
+	@$(SUDO) systemctl --no-pager --lines=0 status stw-recorder | head -8
 	@echo
-	@sudo journalctl -u stw-recorder -n 20 --no-pager
+	@$(SUDO) journalctl -u stw-recorder -n 15 --no-pager
+
+record-stop: ## Stop the recorder and leave it stopped across reboots
+	$(SUDO) systemctl disable --now stw-recorder
 
 clean: ## Remove caches and build artifacts
 	rm -rf .mypy_cache .ruff_cache .pytest_cache htmlcov .coverage coverage.xml requirements-audit.txt

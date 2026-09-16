@@ -219,19 +219,39 @@ def registered_gaps(dsn: str, hours: int) -> list[dict[str, Any]] | str:
 
 
 def arrival_latency(client: Client, hours: int) -> dict[str, Any]:
-    """Quantiles of venue-time to receipt-time, where the venue supplied one."""
-    result = rows(
+    """Quantiles of venue-time to receipt-time, overall and per event type.
+
+    Per type because the overall tail is not one phenomenon. A funding message
+    carries the timestamp of the funding period, not of its own emission, and
+    the first frames after a subscribe describe state that last changed
+    minutes ago — both arrive "late" by this measure without anything being
+    slow. Splitting the distribution is what tells those apart from a feed
+    that is genuinely behind.
+    """
+    cutoff = cutoff_for(hours)
+    overall = rows(
         client,
         "SELECT count(), quantile(0.50)(source_to_receive_ms), "
         "quantile(0.90)(source_to_receive_ms), quantile(0.99)(source_to_receive_ms), "
         "min(source_to_receive_ms), max(source_to_receive_ms) "
         "FROM market_events WHERE local_receive_time >= %(cutoff)s "
         "AND source_to_receive_ms IS NOT NULL",
-        cutoff=cutoff_for(hours),
+        cutoff=cutoff,
     )
-    count, p50, p90, p99, low, high = result[0]
+    count, p50, p90, p99, low, high = overall[0]
     if count == 0:
-        return {"events_with_venue_time": 0}
+        return {"events_with_venue_time": 0, "by_type": []}
+
+    per_type = rows(
+        client,
+        "SELECT event_type, count(), quantile(0.50)(source_to_receive_ms), "
+        "quantile(0.90)(source_to_receive_ms), quantile(0.99)(source_to_receive_ms), "
+        "max(source_to_receive_ms) "
+        "FROM market_events WHERE local_receive_time >= %(cutoff)s "
+        "AND source_to_receive_ms IS NOT NULL "
+        "GROUP BY event_type ORDER BY quantile(0.99)(source_to_receive_ms) DESC",
+        cutoff=cutoff,
+    )
     return {
         "events_with_venue_time": int(count),
         "p50_ms": round(float(p50), 1),
@@ -239,6 +259,17 @@ def arrival_latency(client: Client, hours: int) -> dict[str, Any]:
         "p99_ms": round(float(p99), 1),
         "min_ms": int(low),
         "max_ms": int(high),
+        "by_type": [
+            {
+                "event_type": event_type,
+                "events": int(n),
+                "p50_ms": round(float(a), 1),
+                "p90_ms": round(float(b), 1),
+                "p99_ms": round(float(c), 1),
+                "max_ms": int(worst),
+            }
+            for event_type, n, a, b, c, worst in per_type
+        ],
     }
 
 
@@ -449,6 +480,12 @@ def render(report: dict[str, Any]) -> str:
             f"  p50 {latency['p50_ms']}ms   p90 {latency['p90_ms']}ms   "
             f"p99 {latency['p99_ms']}ms   min {latency['min_ms']}ms"
         )
+        for entry in latency["by_type"]:
+            lines.append(
+                f"    {entry['event_type']:<14} p50 {entry['p50_ms']:>9.1f}   "
+                f"p90 {entry['p90_ms']:>9.1f}   p99 {entry['p99_ms']:>10.1f}   "
+                f"max {entry['max_ms']:>10,}"
+            )
 
     integrity_report = report["integrity"]
     lines.append("\nIntegrity")

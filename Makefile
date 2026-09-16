@@ -5,7 +5,7 @@
 UV := uv
 
 .PHONY: help setup format lint typecheck test test-unit test-integration audit check \
-        stack-up stack-down stack-logs stack-verify migrate accept console clean
+        stack-up stack-down stack-logs stack-verify migrate accept console inspect clean
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -70,6 +70,9 @@ console: ## Serve the product console on http://localhost:8000
 
 accept: ## Run the full M1/M2 acceptance against the real stack and the live venue
 	@bash infrastructure/scripts/accept_m1_m2.sh $(ACCEPT_ARGS)
+
+inspect: ## Report what the store actually holds from the last HOURS (default 24)
+	$(UV) run python infrastructure/scripts/inspect_recording.py --hours $(or $(HOURS),24)
 
 clean: ## Remove caches and build artifacts
 	rm -rf .mypy_cache .ruff_cache .pytest_cache htmlcov .coverage coverage.xml requirements-audit.txt

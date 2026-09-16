@@ -1,0 +1,44 @@
+92,612 events over 5.21 h (4.94/s)
+  2026-09-16T10:10:55.538661  ->  2026-09-16T15:23:37.483490
+
+Streams
+  BTC   MARK_PRICE         18,120
+  BTC   ORACLE_PRICE       18,120
+  BTC   FUNDING            18,120
+  BTC   OPEN_INTEREST      18,120
+  BTC   BBO                12,136
+  BTC   TRADE               4,394
+  BTC   L2_SNAPSHOT         3,602
+
+Longest silence per stream
+  BTC   BBO            longest    11.97s   mean   1545.7ms
+  BTC   TRADE          longest     8.27s   mean   4269.9ms
+  BTC   L2_SNAPSHOT    longest     7.96s   mean   5210.2ms
+  BTC   MARK_PRICE     longest     3.72s   mean   1035.5ms
+  BTC   ORACLE_PRICE   longest     3.72s   mean   1035.5ms
+  BTC   FUNDING        longest     3.72s   mean   1035.5ms
+  BTC   OPEN_INTEREST  longest     3.72s   mean   1035.5ms
+
+Arrival latency (venue time -> our receipt)
+  p50 426.0ms   p90 624.0ms   p99 1464.9ms   min 325ms
+    TRADE          p50     427.0   p90     700.7   p99     2147.3   max    145,038
+    BBO            p50     405.5   p90     584.0   p99     1309.5   max      3,159
+    L2_SNAPSHOT    p50     469.0   p90     611.9   p99     1287.7   max      2,980
+
+Integrity
+  quality VALID        92,612
+  duplicate event ids        0
+  duplicate venue event ids  0
+  raw messages retained      38,138
+
+Gap registry
+  nothing registered in this window
+
+Events per hour
+  hour                          BBO     FUNDING L2_SNAPSHOT  MARK_PRICEOPEN_INTERESTORACLE_PRICE       TRADE
+  2026-09-16T10:00         1,343       2,824         557       2,824       2,824       2,824         648
+  2026-09-16T11:00         2,149       3,476         692       3,476       3,476       3,476         806
+  2026-09-16T12:00         2,106       3,479         690       3,479       3,479       3,479         759
+  2026-09-16T13:00         2,710       3,482         695       3,482       3,482       3,482         860
+  2026-09-16T14:00         2,886       3,487         694       3,487       3,487       3,487         955
+  2026-09-16T15:00           942       1,372         274       1,372       1,372       1,372         366

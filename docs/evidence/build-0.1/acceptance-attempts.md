@@ -310,3 +310,53 @@ its TRADE p99 and max describe subscription behaviour rather than transport.
 The ~300 ms floor at p50 is unaffected — a median is not moved by a burst at
 subscribe time — and the reasoning that it is neither our clock nor our network
 stands.
+
+---
+
+## M8 — first signed request the venue answered, 2026-09-16, commit `1e29db8`
+
+**Result: the signature is verified. The account is not yet set up.**
+
+| | |
+|---|---|
+| Host | Contabo VPS |
+| Environment | `TESTNET`, `api.hyperliquid-testnet.xyz` |
+| Chain | proposal → Risk Engine → intent → Execution Engine → adapter |
+| Decision | `APPROVED`, $20 requested, $20 approved |
+| Order | BUY 0.00026 BTC, market, `stw-int_90f7daa988a2420ea9ddb3f71dbcb2c1` |
+| Venue answer | `REJECTED` — "User or API Wallet 0x2d0e0f299…ae66f99a does not exist." |
+
+### What this establishes
+
+**The signing scheme is right.** The address in the venue's rejection is the
+API wallet's own, which means the venue recovered it from our signature. Every
+step between an order and that recovery had to be correct for the right address
+to come back: the MessagePack encoding, the field order inside the action, the
+nonce and vault bytes appended to the hash, the phantom-agent EIP-712 structure,
+and the testnet source byte. A mistake in any one of them recovers a different
+address, and the venue would have named that one instead.
+
+This was the open question the commit that introduced the adapter recorded as
+unanswered: the signature recovered to the signing address locally, but no
+request from this repository had ever been accepted by Hyperliquid. One has now
+been read, understood and answered.
+
+**The whole chain ran end to end for the first time.** `--check` produced a
+priced order without sending it, and the submitting run carried the same intent
+through re-validation to the venue. No step was bypassed.
+
+### What it does not establish
+
+Nothing about fills, positions, cancellation, or reconciliation against venue
+state. The rejection came before any of that could be exercised, and the order
+book was only read, never joined.
+
+### What is actually blocking
+
+The API wallet exists locally and was never registered with the venue: the
+"Authorize API Wallet" step in the testnet UI did not complete. The testnet
+faucet is a second, related blocker — it drips only to wallets that have
+deposited on mainnet, and this account has not.
+
+Neither is a defect in this repository. Both are account setup at the venue.
+

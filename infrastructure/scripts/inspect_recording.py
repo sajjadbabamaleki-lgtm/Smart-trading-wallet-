@@ -216,12 +216,40 @@ def integrity(client: Client, hours: int) -> dict[str, Any]:
     return report
 
 
+def whole_store(client: Client) -> dict[str, Any]:
+    """What the store holds with no time filter at all.
+
+    Asked only when the window is empty, because "nothing in the last day" has
+    two very different causes — a recorder that did not run, and a store that
+    lost what it wrote — and the difference is visible the moment you stop
+    filtering by time.
+    """
+    result = rows(
+        client,
+        "SELECT count(), min(local_receive_time), max(local_receive_time) FROM market_events",
+    )
+    total, first, last = result[0]
+    raw = rows(client, "SELECT count() FROM raw_messages")
+    if total == 0:
+        return {"events": 0, "raw_messages": int(raw[0][0])}
+    return {
+        "events": int(total),
+        "first": first.isoformat(),
+        "last": last.isoformat(),
+        "raw_messages": int(raw[0][0]),
+    }
+
+
 def inspect(hours: int) -> dict[str, Any]:
     settings = load_settings()
     with ch.connect_from_settings(settings) as client:
         summary = window(client, hours)
         if summary["events"] == 0:
-            return {"window_hours": hours, "summary": summary}
+            return {
+                "window_hours": hours,
+                "summary": summary,
+                "whole_store": whole_store(client),
+            }
         return {
             "window_hours": hours,
             "summary": summary,
@@ -237,7 +265,24 @@ def render(report: dict[str, Any]) -> str:
     lines: list[str] = []
     summary = report["summary"]
     if summary["events"] == 0:
-        return f"No market events in the last {report['window_hours']} hours."
+        stored = report["whole_store"]
+        lines.append(f"No market events in the last {report['window_hours']} hours.")
+        if stored["events"] == 0:
+            lines.append(
+                f"  The table is empty: 0 market events, "
+                f"{stored['raw_messages']:,} raw messages retained."
+            )
+            lines.append(
+                "  Either the recorder never persisted (a --dry-run writes nothing), "
+                "or this is not the store it wrote to."
+            )
+        else:
+            lines.append(
+                f"  The store holds {stored['events']:,} events, "
+                f"newest {stored['last']}, oldest {stored['first']}."
+            )
+            lines.append("  Re-run with a wider --hours to inspect them.")
+        return "\n".join(lines)
 
     lines.append(
         f"{summary['events']:,} events over {summary['hours_covered']} h "

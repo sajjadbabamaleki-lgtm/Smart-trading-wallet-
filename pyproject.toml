@@ -21,6 +21,9 @@ dependencies = [
     # one without a build step or a JavaScript toolchain.
     "fastapi>=0.115,<1",
     "uvicorn>=0.32,<1",
+    "httpx>=0.28.1",
+    "msgpack>=1.2.2",
+    "eth-account>=0.14.0",
 ]
 
 # Production dependencies stay deliberately small (Build 0.1 Rev.1 §7).
@@ -119,6 +122,13 @@ disallow_untyped_defs = false
 # clickhouse-connect ships no py.typed marker.
 [[tool.mypy.overrides]]
 module = ["clickhouse_connect.*"]
+ignore_missing_imports = true
+
+# msgpack ships no py.typed marker either. It is used in one place, to encode
+# the bytes a Hyperliquid action is hashed over, and that call site is covered
+# by tests that check the hash rather than by the type checker.
+[[tool.mypy.overrides]]
+module = ["msgpack.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

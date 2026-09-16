@@ -119,6 +119,19 @@ class IntentLedger:
         self._consumed.add(intent_id)
         return intent
 
+    def issued(self, intent_id: str) -> ExecutionIntent:
+        """Read an intent back without spending it.
+
+        The Risk Engine returns a decision carrying an intent id, not the
+        intent, so a caller holding a decision has no way to reach the thing it
+        authorises. This is that way, and it is deliberately read-only:
+        `consume` is still the only path that spends one.
+        """
+        intent = self._issued.get(intent_id)
+        if intent is None:
+            raise IntentNotFoundError(intent_id)
+        return intent
+
     def state_of(self, intent_id: str, *, at: datetime) -> IntentState:
         intent = self._issued.get(intent_id)
         if intent is None:

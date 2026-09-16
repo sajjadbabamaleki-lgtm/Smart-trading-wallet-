@@ -137,6 +137,10 @@ make stack-verify      # check every store is reachable and correctly configured
 make migrate           # verify, then apply pending migrations
 make test-integration  # run integration tests against the running stack
 make accept            # the full M1/M2 acceptance — real stack, live venue, evidence
+make record-install    # run the recorder as a service that outlives the shell
+make report            # write what the store holds into the repo, and push it
+make testnet-check     # decide a test order and show it, sending nothing
+make testnet-order     # place one test order on Hyperliquid testnet
 make help              # all targets
 
 # Record from the live testnet feed without writing anything
@@ -171,6 +175,13 @@ anything. The procedure is
 [`docs/runbooks/m1-m2-acceptance.md`](docs/runbooks/m1-m2-acceptance.md); the
 CI workflow calls the same script, so a result means the same thing wherever it
 ran.
+
+`make testnet-check` is the safe way to meet the execution path. It reads the
+book, asks the Risk Engine, builds the order that would be sent, prints it, and
+stops. Three separate things must be true before `make testnet-order` can send
+anything — `STW_EXECUTION_ENVIRONMENT=TESTNET`, `STW_TRADING_ENABLED=true`, and
+a configured API wallet key — and the adapter refuses to be constructed at all
+outside testnet, independently of what configuration says.
 
 `make stack-verify` is how the storage claim is checked rather than asserted: it
 reports each store's status, latency and configuration, and exits non-zero if

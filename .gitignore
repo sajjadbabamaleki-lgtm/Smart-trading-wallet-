@@ -47,6 +47,11 @@ research/notebooks/.ipynb_checkpoints/
 docs/evidence/build-0.1/*
 !docs/evidence/build-0.1/README.md
 !docs/evidence/build-0.1/acceptance-attempts.md
+# Recording reports are the exception to the exception. They are generated,
+# but the run they describe is gone by the time anyone reads them, so they are
+# not regenerable in the sense the rule above assumes - and they are how the
+# recording host tells everyone else what it saw.
+!docs/evidence/build-0.1/recordings/
 
 # Node
 node_modules/

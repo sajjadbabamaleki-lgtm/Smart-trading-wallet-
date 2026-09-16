@@ -77,6 +77,9 @@ accept: ## Run the full M1/M2 acceptance against the real stack and the live ven
 inspect: ## Report what the store actually holds from the last HOURS (default 24)
 	$(UV) run python infrastructure/scripts/inspect_recording.py --hours $(or $(HOURS),24)
 
+report: ## Write what the store holds into the repo and push it (HOURS=24, PUSH=1)
+	@HOURS=$(or $(HOURS),24) PUSH=$(or $(PUSH),1) UV=$(UV) bash infrastructure/scripts/publish_recording_report.sh
+
 record-install: ## Install and start the recorder as a service that outlives the shell
 	$(SUDO) cp infrastructure/systemd/stw-recorder.service /etc/systemd/system/
 	$(SUDO) systemctl daemon-reload

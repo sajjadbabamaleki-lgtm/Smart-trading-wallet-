@@ -103,6 +103,9 @@ record-install: ## Install and start the recorder as a service that outlives the
 	@echo
 	@$(MAKE) --no-print-directory inspect HOURS=1
 
+explain-gaps: ## Print the raw timestamps behind the first few open gaps
+	$(UV) run python infrastructure/scripts/close_resolved_gaps.py --explain $(or $(N),3)
+
 close-gaps: ## Close silences the store shows ended (read-only; APPLY=1 to write)
 	$(UV) run python infrastructure/scripts/close_resolved_gaps.py $(if $(APPLY),--apply,)
 

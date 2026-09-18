@@ -310,3 +310,108 @@ its TRADE p99 and max describe subscription behaviour rather than transport.
 The ~300 ms floor at p50 is unaffected — a median is not moved by a burst at
 subscribe time — and the reasoning that it is neither our clock nor our network
 stands.
+
+---
+
+## M8 — first signed request the venue answered, 2026-09-16, commit `1e29db8`
+
+**Result: the signature is verified. The account is not yet set up.**
+
+| | |
+|---|---|
+| Host | Contabo VPS |
+| Environment | `TESTNET`, `api.hyperliquid-testnet.xyz` |
+| Chain | proposal → Risk Engine → intent → Execution Engine → adapter |
+| Decision | `APPROVED`, $20 requested, $20 approved |
+| Order | BUY 0.00026 BTC, market, `stw-int_90f7daa988a2420ea9ddb3f71dbcb2c1` |
+| Venue answer | `REJECTED` — "User or API Wallet 0x2d0e0f299…ae66f99a does not exist." |
+
+### What this establishes
+
+**The signing scheme is right.** The address in the venue's rejection is the
+API wallet's own, which means the venue recovered it from our signature. Every
+step between an order and that recovery had to be correct for the right address
+to come back: the MessagePack encoding, the field order inside the action, the
+nonce and vault bytes appended to the hash, the phantom-agent EIP-712 structure,
+and the testnet source byte. A mistake in any one of them recovers a different
+address, and the venue would have named that one instead.
+
+This was the open question the commit that introduced the adapter recorded as
+unanswered: the signature recovered to the signing address locally, but no
+request from this repository had ever been accepted by Hyperliquid. One has now
+been read, understood and answered.
+
+**The whole chain ran end to end for the first time.** `--check` produced a
+priced order without sending it, and the submitting run carried the same intent
+through re-validation to the venue. No step was bypassed.
+
+### What it does not establish
+
+Nothing about fills, positions, cancellation, or reconciliation against venue
+state. The rejection came before any of that could be exercised, and the order
+book was only read, never joined.
+
+### What is actually blocking
+
+The API wallet exists locally and was never registered with the venue: the
+"Authorize API Wallet" step in the testnet UI did not complete. The testnet
+faucet is a second, related blocker — it drips only to wallets that have
+deposited on mainnet, and this account has not.
+
+Neither is a defect in this repository. Both are account setup at the venue.
+
+
+---
+
+## The recorder stopped for 39 hours, 2026-09-17 → 2026-09-18
+
+**Cause: two purposes sharing one `.env`. Not a defect in the guard that
+stopped it.**
+
+| | |
+|---|---|
+| Last event recorded | 2026-09-17T00:15:17Z |
+| Noticed | 2026-09-18T16:13Z, by `make report` |
+| Silent for | ~39 h |
+| Events held either side | 248,280, from 2026-09-15T04:22Z |
+
+### What happened
+
+`STW_EXECUTION_ENVIRONMENT=TESTNET`, `STW_TRADING_ENABLED=true` and a testnet
+API wallet key were written into `.env` so that an order could be placed by
+hand. The recorder reads the same file. `market_data_is_read_only` is false
+whenever the process could submit an order, and the recorder refuses to start
+when it is false, so it refused — correctly. systemd retried on
+`Restart=always`, exhausted `StartLimitBurst`, and stopped trying.
+
+Every component did what it was designed to do, and the outcome was 39 hours of
+nothing.
+
+### What this says about the design
+
+**The guard was right and stays unchanged.** A process that can reach capital
+is not a process whose market-data read is provably risk-free, and weakening
+that to keep a recorder running would trade the invariant for uptime.
+
+**The configuration was wrong.** One `.env` was being asked to describe two
+processes with opposite requirements. The systemd unit now pins the recorder's
+own execution configuration — `DEVELOPMENT`, kill switch engaged, no credential
+— which overrides `.env` because environment variables take precedence. The
+guard now passes because it is true of that process, not because it was
+bypassed. `STW_MARKET_DATA_ENVIRONMENT` is deliberately not pinned: what the
+recorder reads stays the operator's choice.
+
+**The refusal was unactionable.** It said what was wrong and not what to
+change, which is part of why it stayed unfixed for 39 hours rather than 39
+seconds. It now names the three settings and the command that applies them.
+
+### What is still unaddressed
+
+Nothing announced the silence. `Restart=always` is not detection, the gap
+registry cannot record a gap from inside a process that never started, and the
+freshness monitor dies with the recorder. This was found by a person running a
+report two days later.
+
+An alarm that fires when the store stops growing is a different mechanism from
+everything M2 and M3 built, because all of those observe the recorder from
+inside it. Recorded here as the open item it is.

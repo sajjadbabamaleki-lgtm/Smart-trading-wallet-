@@ -31,6 +31,30 @@ Wants=network-online.target
 Type=simple
 WorkingDirectory=/root/Smart-trading-wallet-
 Environment=PATH=/root/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# The recorder runs with its own execution configuration, which overrides
+# whatever .env holds. This is not belt-and-braces; it is what keeps the
+# recorder running at all.
+#
+# `market_data_is_read_only` is false whenever the process could submit an
+# order, and the recorder refuses to start when it is false - correctly, since
+# a process that can reach capital is not a process whose market-data read is
+# provably risk-free. But .env is shared. The day a testnet key and the kill
+# switch were set there so that `make testnet-order` could run, the recorder
+# read the same file, saw that it could now trade, and refused. systemd
+# retried, hit its start limit, and gave up. The gap that followed was
+# thirty-nine hours long and nothing announced it.
+#
+# So the service holds no credential and cannot trade, whatever .env says, and
+# the guard passes because it is true rather than because it was bypassed.
+# Environment variables take precedence over .env, so these win. An empty value
+# is still a value, which is what clears an inherited key.
+Environment=STW_EXECUTION_ENVIRONMENT=DEVELOPMENT
+Environment=STW_TRADING_ENABLED=false
+Environment=STW_TESTNET_API_WALLET_ADDRESS=
+Environment=STW_TESTNET_API_WALLET_PRIVATE_KEY=
+# Deliberately absent: STW_MARKET_DATA_ENVIRONMENT. What the recorder reads is
+# the operator's choice and lives in .env; only execution is pinned here.
 # No --minutes: the run ends when it is stopped, not when a timer someone
 # guessed at expires.
 # `env` rather than a hard path: uv installs to ~/.local/bin for root and to

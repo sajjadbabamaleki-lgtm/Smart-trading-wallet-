@@ -1,0 +1,338 @@
+251,502 events over 84.24 h (0.83/s)
+  2026-09-15T04:22:06.604404  ->  2026-09-18T16:36:17.347775
+
+Streams
+  BTC   MARK_PRICE         50,864
+  BTC   ORACLE_PRICE       50,864
+  BTC   FUNDING            50,864
+  BTC   OPEN_INTEREST      50,864
+  BTC   BBO                27,722
+  BTC   TRADE              10,225
+  BTC   L2_SNAPSHOT        10,099
+
+Longest silence per stream
+  BTC   TRADE          longest 144593.00s   mean  29659.2ms
+  BTC   BBO            longest 144591.46s   mean  10939.2ms
+  BTC   L2_SNAPSHOT    longest 144590.10s   mean  30030.6ms
+  BTC   MARK_PRICE     longest 144588.01s   mean   5962.1ms
+  BTC   ORACLE_PRICE   longest 144588.01s   mean   5962.1ms
+  BTC   FUNDING        longest 144588.01s   mean   5962.1ms
+  BTC   OPEN_INTEREST  longest 144588.01s   mean   5962.1ms
+
+Arrival latency (venue time -> our receipt)
+  p50 425.0ms   p90 565.9ms   p99 1908.4ms   min 325ms   max 894,992ms
+  excludes 30 event(s) the venue replayed on subscribe, worst 76.8s:
+    TRADE              30 replayed   oldest     76.8s
+    TRADE          p50     423.0   p90     712.9   p99   402013.8   max    894,992
+    BBO            p50     401.0   p90     523.0   p99     1100.0   max      4,090
+    L2_SNAPSHOT    p50     469.0   p90     564.0   p99     1068.7   max      2,980
+
+Integrity
+  quality INVALID         206
+  quality VALID       251,296
+  duplicate event ids        0
+  duplicate venue event ids  257
+  raw messages retained      97,444
+
+Minutes with no events at all: 4171
+  from 2026-09-15T04:43 to 2026-09-18T16:24
+
+Gap registry
+  BTC   TRADE          2026-09-16T15:30:08 -> open  no message for 35s, threshold 30s
+  BTC   BBO            2026-09-16T15:31:08 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T18:02:20 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T18:04:18 -> open  no message for 35s, threshold 30s
+  BTC   TRADE          2026-09-16T18:10:32 -> open  no message for 32s, threshold 30s
+  BTC   BBO            2026-09-16T18:10:34 -> open  no message for 30s, threshold 30s
+  BTC   TRADE          2026-09-16T18:15:14 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T18:21:40 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T18:25:28 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T18:26:49 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T18:29:14 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T18:32:39 -> open  no message for 35s, threshold 30s
+  BTC   BBO            2026-09-16T18:32:41 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T18:33:35 -> open  no message for 34s, threshold 30s
+  BTC   BBO            2026-09-16T18:33:47 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T18:39:44 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T18:40:53 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T18:45:24 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T18:46:46 -> open  no message for 32s, threshold 30s
+  BTC   BBO            2026-09-16T18:47:19 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T18:48:19 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T18:49:59 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T18:52:18 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T18:56:05 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T18:57:37 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T19:01:36 -> open  no message for 35s, threshold 30s
+  BTC   BBO            2026-09-16T19:01:39 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T19:02:40 -> open  no message for 35s, threshold 30s
+  BTC   BBO            2026-09-16T19:02:41 -> open  no message for 35s, threshold 30s
+  BTC   TRADE          2026-09-16T19:04:17 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T19:05:31 -> open  no message for 30s, threshold 30s
+  BTC   TRADE          2026-09-16T19:06:12 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T19:07:08 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T19:08:21 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T19:11:33 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T19:15:31 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T19:16:30 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T19:20:05 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T19:21:26 -> open  no message for 32s, threshold 30s
+  BTC   BBO            2026-09-16T19:21:30 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T19:25:03 -> open  no message for 30s, threshold 30s
+  BTC   TRADE          2026-09-16T19:26:25 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T19:28:08 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T19:30:34 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T19:32:19 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T19:36:10 -> open  no message for 30s, threshold 30s
+  BTC   TRADE          2026-09-16T19:37:46 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T19:38:32 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T19:40:50 -> open  no message for 33s, threshold 30s
+  BTC   BBO            2026-09-16T19:41:07 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T19:42:37 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T19:45:20 -> open  no message for 30s, threshold 30s
+  BTC   TRADE          2026-09-16T19:46:31 -> open  no message for 34s, threshold 30s
+  BTC   BBO            2026-09-16T19:47:02 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T19:47:53 -> open  no message for 33s, threshold 30s
+  BTC   BBO            2026-09-16T19:47:53 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T19:50:16 -> open  no message for 30s, threshold 30s
+  BTC   TRADE          2026-09-16T19:51:29 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T19:52:22 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T19:53:20 -> open  no message for 34s, threshold 30s
+  BTC   BBO            2026-09-16T19:53:21 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T19:54:34 -> open  no message for 34s, threshold 30s
+  BTC   BBO            2026-09-16T19:56:05 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T19:56:05 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T19:57:55 -> open  no message for 35s, threshold 30s
+  BTC   BBO            2026-09-16T19:57:58 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T20:01:58 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T20:04:43 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T20:08:22 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T20:11:29 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T20:12:25 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T20:13:10 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T20:16:39 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T20:18:49 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T20:20:19 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T20:21:59 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T20:22:37 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T20:24:09 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T20:25:04 -> open  no message for 30s, threshold 30s
+  BTC   TRADE          2026-09-16T20:25:54 -> open  no message for 35s, threshold 30s
+  BTC   TRADE          2026-09-16T20:26:51 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T20:28:22 -> open  no message for 32s, threshold 30s
+  BTC   BBO            2026-09-16T20:28:27 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T20:30:42 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T20:32:25 -> open  no message for 30s, threshold 30s
+  BTC   TRADE          2026-09-16T20:35:34 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T20:38:50 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T20:39:31 -> open  no message for 35s, threshold 30s
+  BTC   TRADE          2026-09-16T20:40:51 -> open  no message for 30s, threshold 30s
+  BTC   TRADE          2026-09-16T20:42:10 -> open  no message for 32s, threshold 30s
+  BTC   BBO            2026-09-16T20:42:11 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T20:43:24 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T20:44:14 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T20:45:46 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T20:48:53 -> open  no message for 30s, threshold 30s
+  BTC   TRADE          2026-09-16T20:50:02 -> open  no message for 32s, threshold 30s
+  BTC   BBO            2026-09-16T20:50:12 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T20:51:27 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T20:52:39 -> open  no message for 35s, threshold 30s
+  BTC   TRADE          2026-09-16T20:53:57 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T20:54:39 -> open  no message for 35s, threshold 30s
+  BTC   TRADE          2026-09-16T20:56:41 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T20:57:52 -> open  no message for 33s, threshold 30s
+  BTC   BBO            2026-09-16T20:57:53 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T20:59:19 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T21:00:31 -> open  no message for 30s, threshold 30s
+  BTC   BBO            2026-09-16T21:00:34 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T21:01:33 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T21:02:36 -> open  no message for 30s, threshold 30s
+  BTC   TRADE          2026-09-16T21:03:55 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T21:05:39 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T21:06:49 -> open  no message for 31s, threshold 30s
+  BTC   BBO            2026-09-16T21:07:19 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T21:08:47 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T21:10:28 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T21:11:02 -> open  no message for 35s, threshold 30s
+  BTC   TRADE          2026-09-16T21:11:59 -> open  no message for 33s, threshold 30s
+  BTC   BBO            2026-09-16T21:12:03 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T21:17:13 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T21:18:47 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T21:20:13 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T21:20:48 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T21:22:17 -> open  no message for 33s, threshold 30s
+  BTC   BBO            2026-09-16T21:22:17 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T21:23:58 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T21:24:38 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T21:25:47 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T21:27:32 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T21:28:16 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T21:29:32 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T21:31:09 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T21:32:04 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T21:32:54 -> open  no message for 31s, threshold 30s
+  BTC   BBO            2026-09-16T21:33:24 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T21:34:36 -> open  no message for 30s, threshold 30s
+  BTC   BBO            2026-09-16T21:34:36 -> open  no message for 35s, threshold 30s
+  BTC   TRADE          2026-09-16T21:35:30 -> open  no message for 31s, threshold 30s
+  BTC   BBO            2026-09-16T21:35:31 -> open  no message for 30s, threshold 30s
+  BTC   TRADE          2026-09-16T21:36:29 -> open  no message for 32s, threshold 30s
+  BTC   BBO            2026-09-16T21:36:29 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T21:37:58 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T21:41:15 -> open  no message for 32s, threshold 30s
+  BTC   BBO            2026-09-16T21:41:15 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T21:41:55 -> open  no message for 32s, threshold 30s
+  BTC   BBO            2026-09-16T21:42:03 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T21:45:25 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T21:48:05 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T21:50:51 -> open  no message for 32s, threshold 30s
+  BTC   BBO            2026-09-16T21:51:19 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T21:52:48 -> open  no message for 34s, threshold 30s
+  BTC   BBO            2026-09-16T21:52:51 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T21:54:45 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T21:56:01 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T21:57:02 -> open  no message for 31s, threshold 30s
+  BTC   BBO            2026-09-16T21:57:07 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T21:58:22 -> open  no message for 31s, threshold 30s
+  BTC   BBO            2026-09-16T21:58:24 -> open  no message for 35s, threshold 30s
+  BTC   TRADE          2026-09-16T21:59:20 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T22:01:11 -> open  no message for 33s, threshold 30s
+  BTC   BBO            2026-09-16T22:01:12 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T22:02:36 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T22:06:27 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T22:07:37 -> open  no message for 32s, threshold 30s
+  BTC   BBO            2026-09-16T22:07:38 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T22:08:34 -> open  no message for 30s, threshold 30s
+  BTC   TRADE          2026-09-16T22:12:52 -> open  no message for 34s, threshold 30s
+  BTC   BBO            2026-09-16T22:12:53 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T22:14:19 -> open  no message for 33s, threshold 30s
+  BTC   BBO            2026-09-16T22:14:19 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T22:15:30 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T22:17:04 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T22:17:52 -> open  no message for 32s, threshold 30s
+  BTC   BBO            2026-09-16T22:17:57 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T22:19:09 -> open  no message for 30s, threshold 30s
+  BTC   TRADE          2026-09-16T22:19:51 -> open  no message for 34s, threshold 30s
+  BTC   BBO            2026-09-16T22:20:20 -> open  no message for 30s, threshold 30s
+  BTC   TRADE          2026-09-16T22:22:07 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T22:22:49 -> open  no message for 32s, threshold 30s
+  BTC   BBO            2026-09-16T22:22:50 -> open  no message for 32s, threshold 30s
+  BTC   BBO            2026-09-16T22:24:15 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T22:24:15 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T22:25:31 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T22:32:23 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T22:34:33 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T22:36:23 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T22:37:52 -> open  no message for 33s, threshold 30s
+  BTC   BBO            2026-09-16T22:37:59 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T22:39:09 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T22:40:36 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T22:41:53 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T22:43:51 -> open  no message for 35s, threshold 30s
+  BTC   TRADE          2026-09-16T22:45:15 -> open  no message for 30s, threshold 30s
+  BTC   TRADE          2026-09-16T22:46:45 -> open  no message for 32s, threshold 30s
+  BTC   BBO            2026-09-16T22:47:12 -> open  no message for 35s, threshold 30s
+  BTC   TRADE          2026-09-16T22:48:53 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T22:50:12 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T22:52:54 -> open  no message for 35s, threshold 30s
+  BTC   BBO            2026-09-16T22:52:54 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T22:53:48 -> open  no message for 30s, threshold 30s
+  BTC   BBO            2026-09-16T22:53:50 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T22:54:45 -> open  no message for 34s, threshold 30s
+  BTC   BBO            2026-09-16T22:54:45 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T22:55:30 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T22:57:29 -> open  no message for 30s, threshold 30s
+  BTC   TRADE          2026-09-16T22:58:29 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T23:00:36 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T23:01:35 -> open  no message for 30s, threshold 30s
+  BTC   TRADE          2026-09-16T23:03:05 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T23:04:51 -> open  no message for 31s, threshold 30s
+  BTC   BBO            2026-09-16T23:05:03 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T23:06:59 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T23:07:55 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T23:09:42 -> open  no message for 30s, threshold 30s
+  BTC   TRADE          2026-09-16T23:10:42 -> open  no message for 30s, threshold 30s
+  BTC   TRADE          2026-09-16T23:12:10 -> open  no message for 33s, threshold 30s
+  BTC   BBO            2026-09-16T23:12:11 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T23:18:26 -> open  no message for 33s, threshold 30s
+  BTC   BBO            2026-09-16T23:18:28 -> open  no message for 31s, threshold 30s
+  BTC   BBO            2026-09-16T23:19:44 -> open  no message for 30s, threshold 30s
+  BTC   TRADE          2026-09-16T23:19:44 -> open  no message for 30s, threshold 30s
+  BTC   TRADE          2026-09-16T23:22:48 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T23:24:36 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T23:26:20 -> open  no message for 35s, threshold 30s
+  BTC   BBO            2026-09-16T23:26:34 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T23:27:27 -> open  no message for 33s, threshold 30s
+  BTC   BBO            2026-09-16T23:27:28 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T23:29:08 -> open  no message for 32s, threshold 30s
+  BTC   BBO            2026-09-16T23:29:32 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T23:30:37 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T23:32:17 -> open  no message for 33s, threshold 30s
+  BTC   BBO            2026-09-16T23:32:23 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T23:33:09 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T23:34:09 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T23:35:46 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T23:36:28 -> open  no message for 33s, threshold 30s
+  BTC   BBO            2026-09-16T23:36:49 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T23:41:53 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T23:42:42 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T23:44:23 -> open  no message for 33s, threshold 30s
+  BTC   BBO            2026-09-16T23:44:24 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T23:46:36 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T23:47:10 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T23:48:05 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T23:49:50 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T23:51:07 -> open  no message for 35s, threshold 30s
+  BTC   BBO            2026-09-16T23:51:07 -> open  no message for 35s, threshold 30s
+  BTC   TRADE          2026-09-16T23:52:13 -> open  no message for 34s, threshold 30s
+  BTC   BBO            2026-09-16T23:52:25 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-16T23:53:15 -> open  no message for 33s, threshold 30s
+  BTC   BBO            2026-09-16T23:54:01 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T23:54:50 -> open  no message for 32s, threshold 30s
+  BTC   BBO            2026-09-16T23:54:51 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-16T23:55:52 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T23:56:44 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-16T23:57:31 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T23:58:31 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-16T23:59:04 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-17T00:01:35 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-17T00:03:03 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-17T00:03:36 -> open  no message for 32s, threshold 30s
+  BTC   BBO            2026-09-17T00:03:50 -> open  no message for 33s, threshold 30s
+  BTC   TRADE          2026-09-17T00:07:07 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-17T00:08:03 -> open  no message for 31s, threshold 30s
+  BTC   BBO            2026-09-17T00:08:26 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-17T00:10:28 -> open  no message for 31s, threshold 30s
+  BTC   BBO            2026-09-17T00:10:29 -> open  no message for 30s, threshold 30s
+  BTC   TRADE          2026-09-17T00:11:09 -> open  no message for 30s, threshold 30s
+  BTC   TRADE          2026-09-17T00:14:32 -> open  no message for 32s, threshold 30s
+  BTC   BBO            2026-09-17T00:14:33 -> open  no message for 32s, threshold 30s
+  BTC   TRADE          2026-09-18T16:25:05 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-18T16:26:25 -> open  no message for 35s, threshold 30s
+  BTC   BBO            2026-09-18T16:26:25 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-18T16:27:23 -> open  no message for 31s, threshold 30s
+  BTC   TRADE          2026-09-18T16:29:16 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-18T16:31:16 -> open  no message for 34s, threshold 30s
+  BTC   BBO            2026-09-18T16:31:16 -> open  no message for 34s, threshold 30s
+  BTC   TRADE          2026-09-18T16:35:12 -> open  no message for 33s, threshold 30s
+
+Events per hour
+  hour                          BBO     FUNDING L2_SNAPSHOT  MARK_PRICEOPEN_INTERESTORACLE_PRICE       TRADE
+  2026-09-15T04:00           750       1,156         229       1,156       1,156       1,156         446
+  2026-09-15T05:00           326         290          58         290         290         290         256
+  2026-09-16T10:00         1,343       2,824         557       2,824       2,824       2,824         648
+  2026-09-16T11:00         2,149       3,476         692       3,476       3,476       3,476         806
+  2026-09-16T12:00         2,106       3,479         690       3,479       3,479       3,479         759
+  2026-09-16T13:00         2,710       3,482         695       3,482       3,482       3,482         860
+  2026-09-16T14:00         2,886       3,487         694       3,487       3,487       3,487         955
+  2026-09-16T15:00         2,232       3,389         672       3,389       3,389       3,389         906
+  2026-09-16T16:00         1,989       3,459         685       3,459       3,459       3,459         776
+  2026-09-16T17:00         2,272       3,466         689       3,466       3,466       3,466         992
+  2026-09-16T18:00         2,414       3,491         694       3,491       3,491       3,491         840
+  2026-09-16T19:00         1,701       3,483         694       3,483       3,483       3,483         424
+  2026-09-16T20:00         1,317       3,469         687       3,469       3,469       3,469         355
+  2026-09-16T21:00           811       3,456         686       3,456       3,456       3,456         283
+  2026-09-16T22:00         1,009       3,459         684       3,459       3,459       3,459         377
+  2026-09-16T23:00         1,017       3,464         688       3,464       3,464       3,464         325
+  2026-09-17T00:00           300         884         175         884         884         884         115
+  2026-09-18T16:00           390         650         130         650         650         650         102

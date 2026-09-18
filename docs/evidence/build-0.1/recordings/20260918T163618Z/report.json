@@ -1,0 +1,7440 @@
+{
+  "window_hours": 96,
+  "clock": {
+    "ours": "2026-09-18T16:36:20.695488+00:00",
+    "store": "2026-09-18T16:36:20+00:00",
+    "skew_seconds": -0.7
+  },
+  "summary": {
+    "events": 251514,
+    "first": "2026-09-15T04:22:06.604404",
+    "last": "2026-09-18T16:36:20.424728",
+    "hours_covered": 84.24,
+    "events_per_second": 0.83
+  },
+  "streams": [
+    {
+      "asset": "BTC",
+      "event_type": "MARK_PRICE",
+      "events": 50867,
+      "first": "2026-09-15T04:22:06.750835",
+      "last": "2026-09-18T16:36:20.424728"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "ORACLE_PRICE",
+      "events": 50867,
+      "first": "2026-09-15T04:22:06.750835",
+      "last": "2026-09-18T16:36:20.424728"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "FUNDING",
+      "events": 50867,
+      "first": "2026-09-15T04:22:06.750835",
+      "last": "2026-09-18T16:36:20.424728"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "OPEN_INTEREST",
+      "events": 50867,
+      "first": "2026-09-15T04:22:06.750835",
+      "last": "2026-09-18T16:36:20.424728"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "events": 27722,
+      "first": "2026-09-15T04:22:08.279153",
+      "last": "2026-09-18T16:36:14.208673"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "events": 10225,
+      "first": "2026-09-15T04:22:06.604404",
+      "last": "2026-09-18T16:36:02.085540"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "L2_SNAPSHOT",
+      "events": 10099,
+      "first": "2026-09-15T04:22:06.624975",
+      "last": "2026-09-18T16:36:15.530031"
+    }
+  ],
+  "hourly": [
+    {
+      "hour": "2026-09-15T04:00:00",
+      "event_type": "BBO",
+      "events": 750
+    },
+    {
+      "hour": "2026-09-15T04:00:00",
+      "event_type": "FUNDING",
+      "events": 1156
+    },
+    {
+      "hour": "2026-09-15T04:00:00",
+      "event_type": "L2_SNAPSHOT",
+      "events": 229
+    },
+    {
+      "hour": "2026-09-15T04:00:00",
+      "event_type": "MARK_PRICE",
+      "events": 1156
+    },
+    {
+      "hour": "2026-09-15T04:00:00",
+      "event_type": "OPEN_INTEREST",
+      "events": 1156
+    },
+    {
+      "hour": "2026-09-15T04:00:00",
+      "event_type": "ORACLE_PRICE",
+      "events": 1156
+    },
+    {
+      "hour": "2026-09-15T04:00:00",
+      "event_type": "TRADE",
+      "events": 446
+    },
+    {
+      "hour": "2026-09-15T05:00:00",
+      "event_type": "BBO",
+      "events": 326
+    },
+    {
+      "hour": "2026-09-15T05:00:00",
+      "event_type": "FUNDING",
+      "events": 290
+    },
+    {
+      "hour": "2026-09-15T05:00:00",
+      "event_type": "L2_SNAPSHOT",
+      "events": 58
+    },
+    {
+      "hour": "2026-09-15T05:00:00",
+      "event_type": "MARK_PRICE",
+      "events": 290
+    },
+    {
+      "hour": "2026-09-15T05:00:00",
+      "event_type": "OPEN_INTEREST",
+      "events": 290
+    },
+    {
+      "hour": "2026-09-15T05:00:00",
+      "event_type": "ORACLE_PRICE",
+      "events": 290
+    },
+    {
+      "hour": "2026-09-15T05:00:00",
+      "event_type": "TRADE",
+      "events": 256
+    },
+    {
+      "hour": "2026-09-16T10:00:00",
+      "event_type": "BBO",
+      "events": 1343
+    },
+    {
+      "hour": "2026-09-16T10:00:00",
+      "event_type": "FUNDING",
+      "events": 2824
+    },
+    {
+      "hour": "2026-09-16T10:00:00",
+      "event_type": "L2_SNAPSHOT",
+      "events": 557
+    },
+    {
+      "hour": "2026-09-16T10:00:00",
+      "event_type": "MARK_PRICE",
+      "events": 2824
+    },
+    {
+      "hour": "2026-09-16T10:00:00",
+      "event_type": "OPEN_INTEREST",
+      "events": 2824
+    },
+    {
+      "hour": "2026-09-16T10:00:00",
+      "event_type": "ORACLE_PRICE",
+      "events": 2824
+    },
+    {
+      "hour": "2026-09-16T10:00:00",
+      "event_type": "TRADE",
+      "events": 648
+    },
+    {
+      "hour": "2026-09-16T11:00:00",
+      "event_type": "BBO",
+      "events": 2149
+    },
+    {
+      "hour": "2026-09-16T11:00:00",
+      "event_type": "FUNDING",
+      "events": 3476
+    },
+    {
+      "hour": "2026-09-16T11:00:00",
+      "event_type": "L2_SNAPSHOT",
+      "events": 692
+    },
+    {
+      "hour": "2026-09-16T11:00:00",
+      "event_type": "MARK_PRICE",
+      "events": 3476
+    },
+    {
+      "hour": "2026-09-16T11:00:00",
+      "event_type": "OPEN_INTEREST",
+      "events": 3476
+    },
+    {
+      "hour": "2026-09-16T11:00:00",
+      "event_type": "ORACLE_PRICE",
+      "events": 3476
+    },
+    {
+      "hour": "2026-09-16T11:00:00",
+      "event_type": "TRADE",
+      "events": 806
+    },
+    {
+      "hour": "2026-09-16T12:00:00",
+      "event_type": "BBO",
+      "events": 2106
+    },
+    {
+      "hour": "2026-09-16T12:00:00",
+      "event_type": "FUNDING",
+      "events": 3479
+    },
+    {
+      "hour": "2026-09-16T12:00:00",
+      "event_type": "L2_SNAPSHOT",
+      "events": 690
+    },
+    {
+      "hour": "2026-09-16T12:00:00",
+      "event_type": "MARK_PRICE",
+      "events": 3479
+    },
+    {
+      "hour": "2026-09-16T12:00:00",
+      "event_type": "OPEN_INTEREST",
+      "events": 3479
+    },
+    {
+      "hour": "2026-09-16T12:00:00",
+      "event_type": "ORACLE_PRICE",
+      "events": 3479
+    },
+    {
+      "hour": "2026-09-16T12:00:00",
+      "event_type": "TRADE",
+      "events": 759
+    },
+    {
+      "hour": "2026-09-16T13:00:00",
+      "event_type": "BBO",
+      "events": 2710
+    },
+    {
+      "hour": "2026-09-16T13:00:00",
+      "event_type": "FUNDING",
+      "events": 3482
+    },
+    {
+      "hour": "2026-09-16T13:00:00",
+      "event_type": "L2_SNAPSHOT",
+      "events": 695
+    },
+    {
+      "hour": "2026-09-16T13:00:00",
+      "event_type": "MARK_PRICE",
+      "events": 3482
+    },
+    {
+      "hour": "2026-09-16T13:00:00",
+      "event_type": "OPEN_INTEREST",
+      "events": 3482
+    },
+    {
+      "hour": "2026-09-16T13:00:00",
+      "event_type": "ORACLE_PRICE",
+      "events": 3482
+    },
+    {
+      "hour": "2026-09-16T13:00:00",
+      "event_type": "TRADE",
+      "events": 860
+    },
+    {
+      "hour": "2026-09-16T14:00:00",
+      "event_type": "BBO",
+      "events": 2886
+    },
+    {
+      "hour": "2026-09-16T14:00:00",
+      "event_type": "FUNDING",
+      "events": 3487
+    },
+    {
+      "hour": "2026-09-16T14:00:00",
+      "event_type": "L2_SNAPSHOT",
+      "events": 694
+    },
+    {
+      "hour": "2026-09-16T14:00:00",
+      "event_type": "MARK_PRICE",
+      "events": 3487
+    },
+    {
+      "hour": "2026-09-16T14:00:00",
+      "event_type": "OPEN_INTEREST",
+      "events": 3487
+    },
+    {
+      "hour": "2026-09-16T14:00:00",
+      "event_type": "ORACLE_PRICE",
+      "events": 3487
+    },
+    {
+      "hour": "2026-09-16T14:00:00",
+      "event_type": "TRADE",
+      "events": 955
+    },
+    {
+      "hour": "2026-09-16T15:00:00",
+      "event_type": "BBO",
+      "events": 2232
+    },
+    {
+      "hour": "2026-09-16T15:00:00",
+      "event_type": "FUNDING",
+      "events": 3389
+    },
+    {
+      "hour": "2026-09-16T15:00:00",
+      "event_type": "L2_SNAPSHOT",
+      "events": 672
+    },
+    {
+      "hour": "2026-09-16T15:00:00",
+      "event_type": "MARK_PRICE",
+      "events": 3389
+    },
+    {
+      "hour": "2026-09-16T15:00:00",
+      "event_type": "OPEN_INTEREST",
+      "events": 3389
+    },
+    {
+      "hour": "2026-09-16T15:00:00",
+      "event_type": "ORACLE_PRICE",
+      "events": 3389
+    },
+    {
+      "hour": "2026-09-16T15:00:00",
+      "event_type": "TRADE",
+      "events": 906
+    },
+    {
+      "hour": "2026-09-16T16:00:00",
+      "event_type": "BBO",
+      "events": 1989
+    },
+    {
+      "hour": "2026-09-16T16:00:00",
+      "event_type": "FUNDING",
+      "events": 3459
+    },
+    {
+      "hour": "2026-09-16T16:00:00",
+      "event_type": "L2_SNAPSHOT",
+      "events": 685
+    },
+    {
+      "hour": "2026-09-16T16:00:00",
+      "event_type": "MARK_PRICE",
+      "events": 3459
+    },
+    {
+      "hour": "2026-09-16T16:00:00",
+      "event_type": "OPEN_INTEREST",
+      "events": 3459
+    },
+    {
+      "hour": "2026-09-16T16:00:00",
+      "event_type": "ORACLE_PRICE",
+      "events": 3459
+    },
+    {
+      "hour": "2026-09-16T16:00:00",
+      "event_type": "TRADE",
+      "events": 776
+    },
+    {
+      "hour": "2026-09-16T17:00:00",
+      "event_type": "BBO",
+      "events": 2272
+    },
+    {
+      "hour": "2026-09-16T17:00:00",
+      "event_type": "FUNDING",
+      "events": 3466
+    },
+    {
+      "hour": "2026-09-16T17:00:00",
+      "event_type": "L2_SNAPSHOT",
+      "events": 689
+    },
+    {
+      "hour": "2026-09-16T17:00:00",
+      "event_type": "MARK_PRICE",
+      "events": 3466
+    },
+    {
+      "hour": "2026-09-16T17:00:00",
+      "event_type": "OPEN_INTEREST",
+      "events": 3466
+    },
+    {
+      "hour": "2026-09-16T17:00:00",
+      "event_type": "ORACLE_PRICE",
+      "events": 3466
+    },
+    {
+      "hour": "2026-09-16T17:00:00",
+      "event_type": "TRADE",
+      "events": 992
+    },
+    {
+      "hour": "2026-09-16T18:00:00",
+      "event_type": "BBO",
+      "events": 2414
+    },
+    {
+      "hour": "2026-09-16T18:00:00",
+      "event_type": "FUNDING",
+      "events": 3491
+    },
+    {
+      "hour": "2026-09-16T18:00:00",
+      "event_type": "L2_SNAPSHOT",
+      "events": 694
+    },
+    {
+      "hour": "2026-09-16T18:00:00",
+      "event_type": "MARK_PRICE",
+      "events": 3491
+    },
+    {
+      "hour": "2026-09-16T18:00:00",
+      "event_type": "OPEN_INTEREST",
+      "events": 3491
+    },
+    {
+      "hour": "2026-09-16T18:00:00",
+      "event_type": "ORACLE_PRICE",
+      "events": 3491
+    },
+    {
+      "hour": "2026-09-16T18:00:00",
+      "event_type": "TRADE",
+      "events": 840
+    },
+    {
+      "hour": "2026-09-16T19:00:00",
+      "event_type": "BBO",
+      "events": 1701
+    },
+    {
+      "hour": "2026-09-16T19:00:00",
+      "event_type": "FUNDING",
+      "events": 3483
+    },
+    {
+      "hour": "2026-09-16T19:00:00",
+      "event_type": "L2_SNAPSHOT",
+      "events": 694
+    },
+    {
+      "hour": "2026-09-16T19:00:00",
+      "event_type": "MARK_PRICE",
+      "events": 3483
+    },
+    {
+      "hour": "2026-09-16T19:00:00",
+      "event_type": "OPEN_INTEREST",
+      "events": 3483
+    },
+    {
+      "hour": "2026-09-16T19:00:00",
+      "event_type": "ORACLE_PRICE",
+      "events": 3483
+    },
+    {
+      "hour": "2026-09-16T19:00:00",
+      "event_type": "TRADE",
+      "events": 424
+    },
+    {
+      "hour": "2026-09-16T20:00:00",
+      "event_type": "BBO",
+      "events": 1317
+    },
+    {
+      "hour": "2026-09-16T20:00:00",
+      "event_type": "FUNDING",
+      "events": 3469
+    },
+    {
+      "hour": "2026-09-16T20:00:00",
+      "event_type": "L2_SNAPSHOT",
+      "events": 687
+    },
+    {
+      "hour": "2026-09-16T20:00:00",
+      "event_type": "MARK_PRICE",
+      "events": 3469
+    },
+    {
+      "hour": "2026-09-16T20:00:00",
+      "event_type": "OPEN_INTEREST",
+      "events": 3469
+    },
+    {
+      "hour": "2026-09-16T20:00:00",
+      "event_type": "ORACLE_PRICE",
+      "events": 3469
+    },
+    {
+      "hour": "2026-09-16T20:00:00",
+      "event_type": "TRADE",
+      "events": 355
+    },
+    {
+      "hour": "2026-09-16T21:00:00",
+      "event_type": "BBO",
+      "events": 811
+    },
+    {
+      "hour": "2026-09-16T21:00:00",
+      "event_type": "FUNDING",
+      "events": 3456
+    },
+    {
+      "hour": "2026-09-16T21:00:00",
+      "event_type": "L2_SNAPSHOT",
+      "events": 686
+    },
+    {
+      "hour": "2026-09-16T21:00:00",
+      "event_type": "MARK_PRICE",
+      "events": 3456
+    },
+    {
+      "hour": "2026-09-16T21:00:00",
+      "event_type": "OPEN_INTEREST",
+      "events": 3456
+    },
+    {
+      "hour": "2026-09-16T21:00:00",
+      "event_type": "ORACLE_PRICE",
+      "events": 3456
+    },
+    {
+      "hour": "2026-09-16T21:00:00",
+      "event_type": "TRADE",
+      "events": 283
+    },
+    {
+      "hour": "2026-09-16T22:00:00",
+      "event_type": "BBO",
+      "events": 1009
+    },
+    {
+      "hour": "2026-09-16T22:00:00",
+      "event_type": "FUNDING",
+      "events": 3459
+    },
+    {
+      "hour": "2026-09-16T22:00:00",
+      "event_type": "L2_SNAPSHOT",
+      "events": 684
+    },
+    {
+      "hour": "2026-09-16T22:00:00",
+      "event_type": "MARK_PRICE",
+      "events": 3459
+    },
+    {
+      "hour": "2026-09-16T22:00:00",
+      "event_type": "OPEN_INTEREST",
+      "events": 3459
+    },
+    {
+      "hour": "2026-09-16T22:00:00",
+      "event_type": "ORACLE_PRICE",
+      "events": 3459
+    },
+    {
+      "hour": "2026-09-16T22:00:00",
+      "event_type": "TRADE",
+      "events": 377
+    },
+    {
+      "hour": "2026-09-16T23:00:00",
+      "event_type": "BBO",
+      "events": 1017
+    },
+    {
+      "hour": "2026-09-16T23:00:00",
+      "event_type": "FUNDING",
+      "events": 3464
+    },
+    {
+      "hour": "2026-09-16T23:00:00",
+      "event_type": "L2_SNAPSHOT",
+      "events": 688
+    },
+    {
+      "hour": "2026-09-16T23:00:00",
+      "event_type": "MARK_PRICE",
+      "events": 3464
+    },
+    {
+      "hour": "2026-09-16T23:00:00",
+      "event_type": "OPEN_INTEREST",
+      "events": 3464
+    },
+    {
+      "hour": "2026-09-16T23:00:00",
+      "event_type": "ORACLE_PRICE",
+      "events": 3464
+    },
+    {
+      "hour": "2026-09-16T23:00:00",
+      "event_type": "TRADE",
+      "events": 325
+    },
+    {
+      "hour": "2026-09-17T00:00:00",
+      "event_type": "BBO",
+      "events": 300
+    },
+    {
+      "hour": "2026-09-17T00:00:00",
+      "event_type": "FUNDING",
+      "events": 884
+    },
+    {
+      "hour": "2026-09-17T00:00:00",
+      "event_type": "L2_SNAPSHOT",
+      "events": 175
+    },
+    {
+      "hour": "2026-09-17T00:00:00",
+      "event_type": "MARK_PRICE",
+      "events": 884
+    },
+    {
+      "hour": "2026-09-17T00:00:00",
+      "event_type": "OPEN_INTEREST",
+      "events": 884
+    },
+    {
+      "hour": "2026-09-17T00:00:00",
+      "event_type": "ORACLE_PRICE",
+      "events": 884
+    },
+    {
+      "hour": "2026-09-17T00:00:00",
+      "event_type": "TRADE",
+      "events": 115
+    },
+    {
+      "hour": "2026-09-18T16:00:00",
+      "event_type": "BBO",
+      "events": 390
+    },
+    {
+      "hour": "2026-09-18T16:00:00",
+      "event_type": "FUNDING",
+      "events": 653
+    },
+    {
+      "hour": "2026-09-18T16:00:00",
+      "event_type": "L2_SNAPSHOT",
+      "events": 130
+    },
+    {
+      "hour": "2026-09-18T16:00:00",
+      "event_type": "MARK_PRICE",
+      "events": 653
+    },
+    {
+      "hour": "2026-09-18T16:00:00",
+      "event_type": "OPEN_INTEREST",
+      "events": 653
+    },
+    {
+      "hour": "2026-09-18T16:00:00",
+      "event_type": "ORACLE_PRICE",
+      "events": 653
+    },
+    {
+      "hour": "2026-09-18T16:00:00",
+      "event_type": "TRADE",
+      "events": 102
+    }
+  ],
+  "silences": [
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "longest_gap_seconds": 144593.0,
+      "mean_gap_ms": 29659.2
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "longest_gap_seconds": 144591.46,
+      "mean_gap_ms": 10939.2
+    },
+    {
+      "asset": "BTC",
+      "event_type": "L2_SNAPSHOT",
+      "longest_gap_seconds": 144590.1,
+      "mean_gap_ms": 30030.6
+    },
+    {
+      "asset": "BTC",
+      "event_type": "MARK_PRICE",
+      "longest_gap_seconds": 144588.01,
+      "mean_gap_ms": 5961.8
+    },
+    {
+      "asset": "BTC",
+      "event_type": "ORACLE_PRICE",
+      "longest_gap_seconds": 144588.01,
+      "mean_gap_ms": 5961.8
+    },
+    {
+      "asset": "BTC",
+      "event_type": "FUNDING",
+      "longest_gap_seconds": 144588.01,
+      "mean_gap_ms": 5961.8
+    },
+    {
+      "asset": "BTC",
+      "event_type": "OPEN_INTEREST",
+      "longest_gap_seconds": 144588.01,
+      "mean_gap_ms": 5961.8
+    }
+  ],
+  "timeline": [
+    {
+      "minute": "2026-09-15T04:22:00",
+      "events": 300,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T04:23:00",
+      "events": 304,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T04:24:00",
+      "events": 298,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T04:25:00",
+      "events": 340,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T04:26:00",
+      "events": 316,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T04:27:00",
+      "events": 326,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T04:28:00",
+      "events": 294,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T04:29:00",
+      "events": 294,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T04:30:00",
+      "events": 314,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T04:31:00",
+      "events": 285,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T04:32:00",
+      "events": 307,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T04:33:00",
+      "events": 265,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T04:34:00",
+      "events": 292,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T04:35:00",
+      "events": 333,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T04:36:00",
+      "events": 294,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T04:37:00",
+      "events": 318,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T04:38:00",
+      "events": 288,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T04:39:00",
+      "events": 292,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T04:40:00",
+      "events": 278,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T04:41:00",
+      "events": 282,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T04:42:00",
+      "events": 29,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T05:08:00",
+      "events": 281,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T05:09:00",
+      "events": 323,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T05:10:00",
+      "events": 374,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T05:11:00",
+      "events": 373,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T05:12:00",
+      "events": 332,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-15T05:13:00",
+      "events": 117,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:10:00",
+      "events": 54,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:11:00",
+      "events": 280,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:12:00",
+      "events": 279,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:13:00",
+      "events": 289,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:14:00",
+      "events": 299,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:15:00",
+      "events": 280,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:16:00",
+      "events": 273,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:17:00",
+      "events": 271,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:18:00",
+      "events": 268,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:19:00",
+      "events": 271,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:20:00",
+      "events": 273,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:21:00",
+      "events": 279,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:22:00",
+      "events": 274,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:23:00",
+      "events": 279,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:24:00",
+      "events": 280,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:25:00",
+      "events": 275,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:26:00",
+      "events": 280,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:27:00",
+      "events": 287,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:28:00",
+      "events": 287,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:29:00",
+      "events": 289,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:30:00",
+      "events": 292,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:31:00",
+      "events": 289,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:32:00",
+      "events": 284,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:33:00",
+      "events": 285,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:34:00",
+      "events": 262,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:35:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:36:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:37:00",
+      "events": 282,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:38:00",
+      "events": 281,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:39:00",
+      "events": 276,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:40:00",
+      "events": 289,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:41:00",
+      "events": 282,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:42:00",
+      "events": 268,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:43:00",
+      "events": 277,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:44:00",
+      "events": 288,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:45:00",
+      "events": 285,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:46:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:47:00",
+      "events": 291,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:48:00",
+      "events": 278,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:49:00",
+      "events": 280,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:50:00",
+      "events": 282,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:51:00",
+      "events": 278,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:52:00",
+      "events": 275,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:53:00",
+      "events": 279,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:54:00",
+      "events": 298,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:55:00",
+      "events": 291,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:56:00",
+      "events": 288,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:57:00",
+      "events": 276,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:58:00",
+      "events": 288,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T10:59:00",
+      "events": 284,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:00:00",
+      "events": 299,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:01:00",
+      "events": 287,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:02:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:03:00",
+      "events": 281,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:04:00",
+      "events": 279,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:05:00",
+      "events": 298,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:06:00",
+      "events": 294,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:07:00",
+      "events": 289,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:08:00",
+      "events": 286,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:09:00",
+      "events": 285,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:10:00",
+      "events": 289,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:11:00",
+      "events": 280,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:12:00",
+      "events": 277,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:13:00",
+      "events": 282,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:14:00",
+      "events": 289,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:15:00",
+      "events": 304,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:16:00",
+      "events": 300,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:17:00",
+      "events": 279,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:18:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:19:00",
+      "events": 294,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:20:00",
+      "events": 290,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:21:00",
+      "events": 287,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:22:00",
+      "events": 303,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:23:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:24:00",
+      "events": 290,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:25:00",
+      "events": 297,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:26:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:27:00",
+      "events": 289,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:28:00",
+      "events": 281,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:29:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:30:00",
+      "events": 297,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:31:00",
+      "events": 277,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:32:00",
+      "events": 285,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:33:00",
+      "events": 277,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:34:00",
+      "events": 271,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:35:00",
+      "events": 285,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:36:00",
+      "events": 295,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:37:00",
+      "events": 294,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:38:00",
+      "events": 307,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:39:00",
+      "events": 293,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:40:00",
+      "events": 312,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:41:00",
+      "events": 303,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:42:00",
+      "events": 305,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:43:00",
+      "events": 321,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:44:00",
+      "events": 314,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:45:00",
+      "events": 311,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:46:00",
+      "events": 314,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:47:00",
+      "events": 301,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:48:00",
+      "events": 307,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:49:00",
+      "events": 313,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:50:00",
+      "events": 295,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:51:00",
+      "events": 277,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:52:00",
+      "events": 315,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:53:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:54:00",
+      "events": 304,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:55:00",
+      "events": 292,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:56:00",
+      "events": 307,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:57:00",
+      "events": 279,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:58:00",
+      "events": 280,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T11:59:00",
+      "events": 293,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:00:00",
+      "events": 309,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:01:00",
+      "events": 296,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:02:00",
+      "events": 289,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:03:00",
+      "events": 285,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:04:00",
+      "events": 289,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:05:00",
+      "events": 287,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:06:00",
+      "events": 286,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:07:00",
+      "events": 297,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:08:00",
+      "events": 286,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:09:00",
+      "events": 282,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:10:00",
+      "events": 298,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:11:00",
+      "events": 292,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:12:00",
+      "events": 295,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:13:00",
+      "events": 302,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:14:00",
+      "events": 280,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:15:00",
+      "events": 297,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:16:00",
+      "events": 304,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:17:00",
+      "events": 296,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:18:00",
+      "events": 291,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:19:00",
+      "events": 287,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:20:00",
+      "events": 290,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:21:00",
+      "events": 294,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:22:00",
+      "events": 280,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:23:00",
+      "events": 295,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:24:00",
+      "events": 300,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:25:00",
+      "events": 296,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:26:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:27:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:28:00",
+      "events": 273,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:29:00",
+      "events": 279,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:30:00",
+      "events": 284,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:31:00",
+      "events": 280,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:32:00",
+      "events": 306,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:33:00",
+      "events": 315,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:34:00",
+      "events": 292,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:35:00",
+      "events": 303,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:36:00",
+      "events": 301,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:37:00",
+      "events": 286,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:38:00",
+      "events": 297,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:39:00",
+      "events": 288,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:40:00",
+      "events": 290,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:41:00",
+      "events": 286,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:42:00",
+      "events": 289,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:43:00",
+      "events": 295,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:44:00",
+      "events": 284,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:45:00",
+      "events": 295,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:46:00",
+      "events": 290,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:47:00",
+      "events": 289,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:48:00",
+      "events": 286,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:49:00",
+      "events": 301,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:50:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:51:00",
+      "events": 294,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:52:00",
+      "events": 282,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:53:00",
+      "events": 291,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:54:00",
+      "events": 284,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:55:00",
+      "events": 298,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:56:00",
+      "events": 292,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:57:00",
+      "events": 286,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:58:00",
+      "events": 292,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T12:59:00",
+      "events": 291,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:00:00",
+      "events": 300,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:01:00",
+      "events": 271,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:02:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:03:00",
+      "events": 281,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:04:00",
+      "events": 281,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:05:00",
+      "events": 277,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:06:00",
+      "events": 288,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:07:00",
+      "events": 301,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:08:00",
+      "events": 299,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:09:00",
+      "events": 290,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:10:00",
+      "events": 298,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:11:00",
+      "events": 297,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:12:00",
+      "events": 303,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:13:00",
+      "events": 334,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:14:00",
+      "events": 284,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:15:00",
+      "events": 324,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:16:00",
+      "events": 307,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:17:00",
+      "events": 286,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:18:00",
+      "events": 298,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:19:00",
+      "events": 298,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:20:00",
+      "events": 304,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:21:00",
+      "events": 298,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:22:00",
+      "events": 292,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:23:00",
+      "events": 298,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:24:00",
+      "events": 305,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:25:00",
+      "events": 321,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:26:00",
+      "events": 303,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:27:00",
+      "events": 313,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:28:00",
+      "events": 307,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:29:00",
+      "events": 284,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:30:00",
+      "events": 338,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:31:00",
+      "events": 331,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:32:00",
+      "events": 336,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:33:00",
+      "events": 315,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:34:00",
+      "events": 292,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:35:00",
+      "events": 319,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:36:00",
+      "events": 304,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:37:00",
+      "events": 280,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:38:00",
+      "events": 269,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:39:00",
+      "events": 289,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:40:00",
+      "events": 303,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:41:00",
+      "events": 304,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:42:00",
+      "events": 314,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:43:00",
+      "events": 323,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:44:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:45:00",
+      "events": 319,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:46:00",
+      "events": 277,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:47:00",
+      "events": 296,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:48:00",
+      "events": 311,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:49:00",
+      "events": 321,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:50:00",
+      "events": 326,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:51:00",
+      "events": 307,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:52:00",
+      "events": 311,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:53:00",
+      "events": 317,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:54:00",
+      "events": 317,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:55:00",
+      "events": 326,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:56:00",
+      "events": 332,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:57:00",
+      "events": 305,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:58:00",
+      "events": 312,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T13:59:00",
+      "events": 291,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:00:00",
+      "events": 312,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:01:00",
+      "events": 294,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:02:00",
+      "events": 286,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:03:00",
+      "events": 277,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:04:00",
+      "events": 316,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:05:00",
+      "events": 343,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:06:00",
+      "events": 360,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:07:00",
+      "events": 331,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:08:00",
+      "events": 317,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:09:00",
+      "events": 318,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:10:00",
+      "events": 339,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:11:00",
+      "events": 302,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:12:00",
+      "events": 303,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:13:00",
+      "events": 293,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:14:00",
+      "events": 304,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:15:00",
+      "events": 319,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:16:00",
+      "events": 300,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:17:00",
+      "events": 298,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:18:00",
+      "events": 302,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:19:00",
+      "events": 315,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:20:00",
+      "events": 326,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:21:00",
+      "events": 298,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:22:00",
+      "events": 330,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:23:00",
+      "events": 377,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:24:00",
+      "events": 307,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:25:00",
+      "events": 284,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:26:00",
+      "events": 289,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:27:00",
+      "events": 301,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:28:00",
+      "events": 317,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:29:00",
+      "events": 281,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:30:00",
+      "events": 286,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:31:00",
+      "events": 306,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:32:00",
+      "events": 295,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:33:00",
+      "events": 318,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:34:00",
+      "events": 320,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:35:00",
+      "events": 301,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:36:00",
+      "events": 318,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:37:00",
+      "events": 300,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:38:00",
+      "events": 315,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:39:00",
+      "events": 307,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:40:00",
+      "events": 287,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:41:00",
+      "events": 314,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:42:00",
+      "events": 304,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:43:00",
+      "events": 317,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:44:00",
+      "events": 299,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:45:00",
+      "events": 298,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:46:00",
+      "events": 308,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:47:00",
+      "events": 314,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:48:00",
+      "events": 282,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:49:00",
+      "events": 289,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:50:00",
+      "events": 311,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:51:00",
+      "events": 308,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:52:00",
+      "events": 296,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:53:00",
+      "events": 335,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:54:00",
+      "events": 314,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:55:00",
+      "events": 304,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:56:00",
+      "events": 303,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:57:00",
+      "events": 302,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:58:00",
+      "events": 304,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T14:59:00",
+      "events": 289,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:00:00",
+      "events": 294,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:01:00",
+      "events": 297,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:02:00",
+      "events": 285,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:03:00",
+      "events": 281,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:04:00",
+      "events": 284,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:05:00",
+      "events": 282,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:06:00",
+      "events": 311,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:07:00",
+      "events": 293,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:08:00",
+      "events": 321,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:09:00",
+      "events": 307,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:10:00",
+      "events": 295,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:11:00",
+      "events": 289,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:12:00",
+      "events": 293,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:13:00",
+      "events": 300,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:14:00",
+      "events": 275,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:15:00",
+      "events": 306,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:16:00",
+      "events": 316,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:17:00",
+      "events": 301,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:18:00",
+      "events": 297,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:19:00",
+      "events": 332,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:20:00",
+      "events": 335,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:21:00",
+      "events": 320,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:22:00",
+      "events": 286,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:23:00",
+      "events": 275,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:24:00",
+      "events": 284,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:25:00",
+      "events": 305,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:26:00",
+      "events": 293,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:27:00",
+      "events": 300,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:28:00",
+      "events": 194,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:30:00",
+      "events": 258,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:31:00",
+      "events": 245,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:32:00",
+      "events": 306,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:33:00",
+      "events": 274,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:34:00",
+      "events": 275,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:35:00",
+      "events": 284,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:36:00",
+      "events": 297,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:37:00",
+      "events": 294,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:38:00",
+      "events": 297,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:39:00",
+      "events": 292,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:40:00",
+      "events": 291,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:41:00",
+      "events": 281,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:42:00",
+      "events": 276,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:43:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:44:00",
+      "events": 293,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:45:00",
+      "events": 310,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:46:00",
+      "events": 286,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:47:00",
+      "events": 367,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:48:00",
+      "events": 328,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:49:00",
+      "events": 312,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:50:00",
+      "events": 328,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:51:00",
+      "events": 315,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:52:00",
+      "events": 270,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:53:00",
+      "events": 300,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:54:00",
+      "events": 308,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:55:00",
+      "events": 280,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:56:00",
+      "events": 296,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:57:00",
+      "events": 297,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:58:00",
+      "events": 289,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T15:59:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:00:00",
+      "events": 305,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:01:00",
+      "events": 296,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:02:00",
+      "events": 287,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:03:00",
+      "events": 300,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:04:00",
+      "events": 297,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:05:00",
+      "events": 292,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:06:00",
+      "events": 282,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:07:00",
+      "events": 285,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:08:00",
+      "events": 309,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:09:00",
+      "events": 302,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:10:00",
+      "events": 304,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:11:00",
+      "events": 307,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:12:00",
+      "events": 273,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:13:00",
+      "events": 273,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:14:00",
+      "events": 278,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:15:00",
+      "events": 279,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:16:00",
+      "events": 291,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:17:00",
+      "events": 293,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:18:00",
+      "events": 304,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:19:00",
+      "events": 313,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:20:00",
+      "events": 310,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:21:00",
+      "events": 307,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:22:00",
+      "events": 282,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:23:00",
+      "events": 291,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:24:00",
+      "events": 300,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:25:00",
+      "events": 278,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:26:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:27:00",
+      "events": 295,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:28:00",
+      "events": 297,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:29:00",
+      "events": 275,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:30:00",
+      "events": 289,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:31:00",
+      "events": 297,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:32:00",
+      "events": 288,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:33:00",
+      "events": 281,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:34:00",
+      "events": 271,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:35:00",
+      "events": 279,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:36:00",
+      "events": 280,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:37:00",
+      "events": 284,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:38:00",
+      "events": 288,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:39:00",
+      "events": 280,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:40:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:41:00",
+      "events": 277,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:42:00",
+      "events": 291,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:43:00",
+      "events": 294,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:44:00",
+      "events": 307,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:45:00",
+      "events": 298,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:46:00",
+      "events": 303,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:47:00",
+      "events": 272,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:48:00",
+      "events": 279,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:49:00",
+      "events": 273,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:50:00",
+      "events": 264,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:51:00",
+      "events": 274,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:52:00",
+      "events": 287,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:53:00",
+      "events": 269,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:54:00",
+      "events": 267,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:55:00",
+      "events": 278,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:56:00",
+      "events": 288,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:57:00",
+      "events": 281,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:58:00",
+      "events": 285,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T16:59:00",
+      "events": 291,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:00:00",
+      "events": 297,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:01:00",
+      "events": 304,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:02:00",
+      "events": 289,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:03:00",
+      "events": 282,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:04:00",
+      "events": 288,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:05:00",
+      "events": 279,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:06:00",
+      "events": 303,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:07:00",
+      "events": 293,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:08:00",
+      "events": 277,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:09:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:10:00",
+      "events": 305,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:11:00",
+      "events": 291,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:12:00",
+      "events": 298,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:13:00",
+      "events": 276,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:14:00",
+      "events": 288,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:15:00",
+      "events": 319,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:16:00",
+      "events": 288,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:17:00",
+      "events": 306,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:18:00",
+      "events": 291,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:19:00",
+      "events": 292,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:20:00",
+      "events": 290,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:21:00",
+      "events": 290,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:22:00",
+      "events": 301,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:23:00",
+      "events": 285,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:24:00",
+      "events": 282,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:25:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:26:00",
+      "events": 285,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:27:00",
+      "events": 264,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:28:00",
+      "events": 287,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:29:00",
+      "events": 302,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:30:00",
+      "events": 295,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:31:00",
+      "events": 300,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:32:00",
+      "events": 281,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:33:00",
+      "events": 275,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:34:00",
+      "events": 286,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:35:00",
+      "events": 317,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:36:00",
+      "events": 334,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:37:00",
+      "events": 298,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:38:00",
+      "events": 275,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:39:00",
+      "events": 321,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:40:00",
+      "events": 299,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:41:00",
+      "events": 272,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:42:00",
+      "events": 318,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:43:00",
+      "events": 355,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:44:00",
+      "events": 318,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:45:00",
+      "events": 309,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:46:00",
+      "events": 301,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:47:00",
+      "events": 301,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:48:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:49:00",
+      "events": 298,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:50:00",
+      "events": 284,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:51:00",
+      "events": 313,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:52:00",
+      "events": 278,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:53:00",
+      "events": 271,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:54:00",
+      "events": 295,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:55:00",
+      "events": 298,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:56:00",
+      "events": 297,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:57:00",
+      "events": 279,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:58:00",
+      "events": 389,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T17:59:00",
+      "events": 359,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:00:00",
+      "events": 347,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:01:00",
+      "events": 297,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:02:00",
+      "events": 340,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:03:00",
+      "events": 336,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:04:00",
+      "events": 288,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:05:00",
+      "events": 302,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:06:00",
+      "events": 290,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:07:00",
+      "events": 286,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:08:00",
+      "events": 295,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:09:00",
+      "events": 308,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:10:00",
+      "events": 313,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:11:00",
+      "events": 259,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:12:00",
+      "events": 258,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:13:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:14:00",
+      "events": 270,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:15:00",
+      "events": 281,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:16:00",
+      "events": 320,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:17:00",
+      "events": 329,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:18:00",
+      "events": 297,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:19:00",
+      "events": 313,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:20:00",
+      "events": 285,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:21:00",
+      "events": 269,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:22:00",
+      "events": 250,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:23:00",
+      "events": 301,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:24:00",
+      "events": 315,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:25:00",
+      "events": 297,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:26:00",
+      "events": 297,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:27:00",
+      "events": 269,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:28:00",
+      "events": 291,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:29:00",
+      "events": 294,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:30:00",
+      "events": 305,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:31:00",
+      "events": 267,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:32:00",
+      "events": 256,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:33:00",
+      "events": 260,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:34:00",
+      "events": 251,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:35:00",
+      "events": 285,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:36:00",
+      "events": 335,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:37:00",
+      "events": 415,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:38:00",
+      "events": 312,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:39:00",
+      "events": 308,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:40:00",
+      "events": 300,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:41:00",
+      "events": 272,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:42:00",
+      "events": 299,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:43:00",
+      "events": 342,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:44:00",
+      "events": 315,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:45:00",
+      "events": 306,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:46:00",
+      "events": 296,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:47:00",
+      "events": 255,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:48:00",
+      "events": 259,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:49:00",
+      "events": 294,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:50:00",
+      "events": 261,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:51:00",
+      "events": 294,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:52:00",
+      "events": 380,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:53:00",
+      "events": 329,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:54:00",
+      "events": 333,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:55:00",
+      "events": 297,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:56:00",
+      "events": 288,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:57:00",
+      "events": 306,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:58:00",
+      "events": 313,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T18:59:00",
+      "events": 299,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:00:00",
+      "events": 295,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:01:00",
+      "events": 280,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:02:00",
+      "events": 261,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:03:00",
+      "events": 273,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:04:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:05:00",
+      "events": 315,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:06:00",
+      "events": 294,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:07:00",
+      "events": 282,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:08:00",
+      "events": 297,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:09:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:10:00",
+      "events": 271,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:11:00",
+      "events": 292,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:12:00",
+      "events": 303,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:13:00",
+      "events": 279,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:14:00",
+      "events": 289,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:15:00",
+      "events": 315,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:16:00",
+      "events": 293,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:17:00",
+      "events": 312,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:18:00",
+      "events": 278,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:19:00",
+      "events": 301,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:20:00",
+      "events": 278,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:21:00",
+      "events": 264,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:22:00",
+      "events": 302,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:23:00",
+      "events": 264,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:24:00",
+      "events": 282,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:25:00",
+      "events": 292,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:26:00",
+      "events": 284,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:27:00",
+      "events": 304,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:28:00",
+      "events": 287,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:29:00",
+      "events": 291,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:30:00",
+      "events": 300,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:31:00",
+      "events": 312,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:32:00",
+      "events": 284,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:33:00",
+      "events": 268,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:34:00",
+      "events": 287,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:35:00",
+      "events": 305,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:36:00",
+      "events": 267,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:37:00",
+      "events": 284,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:38:00",
+      "events": 274,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:39:00",
+      "events": 260,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:40:00",
+      "events": 289,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:41:00",
+      "events": 249,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:42:00",
+      "events": 262,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:43:00",
+      "events": 267,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:44:00",
+      "events": 299,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:45:00",
+      "events": 284,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:46:00",
+      "events": 272,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:47:00",
+      "events": 256,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:48:00",
+      "events": 240,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:49:00",
+      "events": 273,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:50:00",
+      "events": 268,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:51:00",
+      "events": 256,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:52:00",
+      "events": 251,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:53:00",
+      "events": 250,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:54:00",
+      "events": 254,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:55:00",
+      "events": 268,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:56:00",
+      "events": 248,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:57:00",
+      "events": 251,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:58:00",
+      "events": 252,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T19:59:00",
+      "events": 277,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:00:00",
+      "events": 284,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:01:00",
+      "events": 275,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:02:00",
+      "events": 277,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:03:00",
+      "events": 261,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:04:00",
+      "events": 276,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:05:00",
+      "events": 268,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:06:00",
+      "events": 308,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:07:00",
+      "events": 274,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:08:00",
+      "events": 276,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:09:00",
+      "events": 250,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:10:00",
+      "events": 268,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:11:00",
+      "events": 286,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:12:00",
+      "events": 267,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:13:00",
+      "events": 260,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:14:00",
+      "events": 268,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:15:00",
+      "events": 320,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:16:00",
+      "events": 287,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:17:00",
+      "events": 284,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:18:00",
+      "events": 291,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:19:00",
+      "events": 265,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:20:00",
+      "events": 279,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:21:00",
+      "events": 271,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:22:00",
+      "events": 274,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:23:00",
+      "events": 273,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:24:00",
+      "events": 261,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:25:00",
+      "events": 281,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:26:00",
+      "events": 262,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:27:00",
+      "events": 266,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:28:00",
+      "events": 265,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:29:00",
+      "events": 286,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:30:00",
+      "events": 297,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:31:00",
+      "events": 266,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:32:00",
+      "events": 270,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:33:00",
+      "events": 253,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:34:00",
+      "events": 276,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:35:00",
+      "events": 270,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:36:00",
+      "events": 261,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:37:00",
+      "events": 272,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:38:00",
+      "events": 272,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:39:00",
+      "events": 256,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:40:00",
+      "events": 253,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:41:00",
+      "events": 262,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:42:00",
+      "events": 266,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:43:00",
+      "events": 272,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:44:00",
+      "events": 257,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:45:00",
+      "events": 263,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:46:00",
+      "events": 260,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:47:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:48:00",
+      "events": 286,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:49:00",
+      "events": 256,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:50:00",
+      "events": 263,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:51:00",
+      "events": 255,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:52:00",
+      "events": 282,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:53:00",
+      "events": 263,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:54:00",
+      "events": 260,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:55:00",
+      "events": 279,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:56:00",
+      "events": 256,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:57:00",
+      "events": 248,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:58:00",
+      "events": 257,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T20:59:00",
+      "events": 258,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:00:00",
+      "events": 270,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:01:00",
+      "events": 256,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:02:00",
+      "events": 265,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:03:00",
+      "events": 260,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:04:00",
+      "events": 262,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:05:00",
+      "events": 269,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:06:00",
+      "events": 265,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:07:00",
+      "events": 256,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:08:00",
+      "events": 270,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:09:00",
+      "events": 266,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:10:00",
+      "events": 259,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:11:00",
+      "events": 263,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:12:00",
+      "events": 246,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:13:00",
+      "events": 265,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:14:00",
+      "events": 277,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:15:00",
+      "events": 275,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:16:00",
+      "events": 279,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:17:00",
+      "events": 255,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:18:00",
+      "events": 254,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:19:00",
+      "events": 249,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:20:00",
+      "events": 260,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:21:00",
+      "events": 270,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:22:00",
+      "events": 251,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:23:00",
+      "events": 259,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:24:00",
+      "events": 260,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:25:00",
+      "events": 276,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:26:00",
+      "events": 261,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:27:00",
+      "events": 260,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:28:00",
+      "events": 272,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:29:00",
+      "events": 263,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:30:00",
+      "events": 262,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:31:00",
+      "events": 259,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:32:00",
+      "events": 260,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:33:00",
+      "events": 244,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:34:00",
+      "events": 247,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:35:00",
+      "events": 246,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:36:00",
+      "events": 251,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:37:00",
+      "events": 278,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:38:00",
+      "events": 257,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:39:00",
+      "events": 255,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:40:00",
+      "events": 261,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:41:00",
+      "events": 251,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:42:00",
+      "events": 251,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:43:00",
+      "events": 255,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:44:00",
+      "events": 265,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:45:00",
+      "events": 252,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:46:00",
+      "events": 257,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:47:00",
+      "events": 256,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:48:00",
+      "events": 251,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:49:00",
+      "events": 254,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:50:00",
+      "events": 266,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:51:00",
+      "events": 242,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:52:00",
+      "events": 266,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:53:00",
+      "events": 240,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:54:00",
+      "events": 287,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:55:00",
+      "events": 260,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:56:00",
+      "events": 265,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:57:00",
+      "events": 255,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:58:00",
+      "events": 260,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T21:59:00",
+      "events": 258,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:00:00",
+      "events": 278,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:01:00",
+      "events": 275,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:02:00",
+      "events": 318,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:03:00",
+      "events": 277,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:04:00",
+      "events": 308,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:05:00",
+      "events": 299,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:06:00",
+      "events": 270,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:07:00",
+      "events": 255,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:08:00",
+      "events": 257,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:09:00",
+      "events": 281,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:10:00",
+      "events": 287,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:11:00",
+      "events": 280,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:12:00",
+      "events": 272,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:13:00",
+      "events": 244,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:14:00",
+      "events": 245,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:15:00",
+      "events": 267,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:16:00",
+      "events": 263,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:17:00",
+      "events": 253,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:18:00",
+      "events": 250,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:19:00",
+      "events": 282,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:20:00",
+      "events": 250,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:21:00",
+      "events": 265,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:22:00",
+      "events": 263,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:23:00",
+      "events": 248,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:24:00",
+      "events": 243,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:25:00",
+      "events": 264,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:26:00",
+      "events": 267,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:27:00",
+      "events": 263,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:28:00",
+      "events": 269,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:29:00",
+      "events": 280,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:30:00",
+      "events": 272,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:31:00",
+      "events": 276,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:32:00",
+      "events": 255,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:33:00",
+      "events": 259,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:34:00",
+      "events": 258,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:35:00",
+      "events": 263,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:36:00",
+      "events": 284,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:37:00",
+      "events": 268,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:38:00",
+      "events": 252,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:39:00",
+      "events": 269,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:40:00",
+      "events": 272,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:41:00",
+      "events": 267,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:42:00",
+      "events": 253,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:43:00",
+      "events": 260,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:44:00",
+      "events": 258,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:45:00",
+      "events": 262,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:46:00",
+      "events": 262,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:47:00",
+      "events": 242,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:48:00",
+      "events": 261,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:49:00",
+      "events": 258,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:50:00",
+      "events": 252,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:51:00",
+      "events": 266,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:52:00",
+      "events": 279,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:53:00",
+      "events": 244,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:54:00",
+      "events": 245,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:55:00",
+      "events": 259,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:56:00",
+      "events": 260,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:57:00",
+      "events": 256,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:58:00",
+      "events": 254,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T22:59:00",
+      "events": 267,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:00:00",
+      "events": 267,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:01:00",
+      "events": 273,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:02:00",
+      "events": 282,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:03:00",
+      "events": 266,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:04:00",
+      "events": 263,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:05:00",
+      "events": 257,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:06:00",
+      "events": 267,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:07:00",
+      "events": 263,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:08:00",
+      "events": 268,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:09:00",
+      "events": 265,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:10:00",
+      "events": 262,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:11:00",
+      "events": 269,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:12:00",
+      "events": 251,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:13:00",
+      "events": 258,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:14:00",
+      "events": 284,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:15:00",
+      "events": 282,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:16:00",
+      "events": 283,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:17:00",
+      "events": 266,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:18:00",
+      "events": 249,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:19:00",
+      "events": 255,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:20:00",
+      "events": 255,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:21:00",
+      "events": 284,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:22:00",
+      "events": 268,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:23:00",
+      "events": 264,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:24:00",
+      "events": 267,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:25:00",
+      "events": 272,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:26:00",
+      "events": 261,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:27:00",
+      "events": 250,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:28:00",
+      "events": 271,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:29:00",
+      "events": 253,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:30:00",
+      "events": 280,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:31:00",
+      "events": 269,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:32:00",
+      "events": 257,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:33:00",
+      "events": 258,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:34:00",
+      "events": 251,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:35:00",
+      "events": 282,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:36:00",
+      "events": 253,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:37:00",
+      "events": 260,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:38:00",
+      "events": 257,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:39:00",
+      "events": 271,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:40:00",
+      "events": 276,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:41:00",
+      "events": 277,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:42:00",
+      "events": 262,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:43:00",
+      "events": 258,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:44:00",
+      "events": 248,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:45:00",
+      "events": 258,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:46:00",
+      "events": 277,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:47:00",
+      "events": 274,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:48:00",
+      "events": 267,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:49:00",
+      "events": 277,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:50:00",
+      "events": 275,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:51:00",
+      "events": 247,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:52:00",
+      "events": 253,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:53:00",
+      "events": 265,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:54:00",
+      "events": 249,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:55:00",
+      "events": 261,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:56:00",
+      "events": 258,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:57:00",
+      "events": 273,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:58:00",
+      "events": 261,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-16T23:59:00",
+      "events": 257,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-17T00:00:00",
+      "events": 294,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-17T00:01:00",
+      "events": 256,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-17T00:02:00",
+      "events": 267,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-17T00:03:00",
+      "events": 266,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-17T00:04:00",
+      "events": 246,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-17T00:05:00",
+      "events": 271,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-17T00:06:00",
+      "events": 284,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-17T00:07:00",
+      "events": 270,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-17T00:08:00",
+      "events": 270,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-17T00:09:00",
+      "events": 272,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-17T00:10:00",
+      "events": 249,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-17T00:11:00",
+      "events": 257,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-17T00:12:00",
+      "events": 303,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-17T00:13:00",
+      "events": 275,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-17T00:14:00",
+      "events": 253,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-17T00:15:00",
+      "events": 93,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-18T16:25:00",
+      "events": 293,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-18T16:26:00",
+      "events": 262,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-18T16:27:00",
+      "events": 258,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-18T16:28:00",
+      "events": 312,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-18T16:29:00",
+      "events": 324,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-18T16:30:00",
+      "events": 274,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-18T16:31:00",
+      "events": 254,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-18T16:32:00",
+      "events": 292,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-18T16:33:00",
+      "events": 279,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-18T16:34:00",
+      "events": 295,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-18T16:35:00",
+      "events": 302,
+      "quiet": false
+    },
+    {
+      "minute": "2026-09-18T16:36:00",
+      "events": 89,
+      "quiet": false
+    }
+  ],
+  "registered_gaps": [
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T15:30:08.094655+00:00",
+      "end": null,
+      "reason": "no message for 35s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T15:31:08.609376+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T18:02:20.641917+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T18:04:18.485844+00:00",
+      "end": null,
+      "reason": "no message for 35s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T18:10:32.277687+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T18:10:34.507575+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T18:15:14.183288+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T18:21:40.324792+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T18:25:28.692468+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T18:26:49.716903+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T18:29:14.534636+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T18:32:39.668509+00:00",
+      "end": null,
+      "reason": "no message for 35s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T18:32:41.796464+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T18:33:35.584893+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T18:33:47.794048+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T18:39:44.583869+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T18:40:53.204317+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T18:45:24.023932+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T18:46:46.000895+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T18:47:19.184730+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T18:48:19.748422+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T18:49:59.696134+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T18:52:18.060984+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T18:56:05.607716+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T18:57:37.697516+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:01:36.263052+00:00",
+      "end": null,
+      "reason": "no message for 35s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T19:01:39.223952+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:02:40.996104+00:00",
+      "end": null,
+      "reason": "no message for 35s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T19:02:41.037363+00:00",
+      "end": null,
+      "reason": "no message for 35s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:04:17.026264+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:05:31.230808+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:06:12.508520+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:07:08.798093+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:08:21.617016+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:11:33.136872+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:15:31.883884+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:16:30.453203+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:20:05.211216+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:21:26.912608+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T19:21:30.820298+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:25:03.542773+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:26:25.737371+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:28:08.065529+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:30:34.340125+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:32:19.379927+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:36:10.889518+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:37:46.947247+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:38:32.203478+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:40:50.993730+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T19:41:07.941641+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:42:37.102325+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:45:20.670279+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:46:31.911911+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T19:47:02.339129+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:47:53.456203+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T19:47:53.506004+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:50:16.696005+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:51:29.946567+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:52:22.073516+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:53:20.022762+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T19:53:21.352603+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:54:34.938108+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T19:56:05.404679+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:56:05.424956+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T19:57:55.502478+00:00",
+      "end": null,
+      "reason": "no message for 35s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T19:57:58.651411+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:01:58.225333+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:04:43.304428+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:08:22.086557+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:11:29.893633+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:12:25.590011+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:13:10.353683+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:16:39.674855+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:18:49.051161+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:20:19.511699+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:21:59.934339+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:22:37.396841+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:24:09.831039+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:25:04.129870+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:25:54.560779+00:00",
+      "end": null,
+      "reason": "no message for 35s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:26:51.312680+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:28:22.434008+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T20:28:27.751949+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:30:42.031071+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:32:25.424634+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:35:34.054854+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:38:50.060008+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:39:31.948322+00:00",
+      "end": null,
+      "reason": "no message for 35s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:40:51.765425+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:42:10.584812+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T20:42:11.675430+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:43:24.048628+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:44:14.146430+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:45:46.049424+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:48:53.418382+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:50:02.164278+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T20:50:12.957932+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:51:27.525286+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:52:39.246336+00:00",
+      "end": null,
+      "reason": "no message for 35s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:53:57.860257+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:54:39.554739+00:00",
+      "end": null,
+      "reason": "no message for 35s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:56:41.709843+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:57:52.072865+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T20:57:53.020427+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T20:59:19.107566+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:00:31.349564+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T21:00:34.696853+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:01:33.279418+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:02:36.866655+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:03:55.860694+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:05:39.050740+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:06:49.761109+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T21:07:19.485087+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:08:47.749029+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:10:28.903869+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:11:02.879335+00:00",
+      "end": null,
+      "reason": "no message for 35s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:11:59.317155+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T21:12:03.567458+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:17:13.435846+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:18:47.762676+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:20:13.929756+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:20:48.614272+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:22:17.231070+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T21:22:17.632002+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:23:58.063362+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:24:38.879157+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:25:47.578801+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:27:32.957194+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:28:16.757767+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:29:32.196483+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:31:09.250833+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:32:04.384972+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:32:54.766439+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T21:33:24.258086+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:34:36.215380+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T21:34:36.506312+00:00",
+      "end": null,
+      "reason": "no message for 35s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:35:30.637097+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T21:35:31.032101+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:36:29.461065+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T21:36:29.940865+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:37:58.148833+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:41:15.091693+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T21:41:15.641712+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:41:55.199146+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T21:42:03.720762+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:45:25.359762+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:48:05.149436+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:50:51.710006+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T21:51:19.787560+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:52:48.969514+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T21:52:51.650008+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:54:45.463307+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:56:01.356592+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:57:02.891159+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T21:57:07.556462+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:58:22.454538+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T21:58:24.314003+00:00",
+      "end": null,
+      "reason": "no message for 35s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T21:59:20.990500+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:01:11.304807+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T22:01:12.306881+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:02:36.884072+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:06:27.226319+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:07:37.608298+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T22:07:38.169810+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:08:34.844524+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:12:52.482013+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T22:12:53.046631+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:14:19.417690+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T22:14:19.637610+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:15:30.486419+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:17:04.433798+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:17:52.600920+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T22:17:57.019578+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:19:09.990535+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:19:51.391217+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T22:20:20.355096+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:22:07.474054+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:22:49.760830+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T22:22:50.190620+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T22:24:15.511818+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:24:15.529890+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:25:31.622888+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:32:23.462795+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:34:33.716043+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:36:23.759141+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:37:52.182560+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T22:37:59.018711+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:39:09.290660+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:40:36.370817+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:41:53.364181+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:43:51.067117+00:00",
+      "end": null,
+      "reason": "no message for 35s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:45:15.784067+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:46:45.780058+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T22:47:12.934972+00:00",
+      "end": null,
+      "reason": "no message for 35s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:48:53.850903+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:50:12.241063+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:52:54.516148+00:00",
+      "end": null,
+      "reason": "no message for 35s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T22:52:54.898696+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:53:48.808534+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T22:53:50.278476+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:54:45.489933+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T22:54:45.542962+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:55:30.280639+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:57:29.472134+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T22:58:29.404324+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:00:36.757087+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:01:35.435971+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:03:05.075763+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:04:51.089012+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T23:05:03.157698+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:06:59.014315+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:07:55.198914+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:09:42.652841+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:10:42.941623+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:12:10.764599+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T23:12:11.450692+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:18:26.540257+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T23:18:28.168615+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T23:19:44.593161+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:19:44.628660+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:22:48.281949+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:24:36.866842+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:26:20.442247+00:00",
+      "end": null,
+      "reason": "no message for 35s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T23:26:34.392683+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:27:27.780065+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T23:27:28.449902+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:29:08.191503+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T23:29:32.746080+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:30:37.340035+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:32:17.733571+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T23:32:23.236802+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:33:09.133817+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:34:09.324083+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:35:46.874393+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:36:28.834029+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T23:36:49.609374+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:41:53.548111+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:42:42.607099+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:44:23.984624+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T23:44:24.008998+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:46:36.038889+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:47:10.759317+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:48:05.904427+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:49:50.897522+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:51:07.755338+00:00",
+      "end": null,
+      "reason": "no message for 35s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T23:51:07.801630+00:00",
+      "end": null,
+      "reason": "no message for 35s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:52:13.984558+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T23:52:25.241158+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:53:15.194263+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T23:54:01.057459+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:54:50.824197+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-16T23:54:51.346403+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:55:52.324520+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:56:44.391914+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:57:31.647107+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:58:31.770018+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-16T23:59:04.262752+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-17T00:01:35.683423+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-17T00:03:03.225765+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-17T00:03:36.790643+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-17T00:03:50.889080+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-17T00:07:07.485223+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-17T00:08:03.405133+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-17T00:08:26.780158+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-17T00:10:28.495555+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-17T00:10:29.437753+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-17T00:11:09.499964+00:00",
+      "end": null,
+      "reason": "no message for 30s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-17T00:14:32.725658+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-17T00:14:33.193277+00:00",
+      "end": null,
+      "reason": "no message for 32s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-18T16:25:05.846534+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-18T16:26:25.179306+00:00",
+      "end": null,
+      "reason": "no message for 35s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-18T16:26:25.862685+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-18T16:27:23.871516+00:00",
+      "end": null,
+      "reason": "no message for 31s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-18T16:29:16.141433+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-18T16:31:16.299491+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "BBO",
+      "start": "2026-09-18T16:31:16.785563+00:00",
+      "end": null,
+      "reason": "no message for 34s, threshold 30s",
+      "backfill": "PENDING"
+    },
+    {
+      "asset": "BTC",
+      "event_type": "TRADE",
+      "start": "2026-09-18T16:35:12.890542+00:00",
+      "end": null,
+      "reason": "no message for 33s, threshold 30s",
+      "backfill": "PENDING"
+    }
+  ],
+  "arrival_latency": {
+    "events_with_venue_time": 48046,
+    "max_ms_including_replay": 894992,
+    "min_ms_including_replay": 325,
+    "live_events": 48016,
+    "p50_ms": 424.0,
+    "p90_ms": 569.0,
+    "p99_ms": 2231.1,
+    "min_ms": 325,
+    "max_ms": 894992,
+    "replayed": {
+      "events": 30,
+      "max_ms": 76781,
+      "exact": true,
+      "by_type": [
+        {
+          "event_type": "TRADE",
+          "events": 30,
+          "max_ms": 76781
+        }
+      ]
+    },
+    "by_type": [
+      {
+        "event_type": "TRADE",
+        "events": 10195,
+        "p50_ms": 423.0,
+        "p90_ms": 712.9,
+        "p99_ms": 402013.8,
+        "max_ms": 894992
+      },
+      {
+        "event_type": "BBO",
+        "events": 27722,
+        "p50_ms": 400.0,
+        "p90_ms": 523.0,
+        "p99_ms": 1100.0,
+        "max_ms": 4090
+      },
+      {
+        "event_type": "L2_SNAPSHOT",
+        "events": 10099,
+        "p50_ms": 469.0,
+        "p90_ms": 564.0,
+        "p99_ms": 1068.7,
+        "max_ms": 2980
+      }
+    ]
+  },
+  "integrity": {
+    "quality": {
+      "INVALID": 206,
+      "VALID": 251308
+    },
+    "duplicate_event_ids": 0,
+    "duplicate_venue_event_ids": 257,
+    "raw_messages": 97447
+  }
+}

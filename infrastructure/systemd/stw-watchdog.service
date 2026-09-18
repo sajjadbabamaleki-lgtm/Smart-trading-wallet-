@@ -30,6 +30,8 @@ Environment=STW_EXECUTION_ENVIRONMENT=DEVELOPMENT
 Environment=STW_TRADING_ENABLED=false
 Environment=STW_TESTNET_API_WALLET_ADDRESS=
 Environment=STW_TESTNET_API_WALLET_PRIVATE_KEY=
+# Deliberately not pinned: the STW_ALERT_* settings. They come from .env, which
+# is where the mail credential belongs and the only place it exists.
 
 ExecStart=/usr/bin/env uv run python infrastructure/scripts/watch_recording.py --json
 

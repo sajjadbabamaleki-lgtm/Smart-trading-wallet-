@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import socket
 import subprocess
 import sys
 import uuid
@@ -44,6 +45,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from libs.config import ConfigurationError, load_settings  # noqa: E402
+from libs.observability.email import Alert, send  # noqa: E402
 from libs.observability.logging import configure_logging, get_logger  # noqa: E402
 from libs.storage import clickhouse as ch  # noqa: E402
 from libs.storage import postgres as pg  # noqa: E402
@@ -53,12 +55,19 @@ from services.market_data.watchdog import (  # noqa: E402
     Decision,
     OpenOutage,
     StoreState,
+    alert_for,
     assess,
 )
 
 logger = get_logger("market_data.watchdog")
 
 SERVICE = "stw-recorder"
+
+# Where the watchdog remembers that it already complained about not being able
+# to run. That failure cannot be deduplicated in PostgreSQL, because being
+# unable to reach PostgreSQL is one of its causes.
+FAILURE_MARKER = Path("/var/lib/stw-watchdog/last-failure-alert")
+FAILURE_ALERT_INTERVAL = timedelta(hours=6)
 
 
 def newest_event(client: Any) -> datetime | None:
@@ -168,12 +177,45 @@ def restart_recorder() -> dict[str, Any]:
     }
 
 
+def hostname() -> str:
+    """Which machine this is, for a subject line read on a phone."""
+    return socket.gethostname()
+
+
+def due_for_failure_alert(now: datetime) -> bool:
+    """Whether to complain again that the watchdog cannot run.
+
+    Rate-limited on disk rather than in a store, because the store being
+    unreachable is the main reason this fires. A missing or unreadable marker
+    means send: failing closed here would mean silence about silence.
+    """
+    try:
+        stamp = datetime.fromisoformat(FAILURE_MARKER.read_text().strip())
+    except (OSError, ValueError):
+        return True
+    return now - stamp >= FAILURE_ALERT_INTERVAL
+
+
+def note_failure_alert(now: datetime) -> None:
+    try:
+        FAILURE_MARKER.parent.mkdir(parents=True, exist_ok=True)
+        FAILURE_MARKER.write_text(now.isoformat())
+    except OSError as exc:
+        # Losing the rate limit costs extra email, not the watch.
+        logger.warning("failure_marker_not_written", extra={"error": type(exc).__name__})
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--limit-minutes", type=float, default=10.0)
     parser.add_argument("--json", action="store_true", help="machine-readable output")
     parser.add_argument(
         "--no-restart", action="store_true", help="detect and record, but do not restart"
+    )
+    parser.add_argument(
+        "--test-email",
+        action="store_true",
+        help="send one alert now and exit, to prove the mail path before it matters",
     )
     args = parser.parse_args()
 
@@ -184,6 +226,25 @@ def main() -> int:
         return 2
 
     configure_logging(settings.log_level, stream=sys.stderr)
+
+    if args.test_email:
+        # Worth its own flag. An alerting path is only ever exercised at the
+        # worst possible moment, and finding out then that the password was
+        # wrong is finding out too late.
+        delivery = send(
+            Alert(
+                subject=f"[{hostname()}] recording watchdog test",
+                body=(
+                    "This is a test. Nothing is wrong.\n\n"
+                    "If you are reading it, the watchdog can reach you, which is "
+                    "the only thing it could not tell you by itself."
+                ),
+            ),
+            settings=settings,
+        )
+        print(json.dumps(delivery.as_dict(), indent=2))
+        return 0 if delivery.sent else 2
+
     asset = settings.asset_allowlist[0]
     limit = timedelta(minutes=args.limit_minutes)
     now = datetime.now(UTC)
@@ -215,11 +276,30 @@ def main() -> int:
         # Exit 2, not 1: "the watchdog could not run" and "the recorder is not
         # receiving" are different states, and a timer that cannot tell them
         # apart reports an outage every time a database is restarted.
-        print(
-            f"the watchdog could not complete its check: {type(exc).__name__}: {exc}",
-            file=sys.stderr,
-        )
+        reason = f"{type(exc).__name__}: {exc}"
+        print(f"the watchdog could not complete its check: {reason}", file=sys.stderr)
+        if due_for_failure_alert(now):
+            send(
+                Alert(
+                    subject=f"[{hostname()}] the recording watchdog cannot run",
+                    body=(
+                        f"The watchdog could not complete its check: {reason}\n\n"
+                        "This is not the same as the recorder having stopped - it means "
+                        "nothing is currently able to tell you whether it has. The usual "
+                        "cause is ClickHouse or PostgreSQL being down.\n\n"
+                        "  make stack-verify\n"
+                        "  make watch\n\n"
+                        "At most one of these every six hours."
+                    ),
+                ),
+                settings=settings,
+            )
+            note_failure_alert(now)
         return 2
+
+    alert = alert_for(decision, host=hostname())
+    if alert is not None:
+        action["alert"] = send(alert, settings=settings).as_dict()
 
     report = {
         "checked_at": now.isoformat(),

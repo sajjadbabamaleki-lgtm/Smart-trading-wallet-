@@ -9,11 +9,14 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
+from libs.config import Settings, load_settings
+from libs.observability.email import Alert, send
 from services.market_data.watchdog import (
     DEFAULT_LIMIT,
     OpenOutage,
     StoreState,
     Verdict,
+    alert_for,
     assess,
 )
 
@@ -131,3 +134,114 @@ class TestReporting:
 
     def test_an_empty_store_says_so_rather_than_reporting_an_age(self) -> None:
         assert "no market events" in assess(state(age=None), now=NOW).describe()
+
+
+class TestAlerting:
+    """Two emails per outage. Not 468.
+
+    The timer runs every five minutes, so the thirty-nine-hour outage would
+    have produced 468 identical messages, and the 468th would be read exactly
+    as carefully as the third. The branch that sends nothing is the one that
+    makes the two that do arrive worth opening.
+    """
+
+    def test_a_new_outage_is_announced(self) -> None:
+        decision = assess(state(age=timedelta(hours=39)), now=NOW, limit=LIMIT)
+        alert = alert_for(decision, host="vmi")
+        assert alert is not None
+        assert "stopped" in alert.subject
+        assert "vmi" in alert.subject
+
+    def test_a_continuing_outage_says_nothing(self) -> None:
+        """The branch that matters most, and has nothing to look at."""
+        decision = assess(state(age=timedelta(hours=39), outage=outage()), now=NOW, limit=LIMIT)
+        assert decision.verdict is Verdict.STILL_STALE
+        assert alert_for(decision, host="vmi") is None
+
+    def test_a_healthy_check_says_nothing(self) -> None:
+        assert alert_for(assess(state(age=timedelta(seconds=5)), now=NOW), host="vmi") is None
+        assert alert_for(assess(state(age=None), now=NOW), host="vmi") is None
+
+    def test_resumption_is_announced_with_the_length_of_the_outage(self) -> None:
+        decision = assess(
+            state(age=timedelta(seconds=20), outage=outage(started_minutes_ago=120)),
+            now=NOW,
+            limit=LIMIT,
+        )
+        alert = alert_for(decision, host="vmi")
+        assert alert is not None
+        assert "receiving again" in alert.subject
+        assert "2.0 hours" in alert.body
+
+    def test_the_outage_email_says_what_was_done_about_it(self) -> None:
+        alert = alert_for(assess(state(age=timedelta(hours=1)), now=NOW), host="vmi")
+        assert alert is not None
+        assert "data_gaps" in alert.body
+        assert "journalctl" in alert.body
+
+
+class TestAlertDelivery:
+    """Sending must never take down the thing that notices."""
+
+    def settings(self, **overrides: object) -> Settings:
+        base: dict[str, object] = {}
+        base.update(overrides)
+        return load_settings(**base)
+
+    def test_unconfigured_alerting_is_not_a_failure(self) -> None:
+        """It is the default, and it asks a different question of a reader."""
+        delivery = send(Alert(subject="s", body="b"), settings=self.settings())
+        assert not delivery.attempted
+        assert not delivery.sent
+        assert delivery.error is not None
+        assert "not configured" in delivery.error
+
+    def test_a_refused_server_is_reported_rather_than_raised(self) -> None:
+        delivery = send(
+            Alert(subject="s", body="b"),
+            settings=self.settings(
+                alert_smtp_host="127.0.0.1",
+                # Nothing listens here, so the connection is refused rather
+                # than hanging, which is what makes this a fast test.
+                alert_smtp_port=9,
+                alert_email_from="a@example.invalid",
+                alert_email_to="b@example.invalid",
+            ),
+        )
+        assert delivery.attempted
+        assert not delivery.sent
+        assert delivery.error is not None
+
+    def test_the_error_does_not_carry_the_recipient(self) -> None:
+        """An SMTP error can quote the envelope, and a journal gets pasted around."""
+        delivery = send(
+            Alert(subject="s", body="b"),
+            settings=self.settings(
+                alert_smtp_host="127.0.0.1",
+                alert_smtp_port=9,
+                alert_email_from="sender@example.invalid",
+                alert_email_to="recipient@example.invalid",
+            ),
+        )
+        assert delivery.error is not None
+        assert "recipient@example.invalid" not in delivery.error
+
+    def test_alerting_needs_a_host_a_sender_and_a_recipient(self) -> None:
+        assert not self.settings(alert_smtp_host="smtp.example.invalid").alerting_configured
+        assert self.settings(
+            alert_smtp_host="smtp.example.invalid",
+            alert_email_from="a@example.invalid",
+            alert_email_to="b@example.invalid",
+        ).alerting_configured
+
+    def test_the_safe_summary_says_whether_not_to_whom(self) -> None:
+        secret = "hunter2"  # noqa: S105 - the point of the test is that it does not appear
+        described = self.settings(
+            alert_smtp_host="smtp.example.invalid",
+            alert_email_from="a@example.invalid",
+            alert_email_to="b@example.invalid",
+            alert_smtp_password=secret,
+        ).describe()
+        assert described["alerting_configured"] is True
+        assert "b@example.invalid" not in str(described)
+        assert secret not in str(described)

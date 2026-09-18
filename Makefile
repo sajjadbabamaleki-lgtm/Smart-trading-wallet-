@@ -106,6 +106,9 @@ record-install: ## Install and start the recorder as a service that outlives the
 watch: ## Ask the store once whether the recorder is still receiving
 	$(UV) run python infrastructure/scripts/watch_recording.py --no-restart
 
+watch-test-email: ## Send one test alert, to prove the mail path works before it matters
+	$(UV) run python infrastructure/scripts/watch_recording.py --test-email
+
 watch-install: ## Install the timer that asks that question every five minutes
 	$(SUDO) cp infrastructure/systemd/stw-watchdog.service /etc/systemd/system/
 	$(SUDO) cp infrastructure/systemd/stw-watchdog.timer /etc/systemd/system/

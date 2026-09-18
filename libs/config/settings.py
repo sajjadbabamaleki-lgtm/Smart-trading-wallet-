@@ -140,7 +140,28 @@ class Settings(BaseSettings):
     object_store_access_key: str = ""
     object_store_secret_key: str = ""
 
+    # Alerting. All optional: unset means the watchdog detects and records but
+    # sends nothing, which is the state this project was in until someone asked
+    # for email. Nothing here is ever logged - `describe` reports only whether
+    # alerting is configured, never to whom or with what.
+    alert_smtp_host: str = ""
+    alert_smtp_port: int = 587
+    alert_smtp_user: str = ""
+    alert_smtp_password: str = ""
+    alert_email_from: str = ""
+    alert_email_to: str = ""
+
     log_level: str = "INFO"
+
+    @property
+    def alerting_configured(self) -> bool:
+        """Whether an alert has somewhere to go.
+
+        A host, a recipient and a sender are each necessary. Credentials are
+        not: a relay on the same machine may need none, and demanding them
+        would refuse a working configuration.
+        """
+        return bool(self.alert_smtp_host and self.alert_email_to and self.alert_email_from)
 
     @field_validator("asset_allowlist", mode="before")
     @classmethod
@@ -282,6 +303,8 @@ class Settings(BaseSettings):
             "data_staleness_limit_seconds": self.data_staleness_limit_seconds,
             "intent_ttl_seconds": self.intent_ttl_seconds,
             "credential_configured": bool(self.testnet_api_wallet_private_key),
+            # Whether, not where. An address in a log is an address in a log.
+            "alerting_configured": self.alerting_configured,
         }
 
 

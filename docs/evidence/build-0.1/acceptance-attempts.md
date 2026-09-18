@@ -429,6 +429,18 @@ the moment the timer happened to look.
 Worst-case detection is now fifteen minutes — a five-minute period against a
 ten-minute staleness limit. It was thirty-nine hours, and it was a person.
 
-What it still does not do is tell anyone. Exit 1 and a journal line are visible
-to someone who looks; nothing reaches a phone. That needs an external channel
-and a decision about which, so it stays open.
+Email was chosen as the channel and is wired: one message when recording
+stops, one when it resumes, and nothing on the checks in between. The
+thirty-nine-hour outage would otherwise have been 468 identical messages, and
+the 468th would be read as carefully as the third. A separate, disk-rate-limited
+alert covers the watchdog being unable to run at all, which cannot be
+deduplicated in PostgreSQL because being unable to reach PostgreSQL is one of
+its causes.
+
+`make watch-test-email` sends one on demand. An alerting path is only ever
+exercised at the worst possible moment, and discovering then that the password
+was wrong is discovering it too late.
+
+The credential lives in `.env` and nowhere else. Nothing logs the recipient,
+the sender or the password; the run report says only whether alerting is
+configured.

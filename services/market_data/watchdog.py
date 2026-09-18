@@ -33,6 +33,8 @@ from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import Final
 
+from libs.observability.email import Alert
+
 # Belongs to the watchdog rather than to the recorder, and is recorded on the
 # row so a reader can tell the two apart in `data_gaps`.
 WATCHDOG_SOURCE: Final = "watchdog"
@@ -187,3 +189,54 @@ def assess(state: StoreState, *, now: datetime, limit: timedelta = DEFAULT_LIMIT
         # noticed. The difference is the whole point of recording a start.
         started_at=newest,
     )
+
+
+def alert_for(decision: Decision, *, host: str) -> Alert | None:
+    """The email this check should send, or None if it should send nothing.
+
+    **Twice per outage, not once per check.** The timer runs every five
+    minutes; the thirty-nine-hour outage would have been 468 identical emails,
+    and the 468th is read exactly as carefully as the third. `STALE` says it
+    started, `RESUMED` says it ended and how long it lasted, and every check in
+    between says nothing — which is what makes the two that do arrive worth
+    opening.
+
+    `STILL_STALE` returning None is therefore the most important branch here,
+    and the one with nothing to see in it.
+    """
+    if decision.verdict is Verdict.STALE:
+        started = "unknown" if decision.started_at is None else decision.started_at.isoformat()
+        return Alert(
+            subject=f"[{host}] the BTC recorder has stopped",
+            body=(
+                f"The store has not received a market event since {started}.\n"
+                f"{decision.describe()}.\n\n"
+                "An outage has been recorded in data_gaps, so a research dataset "
+                "built over this range will declare it rather than read across it.\n"
+                "One restart of stw-recorder has been attempted.\n\n"
+                "If this does not clear, the reason is in the journal:\n"
+                "  journalctl -u stw-recorder -n 50\n\n"
+                "You will get one more email when recording resumes, and nothing "
+                "in between."
+            ),
+        )
+    if decision.verdict is Verdict.RESUMED:
+        started = "unknown" if decision.started_at is None else decision.started_at.isoformat()
+        ended = "unknown" if decision.ended_at is None else decision.ended_at.isoformat()
+        length = (
+            "unknown"
+            if decision.started_at is None or decision.ended_at is None
+            else f"{(decision.ended_at - decision.started_at).total_seconds() / 3600:.1f} hours"
+        )
+        return Alert(
+            subject=f"[{host}] the BTC recorder is receiving again",
+            body=(
+                f"Recording resumed at {ended}.\n"
+                f"It had stopped at {started}, so the outage lasted {length}.\n\n"
+                "The gap is closed in data_gaps as UNRECOVERABLE: the recorder "
+                "came back, but the events published while it was down were never "
+                "captured and this venue's public history is bounded.\n\n"
+                "Any dataset covering that range will say so."
+            ),
+        )
+    return None

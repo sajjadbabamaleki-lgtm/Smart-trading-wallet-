@@ -360,3 +360,58 @@ deposited on mainnet, and this account has not.
 
 Neither is a defect in this repository. Both are account setup at the venue.
 
+
+---
+
+## The recorder stopped for 39 hours, 2026-09-17 → 2026-09-18
+
+**Cause: two purposes sharing one `.env`. Not a defect in the guard that
+stopped it.**
+
+| | |
+|---|---|
+| Last event recorded | 2026-09-17T00:15:17Z |
+| Noticed | 2026-09-18T16:13Z, by `make report` |
+| Silent for | ~39 h |
+| Events held either side | 248,280, from 2026-09-15T04:22Z |
+
+### What happened
+
+`STW_EXECUTION_ENVIRONMENT=TESTNET`, `STW_TRADING_ENABLED=true` and a testnet
+API wallet key were written into `.env` so that an order could be placed by
+hand. The recorder reads the same file. `market_data_is_read_only` is false
+whenever the process could submit an order, and the recorder refuses to start
+when it is false, so it refused — correctly. systemd retried on
+`Restart=always`, exhausted `StartLimitBurst`, and stopped trying.
+
+Every component did what it was designed to do, and the outcome was 39 hours of
+nothing.
+
+### What this says about the design
+
+**The guard was right and stays unchanged.** A process that can reach capital
+is not a process whose market-data read is provably risk-free, and weakening
+that to keep a recorder running would trade the invariant for uptime.
+
+**The configuration was wrong.** One `.env` was being asked to describe two
+processes with opposite requirements. The systemd unit now pins the recorder's
+own execution configuration — `DEVELOPMENT`, kill switch engaged, no credential
+— which overrides `.env` because environment variables take precedence. The
+guard now passes because it is true of that process, not because it was
+bypassed. `STW_MARKET_DATA_ENVIRONMENT` is deliberately not pinned: what the
+recorder reads stays the operator's choice.
+
+**The refusal was unactionable.** It said what was wrong and not what to
+change, which is part of why it stayed unfixed for 39 hours rather than 39
+seconds. It now names the three settings and the command that applies them.
+
+### What is still unaddressed
+
+Nothing announced the silence. `Restart=always` is not detection, the gap
+registry cannot record a gap from inside a process that never started, and the
+freshness monitor dies with the recorder. This was found by a person running a
+report two days later.
+
+An alarm that fires when the store stops growing is a different mechanism from
+everything M2 and M3 built, because all of those observe the recorder from
+inside it. Recorded here as the open item it is.

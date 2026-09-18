@@ -205,10 +205,19 @@ def websocket_url(settings: Settings) -> str:
     assuming it.
     """
     if not settings.market_data_is_read_only:
+        # Naming the fix is part of the refusal. The first time this fired it
+        # was correct and unactionable: the recorder stopped, systemd exhausted
+        # its start limit, and the message said what was wrong without saying
+        # what to change. Thirty-nine hours of silence followed.
         raise ConfigurationError(
             "refusing to start the recorder: the execution guard reports that "
             "capital could be reached in this configuration, so a market-data "
-            "read is no longer provably risk-free"
+            "read is no longer provably risk-free. The recorder only reads, so "
+            "give it a configuration that cannot trade rather than relaxing the "
+            "guard: STW_EXECUTION_ENVIRONMENT=DEVELOPMENT, "
+            "STW_TRADING_ENABLED=false, and no testnet key. The systemd unit "
+            "sets exactly these, so `make record-install` fixes this; only a "
+            "recorder started by hand from a trading .env sees it."
         )
     return settings.market_data_endpoint
 

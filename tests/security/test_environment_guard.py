@@ -19,6 +19,7 @@ from libs.config import (
 )
 from libs.config.settings import MARKET_DATA_ENDPOINTS, Settings
 from libs.schemas.enums import ExecutionEnvironment, MarketDataEnvironment
+from services.market_data.cli import websocket_url
 
 TESTNET_KEY = "0x" + "ab" * 32
 
@@ -316,3 +317,53 @@ class TestMarketDataIsSeparateFromExecution:
 
     def test_public_read_only_is_asserted_on_the_enum(self) -> None:
         assert MarketDataEnvironment.MAINNET_PUBLIC.is_public_read_only
+
+
+class TestRecorderAndTradingShareAnEnvFile:
+    """The configuration that stopped the recorder for thirty-nine hours.
+
+    A testnet key and a released kill switch were put in `.env` so that an
+    order could be placed by hand. The recorder reads the same file, correctly
+    concluded that it could now reach capital, and refused to start. systemd
+    retried, exhausted its start limit, and stopped trying.
+
+    Both halves are asserted here: that the guard really does close on a
+    trading-enabled testnet build, and that the configuration the systemd unit
+    pins re-opens it without the guard being weakened.
+    """
+
+    def trading_build(self, **overrides: object) -> Settings:
+        base: dict[str, object] = {
+            "execution_environment": ExecutionEnvironment.TESTNET,
+            "trading_enabled": True,
+            "testnet_api_wallet_private_key": TESTNET_KEY,
+            "market_data_environment": MarketDataEnvironment.MAINNET_PUBLIC,
+        }
+        base.update(overrides)
+        return load_settings(**base)
+
+    def test_a_build_that_can_trade_cannot_also_record(self) -> None:
+        settings = self.trading_build()
+        assert settings.may_submit_orders
+        assert not settings.market_data_is_read_only
+
+    def test_the_recorder_refuses_and_says_what_to_change(self) -> None:
+        """An unactionable refusal is how a stopped recorder stays stopped."""
+        with pytest.raises(ConfigurationError) as refusal:
+            websocket_url(self.trading_build())
+        message = str(refusal.value)
+        assert "STW_EXECUTION_ENVIRONMENT=DEVELOPMENT" in message
+        assert "STW_TRADING_ENABLED=false" in message
+
+    def test_the_configuration_the_service_pins_records_again(self) -> None:
+        """What the systemd unit sets, expressed as settings rather than as a file."""
+        settings = self.trading_build(
+            execution_environment=ExecutionEnvironment.DEVELOPMENT,
+            trading_enabled=False,
+            testnet_api_wallet_private_key="",
+        )
+        assert settings.market_data_is_read_only
+        assert not settings.may_submit_orders
+        # Still reading mainnet market data: the fix pins execution, not the feed.
+        assert settings.market_data_environment is MarketDataEnvironment.MAINNET_PUBLIC
+        assert websocket_url(settings) == settings.market_data_endpoint

@@ -51,6 +51,11 @@ RESOLUTION = "closed retroactively: the store holds the event that ended this si
 # seconds, so nothing within a second of its start ended it.
 SAME_FRAME_EPSILON = timedelta(seconds=1)
 
+# Two outage rows describe the same hole when their starts are this close. The
+# start is the last event before the hole, so a re-run computes the identical
+# value; the tolerance is for clock and rounding, not for judgement.
+OUTAGE_MATCH_SECONDS = 60
+
 
 def open_silences(connection: Any) -> list[tuple[str, str, str, datetime]]:
     """Every open gap the recorder itself opened.
@@ -158,10 +163,13 @@ def collect(settings: Any, args: argparse.Namespace, found: Findings) -> None:
             if args.apply:
                 close(conn, gap_id, ended)
 
+        # Deliberately independent of everything above: the dedup looks only at
+        # outage rows, so a closure cannot mask a hole and the dry run cannot
+        # disagree with the real one.
         if args.record_outages:
             minimum = timedelta(minutes=args.outage_minutes)
             for start, end in data_outages(client, asset=asset, minimum=minimum):
-                if already_recorded(conn, asset=asset, start=start, end=end):
+                if already_recorded(conn, asset=asset, start=start):
                     continue
                 entry = {
                     "stream": f"{asset}/{ALL_STREAMS}",
@@ -214,13 +222,25 @@ def data_outages(client: Any, *, asset: str, minimum: timedelta) -> list[tuple[d
     ]
 
 
-def already_recorded(connection: Any, *, asset: str, start: datetime, end: datetime) -> bool:
-    """Whether some row already covers this hole, so it is not recorded twice."""
+def already_recorded(connection: Any, *, asset: str, start: datetime) -> bool:
+    """Whether this same hole already has an outage row of its own.
+
+    Matched on the start, and only against rows this tool or the watchdog
+    wrote. An earlier version asked the looser question — is there any row
+    covering this range? — and a routine thirty-second silence left open in the
+    minute before an outage answered yes to it, which hid a forty-hour hole
+    behind a thirty-second one.
+
+    Worse, it made the answer depend on whether the closures earlier in this
+    same run had been written, so the dry run and the real run disagreed. The
+    check now looks at nothing the repair itself changes.
+    """
     with connection.cursor() as cursor:
         cursor.execute(
-            "SELECT 1 FROM data_gaps WHERE asset = %s AND gap_start <= %s "
-            "AND (gap_end IS NULL OR gap_end >= %s) LIMIT 1",
-            (asset, start, end),
+            "SELECT 1 FROM data_gaps WHERE asset = %s AND source = %s "
+            "AND event_type = %s AND abs(extract(epoch from (gap_start - %s))) < %s "
+            "LIMIT 1",
+            (asset, WATCHDOG_SOURCE, ALL_STREAMS, start, OUTAGE_MATCH_SECONDS),
         )
         return cursor.fetchone() is not None
 

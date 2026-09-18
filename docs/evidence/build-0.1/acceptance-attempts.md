@@ -415,3 +415,20 @@ report two days later.
 An alarm that fires when the store stops growing is a different mechanism from
 everything M2 and M3 built, because all of those observe the recorder from
 inside it. Recorded here as the open item it is.
+
+**Closed the same day** by `services/market_data/watchdog.py` and
+`infrastructure/scripts/watch_recording.py`, run every five minutes by
+`stw-watchdog.timer`. It asks ClickHouse when it last received anything, and a
+recorder that is dead, wedged or refusing to start all look identical from
+there: the number stops moving. The outage is written to `data_gaps` against
+the traded asset, so M4 reads it through the query it already uses and cannot
+call the range clean; the recorder is restarted once, not once per check; and
+the outage is closed when data resumes, with the moment it resumed rather than
+the moment the timer happened to look.
+
+Worst-case detection is now fifteen minutes — a five-minute period against a
+ten-minute staleness limit. It was thirty-nine hours, and it was a person.
+
+What it still does not do is tell anyone. Exit 1 and a journal line are visible
+to someone who looks; nothing reaches a phone. That needs an external channel
+and a decision about which, so it stays open.

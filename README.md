@@ -138,6 +138,7 @@ make migrate           # verify, then apply pending migrations
 make test-integration  # run integration tests against the running stack
 make accept            # the full M1/M2 acceptance — real stack, live venue, evidence
 make record-install    # run the recorder as a service that outlives the shell
+make watch-install     # check every five minutes that the recorder is receiving
 make report            # write what the store holds into the repo, and push it
 make testnet-check     # decide a test order and show it, sending nothing
 make testnet-order     # place one test order on Hyperliquid testnet

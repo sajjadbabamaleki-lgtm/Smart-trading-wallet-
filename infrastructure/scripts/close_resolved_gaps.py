@@ -29,7 +29,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -43,6 +43,11 @@ from libs.storage import postgres as pg  # noqa: E402
 from services.market_data.watchdog import WATCHDOG_SOURCE  # noqa: E402
 
 RESOLUTION = "closed retroactively: the store holds the event that ended this silence"
+
+# Events from one frame share a receipt time, and the column's nanoseconds are
+# finer than Python's microseconds. A silence is reported only after tens of
+# seconds, so nothing within a second of its start ended it.
+SAME_FRAME_EPSILON = timedelta(seconds=1)
 
 
 def open_silences(connection: Any) -> list[tuple[str, str, str, datetime]]:
@@ -63,12 +68,19 @@ def open_silences(connection: Any) -> list[tuple[str, str, str, datetime]]:
 def resumed_at(client: Any, *, asset: str, event_type: str, after: datetime) -> datetime | None:
     """The first event on this stream after the silence began, if there is one.
 
-    `after` is converted to UTC before it is sent. PostgreSQL hands back a
-    timestamp in the session's zone, which on the recording host is two hours
-    from UTC, and ClickHouse stores UTC. Passing it across unconverted asks for
-    the first event after a moment two hours off from the one meant — which is
-    how the first run of this reported that all 324 silences had lasted zero
-    seconds.
+    A second is skipped first, and that is the whole of why an earlier version
+    of this reported that all 324 silences had lasted zero seconds.
+
+    `local_receive_time` is stamped per frame, and one frame can carry several
+    trades — the diagnostic found four events sharing the microsecond a gap
+    started on. The column holds nanoseconds; Python sees microseconds. So
+    "the first event strictly after the gap started" matched the gap's own
+    frame-mates, a few nanoseconds along, and the difference rounded to zero.
+
+    A silence is only recorded after tens of seconds of quiet, so the event
+    that ended one cannot be within a second of its start. Anything that close
+    is the same frame, and stepping over it costs nothing and settles the
+    ambiguity that microsecond arithmetic could not.
     """
     rows = list(
         client.query(
@@ -78,7 +90,7 @@ def resumed_at(client: Any, *, asset: str, event_type: str, after: datetime) -> 
             parameters={
                 "asset": asset,
                 "event_type": event_type,
-                "after": after.astimezone(UTC).replace(tzinfo=None),
+                "after": (after + SAME_FRAME_EPSILON).astimezone(UTC).replace(tzinfo=None),
             },
         ).result_rows
     )
@@ -169,7 +181,11 @@ def explain(settings: Any, count: int) -> None:
                     "SELECT min(local_receive_time), max(local_receive_time), count() "
                     "FROM market_events WHERE asset = %(asset)s "
                     "AND event_type = %(event_type)s AND local_receive_time > %(after)s",
-                    parameters={"asset": asset, "event_type": event_type, "after": sent},
+                    parameters={
+                        "asset": asset,
+                        "event_type": event_type,
+                        "after": sent + SAME_FRAME_EPSILON,
+                    },
                 ).result_rows
             )
             around = list(

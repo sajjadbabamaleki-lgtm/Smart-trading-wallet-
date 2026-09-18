@@ -143,10 +143,63 @@ def collect(
             conn.commit()
 
 
+def explain(settings: Any, count: int) -> None:
+    """Print what the two stores actually say about the first few gaps.
+
+    Written because two hypotheses about why every closure computed to zero
+    were both wrong, and a third guess is worth less than one look. Every value
+    the comparison depends on is printed: what PostgreSQL holds, what is sent
+    to ClickHouse, what ClickHouse echoes back of it, and the events on either
+    side of the moment in question.
+    """
+    with ch.connect_from_settings(settings) as client, pg.connect(settings.postgres_dsn) as conn:
+        gaps = open_silences(conn)[:count]
+        with conn.cursor() as cursor:
+            cursor.execute("SHOW timezone")
+            row = cursor.fetchone()
+            print(f"postgres session timezone: {row[0] if row else 'unknown'}")
+        echoed = list(client.query("SELECT timezone(), now()").result_rows)
+        print(f"clickhouse timezone / now:  {echoed[0] if echoed else 'unknown'}")
+        print()
+
+        for gap_id, asset, event_type, gap_start in gaps:
+            sent = gap_start.astimezone(UTC).replace(tzinfo=None)
+            rows = list(
+                client.query(
+                    "SELECT min(local_receive_time), max(local_receive_time), count() "
+                    "FROM market_events WHERE asset = %(asset)s "
+                    "AND event_type = %(event_type)s AND local_receive_time > %(after)s",
+                    parameters={"asset": asset, "event_type": event_type, "after": sent},
+                ).result_rows
+            )
+            around = list(
+                client.query(
+                    "SELECT local_receive_time FROM market_events "
+                    "WHERE asset = %(asset)s AND event_type = %(event_type)s "
+                    "ORDER BY abs(dateDiff('millisecond', local_receive_time, "
+                    "toDateTime64(%(after)s, 9))) ASC LIMIT 4",
+                    parameters={"asset": asset, "event_type": event_type, "after": sent},
+                ).result_rows
+            )
+            print(f"gap {gap_id[:8]}  {asset}/{event_type}")
+            print(f"  postgres gap_start : {gap_start.isoformat()}")
+            print(f"  sent to clickhouse : {sent.isoformat()}")
+            print(f"  min/max/count after: {rows[0] if rows else 'no rows'}")
+            print(f"  nearest events     : {[r[0].isoformat() for r in around]}")
+            print()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--apply", action="store_true", help="write the closures")
     parser.add_argument("--json", action="store_true")
+    parser.add_argument(
+        "--explain",
+        type=int,
+        default=0,
+        metavar="N",
+        help="print the raw timestamps behind the first N gaps, and change nothing",
+    )
     args = parser.parse_args()
 
     try:
@@ -154,6 +207,14 @@ def main() -> int:
     except ConfigurationError as exc:
         print(f"configuration refused: {exc}", file=sys.stderr)
         return 2
+
+    if args.explain:
+        try:
+            explain(settings, args.explain)
+        except Exception as exc:  # noqa: BLE001 - a diagnostic reports its own failure
+            print(f"could not reach the stores: {type(exc).__name__}: {exc}", file=sys.stderr)
+            return 2
+        return 0
 
     closed: list[dict[str, Any]] = []
     left_open: list[dict[str, Any]] = []

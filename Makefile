@@ -103,6 +103,9 @@ record-install: ## Install and start the recorder as a service that outlives the
 	@echo
 	@$(MAKE) --no-print-directory inspect HOURS=1
 
+close-gaps: ## Close silences the store shows ended (read-only; APPLY=1 to write)
+	$(UV) run python infrastructure/scripts/close_resolved_gaps.py $(if $(APPLY),--apply,)
+
 watch: ## Ask the store once whether the recorder is still receiving
 	$(UV) run python infrastructure/scripts/watch_recording.py --no-restart
 

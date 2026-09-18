@@ -1,0 +1,23 @@
+# Every five minutes, and once shortly after boot.
+#
+# Five minutes against a ten-minute staleness limit: an outage is noticed
+# within fifteen minutes of its start in the worst case, which is the number
+# that matters. The previous worst case was thirty-nine hours, and it was a
+# person who noticed.
+
+[Unit]
+Description=Check every five minutes that the recorder is still receiving
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=5min
+# The check is cheap and the stores are local, so spreading it buys nothing
+# and costs precision about when an outage began.
+AccuracySec=15s
+# A host that was off does not owe a backlog of checks; one on resume is the
+# whole of what a missed window is worth.
+Persistent=false
+Unit=stw-watchdog.service
+
+[Install]
+WantedBy=timers.target

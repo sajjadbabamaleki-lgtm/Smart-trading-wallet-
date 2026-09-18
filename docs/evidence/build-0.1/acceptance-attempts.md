@@ -415,3 +415,32 @@ report two days later.
 An alarm that fires when the store stops growing is a different mechanism from
 everything M2 and M3 built, because all of those observe the recorder from
 inside it. Recorded here as the open item it is.
+
+**Closed the same day** by `services/market_data/watchdog.py` and
+`infrastructure/scripts/watch_recording.py`, run every five minutes by
+`stw-watchdog.timer`. It asks ClickHouse when it last received anything, and a
+recorder that is dead, wedged or refusing to start all look identical from
+there: the number stops moving. The outage is written to `data_gaps` against
+the traded asset, so M4 reads it through the query it already uses and cannot
+call the range clean; the recorder is restarted once, not once per check; and
+the outage is closed when data resumes, with the moment it resumed rather than
+the moment the timer happened to look.
+
+Worst-case detection is now fifteen minutes — a five-minute period against a
+ten-minute staleness limit. It was thirty-nine hours, and it was a person.
+
+Email was chosen as the channel and is wired: one message when recording
+stops, one when it resumes, and nothing on the checks in between. The
+thirty-nine-hour outage would otherwise have been 468 identical messages, and
+the 468th would be read as carefully as the third. A separate, disk-rate-limited
+alert covers the watchdog being unable to run at all, which cannot be
+deduplicated in PostgreSQL because being unable to reach PostgreSQL is one of
+its causes.
+
+`make watch-test-email` sends one on demand. An alerting path is only ever
+exercised at the worst possible moment, and discovering then that the password
+was wrong is discovering it too late.
+
+The credential lives in `.env` and nowhere else. Nothing logs the recipient,
+the sender or the password; the run report says only whether alerting is
+configured.

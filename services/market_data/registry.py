@@ -26,7 +26,7 @@ from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
 
 from libs.observability.logging import get_logger
-from services.market_data.gaps import GapReport
+from services.market_data.gaps import GapKind, GapReport
 from services.market_data.sinks import Sink
 
 logger = get_logger(__name__)
@@ -359,8 +359,47 @@ class PersistingGapRegistry:
     async def close(
         self, gap_id: str, *, ended_at: datetime, status: BackfillStatus, resolution: str
     ) -> RegisteredGap:
-        return await self.inner.close(
+        closed = await self.inner.close(
             gap_id, ended_at=ended_at, status=status, resolution=resolution
+        )
+        try:
+            await self.sink.write_gap(
+                GapReport(
+                    gap_id=closed.gap_id,
+                    kind=GapKind.SILENCE,
+                    asset=closed.asset,
+                    event_type=closed.event_type,
+                    gap_start=closed.gap_start,
+                    gap_end=ended_at,
+                    detection_reason=resolution,
+                    suspected=True,
+                )
+            )
+        except Exception as exc:
+            self.persist_failures += 1
+            logger.exception(
+                "gap_close_persist_failed",
+                extra={"gap_id": closed.gap_id, "error": str(exc)},
+            )
+        return closed
+
+    async def resume(self, gap: GapReport) -> RegisteredGap:
+        """Close a silence the monitor saw end, on the monitor's own terms.
+
+        A convenience over `close` so the monitor can pass the report it
+        already holds rather than assembling a status and a sentence for a
+        transition it has fully observed. `RECOVERED` is right here and only
+        here: the stream resumed, so nothing between the two timestamps was
+        ever ours to lose — unlike a venue gap, which stays unrecoverable.
+        """
+        if gap.gap_end is None:
+            raise ValueError("a resumed silence must carry the moment it ended")
+        seconds = (gap.gap_end - gap.gap_start).total_seconds()
+        return await self.close(
+            gap.gap_id,
+            ended_at=gap.gap_end,
+            status=BackfillStatus.RECOVERED,
+            resolution=f"stream resumed after {seconds:.0f}s",
         )
 
     async def record_attempt(self, gap_id: str, *, outcome: str) -> RegisteredGap:

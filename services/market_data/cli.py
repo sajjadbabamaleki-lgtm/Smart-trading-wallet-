@@ -316,6 +316,7 @@ async def run(args: argparse.Namespace) -> int:
         machine=recorder.machine,
         staleness_limit=timedelta(seconds=settings.data_staleness_limit_seconds),
         on_gap=registry.register,
+        on_resume=registry.resume,
     )
 
     logger.info(

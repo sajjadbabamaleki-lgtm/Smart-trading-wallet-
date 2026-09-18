@@ -103,6 +103,27 @@ record-install: ## Install and start the recorder as a service that outlives the
 	@echo
 	@$(MAKE) --no-print-directory inspect HOURS=1
 
+close-gaps: ## Close silences the store shows ended (read-only; APPLY=1 to write)
+	$(UV) run python infrastructure/scripts/close_resolved_gaps.py $(if $(APPLY),--apply,)
+
+watch: ## Ask the store once whether the recorder is still receiving
+	$(UV) run python infrastructure/scripts/watch_recording.py --no-restart
+
+watch-test-email: ## Send one test alert, to prove the mail path works before it matters
+	$(UV) run python infrastructure/scripts/watch_recording.py --test-email
+
+watch-install: ## Install the timer that asks that question every five minutes
+	$(SUDO) cp infrastructure/systemd/stw-watchdog.service /etc/systemd/system/
+	$(SUDO) cp infrastructure/systemd/stw-watchdog.timer /etc/systemd/system/
+	$(SUDO) systemctl daemon-reload
+	$(SUDO) systemctl enable --now stw-watchdog.timer
+	@$(SUDO) systemctl --no-pager list-timers stw-watchdog.timer
+
+watch-status: ## When did the watchdog last look, and what did it find?
+	@$(SUDO) systemctl --no-pager list-timers stw-watchdog.timer
+	@echo
+	@$(SUDO) journalctl -u stw-watchdog -n 20 --no-pager
+
 record-status: ## Is the recorder alive, and what has it said lately?
 	@$(SUDO) systemctl --no-pager --lines=0 status stw-recorder | head -8
 	@echo

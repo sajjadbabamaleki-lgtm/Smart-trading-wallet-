@@ -1,0 +1,46 @@
+# Asks the store whether the recorder is still receiving.
+#
+# Deliberately a separate unit from stw-recorder, started by a timer rather
+# than run continuously. Everything the recorder has for noticing its own
+# failure runs inside the recorder, which is exactly the process that is gone
+# when the failure is "it never started". This one is not that process.
+#
+# Install (as root, on the recording host):
+#
+#   make watch-install
+#
+# Watch it:
+#
+#   systemctl list-timers stw-watchdog.timer
+#   journalctl -u stw-watchdog -n 20
+
+[Unit]
+Description=Smart Trading Wallet — is the recorder still receiving?
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/Smart-trading-wallet-
+Environment=PATH=/root/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# The same pinning the recorder has, for the same reason: this process reads
+# two stores and restarts a service, and it has no business holding a
+# credential that could trade.
+Environment=STW_EXECUTION_ENVIRONMENT=DEVELOPMENT
+Environment=STW_TRADING_ENABLED=false
+Environment=STW_TESTNET_API_WALLET_ADDRESS=
+Environment=STW_TESTNET_API_WALLET_PRIVATE_KEY=
+# Deliberately not pinned: the STW_ALERT_* settings. They come from .env, which
+# is where the mail credential belongs and the only place it exists.
+
+ExecStart=/usr/bin/env uv run python infrastructure/scripts/watch_recording.py --json
+
+# Exit 1 means the recorder is not receiving, which is the watchdog working
+# rather than the watchdog failing. Without this every detected outage would
+# also mark the timer's own unit failed, and the real signal - exit 2, the
+# watchdog itself could not run - would be indistinguishable from it.
+SuccessExitStatus=1
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=stw-watchdog

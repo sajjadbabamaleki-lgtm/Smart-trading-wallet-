@@ -225,6 +225,11 @@ class StoreSink:
         A gap is the one thing that must not be lost to a crash before the next
         flush: losing it turns an explicitly reported gap into a silent one,
         which is the failure Phase 3 §29 is about.
+
+        Writing the same gap again closes it rather than being ignored, which
+        is how a silence that ended stops claiming that data is still missing.
+        `COALESCE` keeps the recorded end: a later restatement without one must
+        not reopen a gap that was closed.
         """
         with self.postgres.cursor() as cursor:
             cursor.execute(
@@ -234,7 +239,9 @@ class StoreSink:
                     detection_reason, expected_sequence, actual_sequence,
                     quality_impact
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (gap_id) DO NOTHING
+                ON CONFLICT (gap_id) DO UPDATE SET
+                    gap_end = COALESCE(EXCLUDED.gap_end, data_gaps.gap_end),
+                    detection_reason = EXCLUDED.detection_reason
                 """,
                 (
                     gap.gap_id,

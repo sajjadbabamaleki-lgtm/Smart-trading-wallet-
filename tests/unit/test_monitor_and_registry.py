@@ -425,3 +425,157 @@ class TestPersistingGapRegistry:
             await monitor.check()
 
         assert len(sink.gaps) == 1
+
+
+class TestAdaptiveSilenceThreshold:
+    """The threshold has to follow the stream, because the stream moves.
+
+    Measured over 15 hours of BTC, the quote rate ran about ten times higher at
+    14:00 than at 21:00, and trades with it. One fixed threshold reported
+    hundreds of overnight silences that were the market being quiet, and a
+    threshold loose enough for the quiet hours would sleep through a real
+    midday outage.
+    """
+
+    def stream(self, *, interval: float, count: int = 40) -> GapDetector:
+        gaps = GapDetector(silence_threshold=timedelta(seconds=5))
+        for i in range(count):
+            gaps.observe(
+                asset="BTC",
+                event_type="TRADE",
+                sequence=None,
+                seen_at=NOW + timedelta(seconds=i * interval),
+            )
+        return gaps
+
+    def test_a_stream_with_no_rhythm_yet_is_judged_at_the_floor(self) -> None:
+        gaps = GapDetector(silence_threshold=timedelta(seconds=5))
+        gaps.observe(asset="BTC", event_type="TRADE", sequence=None, seen_at=NOW)
+        assert gaps.threshold_for("BTC", "TRADE") == timedelta(seconds=5)
+
+    def test_a_slow_stream_earns_a_looser_threshold(self) -> None:
+        busy = self.stream(interval=1.0).threshold_for("BTC", "TRADE")
+        quiet = self.stream(interval=10.0).threshold_for("BTC", "TRADE")
+        assert quiet > busy
+
+    def test_the_threshold_never_drops_below_the_floor(self) -> None:
+        """A fast stream must not become twitchy enough to report every hiccup."""
+        gaps = self.stream(interval=0.05)
+        assert gaps.threshold_for("BTC", "TRADE") == timedelta(seconds=5)
+
+    def test_the_threshold_never_rises_above_the_ceiling(self) -> None:
+        """A stream that has gone slow must not become blind to an outage."""
+        gaps = GapDetector(
+            silence_threshold=timedelta(seconds=5), silence_ceiling=timedelta(seconds=60)
+        )
+        for i in range(60):
+            gaps.observe(
+                asset="BTC", event_type="TRADE", sequence=None, seen_at=NOW + timedelta(minutes=i)
+            )
+        assert gaps.threshold_for("BTC", "TRADE") == timedelta(seconds=60)
+
+    def test_a_quiet_market_at_its_own_pace_is_not_a_gap(self) -> None:
+        """The overnight false positives, stated as a test."""
+        gaps = self.stream(interval=10.0)
+        last = NOW + timedelta(seconds=39 * 10)
+        assert gaps.check_silence(now=last + timedelta(seconds=35)) == ()
+
+    def test_an_outage_ten_times_the_rhythm_still_reports(self) -> None:
+        gaps = self.stream(interval=10.0)
+        last = NOW + timedelta(seconds=39 * 10)
+        reports = gaps.check_silence(now=last + timedelta(seconds=300))
+        assert len(reports) == 1
+        assert reports[0].kind is GapKind.SILENCE
+
+
+class TestSilenceClosure:
+    """An open gap says data is still missing. Most of them are not.
+
+    Until this existed the monitor only ever opened silences. The registry
+    filled with hundreds of open rows, and M4 decides a dataset's quality by
+    whether any gap overlapping it is open — so every dataset built over that
+    period would have been declared degraded on the strength of a stream being
+    quiet for thirty-one seconds overnight.
+    """
+
+    def build(self) -> tuple[Monitor, ManualClock, GapDetector, list[GapReport]]:
+        closed: list[GapReport] = []
+
+        async def collect(gap: GapReport) -> None:
+            closed.append(gap)
+
+        monitor, clock, gaps, heartbeat, _ = build_monitor(silence=timedelta(seconds=10))
+        monitor.on_resume = collect
+        gaps.observe(asset="BTC", event_type="TRADE", sequence=1, seen_at=NOW)
+        heartbeat.record_data(NOW)
+        return monitor, clock, gaps, closed
+
+    async def test_a_resumed_stream_closes_its_silence(self) -> None:
+        monitor, clock, gaps, closed = self.build()
+        clock.advance_seconds(30)
+        await monitor.check()
+        assert len(monitor.open_silences) == 1
+
+        resumed_at = NOW + timedelta(seconds=40)
+        gaps.observe(asset="BTC", event_type="TRADE", sequence=2, seen_at=resumed_at)
+        clock.advance_seconds(5)
+        await monitor.check()
+
+        assert monitor.open_silences == {}
+        assert len(closed) == 1
+        assert closed[0].gap_end == resumed_at
+
+    async def test_a_stream_still_quiet_keeps_its_gap_open(self) -> None:
+        monitor, clock, _, closed = self.build()
+        clock.advance_seconds(30)
+        await monitor.check()
+        clock.advance_seconds(30)
+        await monitor.check()
+        assert len(monitor.open_silences) == 1
+        assert closed == []
+
+    async def test_a_second_outage_on_the_same_stream_is_its_own_gap(self) -> None:
+        monitor, clock, gaps, closed = self.build()
+        clock.advance_seconds(30)
+        await monitor.check()
+
+        resumed_at = NOW + timedelta(seconds=40)
+        gaps.observe(asset="BTC", event_type="TRADE", sequence=2, seen_at=resumed_at)
+        clock.advance_seconds(5)
+        await monitor.check()
+
+        # Long enough to clear the threshold this stream has earned. Two
+        # messages forty seconds apart is a slow rhythm, and the detector now
+        # judges it against that rather than against the floor — which is the
+        # whole point, and is why sixty seconds is no longer an outage here.
+        clock.advance_seconds(350)
+        second = await monitor.check()
+        assert len(second.silence_gaps) == 1
+        assert second.silence_gaps[0].gap_start == resumed_at
+        assert len(closed) == 1
+
+    async def test_the_registry_records_the_closure_as_recovered(self) -> None:
+        """Recovered rather than unrecoverable: nothing was ever ours to lose."""
+        sink = InMemorySink()
+        registry = PersistingGapRegistry(sink=sink)
+        monitor, clock, gaps, _ = self.build()
+        monitor.on_gap = registry.register
+        monitor.on_resume = registry.resume
+
+        clock.advance_seconds(30)
+        await monitor.check()
+        gaps.observe(
+            asset="BTC", event_type="TRADE", sequence=2, seen_at=NOW + timedelta(seconds=40)
+        )
+        clock.advance_seconds(5)
+        await monitor.check()
+
+        summary = await registry.summary()
+        assert summary.total == 1
+        assert summary.open_gaps == 0
+        assert summary.recovered == 1
+        assert not summary.has_missing_data
+        # Opened and closed through the same sink, so the store sees both.
+        assert len(sink.gaps) == 2
+        assert sink.gaps[0].gap_end is None
+        assert sink.gaps[1].gap_end is not None

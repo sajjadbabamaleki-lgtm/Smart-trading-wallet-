@@ -25,6 +25,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import StrEnum
+from typing import Final
 
 
 class GapKind(StrEnum):
@@ -65,6 +66,26 @@ class StreamPosition:
     last_sequence: int | None = None
     last_seen_at: datetime | None = None
     message_count: int = 0
+    mean_interval_seconds: float | None = None
+    """Exponentially weighted mean gap between messages, in seconds.
+
+    Recent intervals weigh more than old ones, which is the point: BTC trades
+    arrive every two seconds in the busy hours and every ten in the quiet ones,
+    and a mean over the whole day describes neither.
+
+    The first interval seen becomes the mean outright, because there is nothing
+    to average it against. A stream whose first interval happens to be long is
+    therefore slow to react for a while; the ceiling is what bounds how long,
+    and bounding it is why the ceiling exists.
+    """
+
+
+# How much quieter than its own recent rhythm a stream must go before the
+# silence is worth reporting.
+SILENCE_MULTIPLIER: Final = 10.0
+# Weight of the newest interval in the mean. Low enough that one slow message
+# does not move the threshold, high enough to follow the day.
+INTERVAL_SMOOTHING: Final = 0.1
 
 
 class GapDetector:
@@ -73,11 +94,39 @@ class GapDetector:
     A stream is one `(asset, event_type)` pair, because sequence numbers and
     update cadences are per-stream: a funding update every eight hours and a
     book update every block cannot share a silence threshold.
+
+    **The threshold follows the stream.** A single fixed one cannot work here:
+    measured over 15 hours, BTC's quote rate ran about ten times higher at
+    14:00 than at 21:00, and trades with it. A 30-second threshold set for the
+    busy hours reported hundreds of silences overnight that were the market
+    being quiet, and a threshold loose enough for the quiet hours would miss a
+    real outage at midday. So each stream is judged against its own recent
+    rhythm, bounded at both ends: never twitchier than `floor`, never blinder
+    than `ceiling`.
     """
 
-    def __init__(self, *, silence_threshold: timedelta = timedelta(seconds=30)) -> None:
+    def __init__(
+        self,
+        *,
+        silence_threshold: timedelta = timedelta(seconds=30),
+        silence_ceiling: timedelta = timedelta(seconds=300),
+    ) -> None:
         self._silence_threshold = silence_threshold
+        self._silence_ceiling = silence_ceiling
         self._streams: dict[tuple[str, str], StreamPosition] = {}
+
+    def threshold_for(self, asset: str, event_type: str) -> timedelta:
+        """How long this stream may be quiet before it is worth reporting.
+
+        A stream that has not yet shown a rhythm is judged at the floor: with
+        one message seen there is nothing to be adaptive about, and the floor is
+        the conservative end.
+        """
+        position = self._streams.get((asset, event_type))
+        if position is None or position.mean_interval_seconds is None:
+            return self._silence_threshold
+        adapted = timedelta(seconds=position.mean_interval_seconds * SILENCE_MULTIPLIER)
+        return max(self._silence_threshold, min(adapted, self._silence_ceiling))
 
     def observe(
         self,
@@ -99,6 +148,17 @@ class GapDetector:
         previous_seen = position.last_seen_at
 
         position.message_count += 1
+        if previous_seen is not None:
+            interval = (seen_at - previous_seen).total_seconds()
+            # Out-of-order arrivals would otherwise pull the mean negative and
+            # make the threshold shorter than any real interval.
+            if interval > 0:
+                previous_mean = position.mean_interval_seconds
+                position.mean_interval_seconds = (
+                    interval
+                    if previous_mean is None
+                    else previous_mean + INTERVAL_SMOOTHING * (interval - previous_mean)
+                )
         position.last_seen_at = seen_at
         if sequence is not None and (
             position.last_sequence is None or sequence > position.last_sequence
@@ -139,7 +199,8 @@ class GapDetector:
             if position.last_seen_at is None:
                 continue
             silence = now - position.last_seen_at
-            if silence <= self._silence_threshold:
+            threshold = self.threshold_for(asset, event_type)
+            if silence <= threshold:
                 continue
             reports.append(
                 GapReport(
@@ -154,7 +215,7 @@ class GapDetector:
                     gap_end=None,
                     detection_reason=(
                         f"no message for {silence.total_seconds():.0f}s, threshold "
-                        f"{self._silence_threshold.total_seconds():.0f}s"
+                        f"{threshold.total_seconds():.0f}s"
                     ),
                     suspected=True,
                 )

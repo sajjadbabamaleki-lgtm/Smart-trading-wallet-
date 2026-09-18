@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -119,8 +119,18 @@ class Monitor:
     stored row - can be passed directly rather than wrapped.
     """
 
+    on_resume: Callable[[GapReport], Awaitable[object]] | None = None
+    """Called once per silence that ended, with `gap_end` filled in.
+
+    Separate from `on_gap` because the two are different claims. Opening a gap
+    says a stream went quiet; closing it says the quiet ended and how long it
+    lasted, which is the part a dataset needs in order to state what it covers.
+    """
+
     checks: int = field(default=0, init=False)
-    reported_gap_ids: set[str] = field(default_factory=set, init=False)
+    open_silences: dict[str, GapReport] = field(default_factory=dict, init=False)
+    """Silences reported and not yet seen to end, keyed by stream."""
+
     last_check: MonitorCheck | None = field(default=None, init=False)
 
     async def check(self) -> MonitorCheck:
@@ -130,6 +140,11 @@ class Monitor:
         stream quiet for an hour would otherwise produce a gap row per interval,
         flooding the registry with restatements of one fact — and burying the
         new gaps that matter among them.
+
+        Silences that ended are closed before new ones are looked for. An open
+        gap claims data is still missing, and a registry holding nothing but
+        open gaps is one a dataset can only read as permanently degraded —
+        which is what it did for as long as this only ever opened them.
         """
         now = self.clock.now()
         self.checks += 1
@@ -137,12 +152,15 @@ class Monitor:
         fresh = self._freshness(now)
         silent = self.heartbeat.is_silent(now=now)
 
+        await self._close_resumed()
+
         new_gaps: list[GapReport] = []
         for gap in self.gaps.check_silence(now=now):
-            key = f"{gap.asset}/{gap.event_type}/{gap.gap_start.isoformat()}"
-            if key in self.reported_gap_ids:
+            stream = f"{gap.asset}/{gap.event_type}"
+            open_gap = self.open_silences.get(stream)
+            if open_gap is not None and open_gap.gap_start == gap.gap_start:
                 continue
-            self.reported_gap_ids.add(key)
+            self.open_silences[stream] = gap
             new_gaps.append(gap)
             logger.warning(
                 "silence_gap",
@@ -166,6 +184,33 @@ class Monitor:
         self.last_check = check
         self._reflect_in_state(check)
         return check
+
+    async def _close_resumed(self) -> None:
+        """Close every silence whose stream has produced a message since.
+
+        Resumption is read from the stream position rather than from delivery:
+        the monitor runs on a timer and never sees a message, but a
+        `last_seen_at` later than the gap's start can only mean one arrived.
+        """
+        for stream, gap in list(self.open_silences.items()):
+            position = self.gaps.position(gap.asset, gap.event_type)
+            if position is None or position.last_seen_at is None:
+                continue
+            if position.last_seen_at <= gap.gap_start:
+                continue
+            del self.open_silences[stream]
+            resumed = replace(gap, gap_end=position.last_seen_at)
+            logger.info(
+                "silence_ended",
+                extra={
+                    "gap_id": resumed.gap_id,
+                    "asset": resumed.asset,
+                    "event_type": resumed.event_type,
+                    "seconds": (position.last_seen_at - gap.gap_start).total_seconds(),
+                },
+            )
+            if self.on_resume is not None:
+                await self.on_resume(resumed)
 
     async def run(self, *, stop: asyncio.Event | None = None) -> None:
         """Check on the interval until stopped."""

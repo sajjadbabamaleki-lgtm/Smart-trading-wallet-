@@ -61,13 +61,25 @@ def open_silences(connection: Any) -> list[tuple[str, str, str, datetime]]:
 
 
 def resumed_at(client: Any, *, asset: str, event_type: str, after: datetime) -> datetime | None:
-    """The first event on this stream after the silence began, if there is one."""
+    """The first event on this stream after the silence began, if there is one.
+
+    `after` is converted to UTC before it is sent. PostgreSQL hands back a
+    timestamp in the session's zone, which on the recording host is two hours
+    from UTC, and ClickHouse stores UTC. Passing it across unconverted asks for
+    the first event after a moment two hours off from the one meant — which is
+    how the first run of this reported that all 324 silences had lasted zero
+    seconds.
+    """
     rows = list(
         client.query(
             "SELECT min(local_receive_time) FROM market_events "
             "WHERE asset = %(asset)s AND event_type = %(event_type)s "
             "AND local_receive_time > %(after)s",
-            parameters={"asset": asset, "event_type": event_type, "after": after},
+            parameters={
+                "asset": asset,
+                "event_type": event_type,
+                "after": after.astimezone(UTC).replace(tzinfo=None),
+            },
         ).result_rows
     )
     found = rows[0][0] if rows else None
@@ -91,6 +103,7 @@ def collect(
     args: argparse.Namespace,
     closed: list[dict[str, Any]],
     left_open: list[dict[str, Any]],
+    implausible: list[dict[str, Any]],
 ) -> None:
     """Walk the open gaps and decide each one, writing only under --apply."""
     with ch.connect_from_settings(settings) as client, pg.connect(settings.postgres_dsn) as conn:
@@ -107,8 +120,22 @@ def collect(
                 # honest answers to "is data still missing?".
                 left_open.append(entry)
                 continue
+
+            seconds = (ended - gap_start).total_seconds()
             entry["ended"] = ended.isoformat()
-            entry["seconds"] = round((ended - gap_start).total_seconds(), 3)
+            entry["seconds"] = round(seconds, 3)
+
+            # A silence was reported because a stream went quiet for longer
+            # than its threshold, so an end at or before its start is not a
+            # closure — it is a query that answered the wrong question. The
+            # first version of this script asked ClickHouse with a timestamp in
+            # the wrong zone and computed exactly this for all 324 rows. It
+            # would have written all of them.
+            if seconds <= 0:
+                entry["refused"] = "the computed end is not after the start"
+                implausible.append(entry)
+                continue
+
             closed.append(entry)
             if args.apply:
                 close(conn, gap_id, ended)
@@ -130,18 +157,26 @@ def main() -> int:
 
     closed: list[dict[str, Any]] = []
     left_open: list[dict[str, Any]] = []
+    implausible: list[dict[str, Any]] = []
 
     try:
-        collect(settings, args, closed, left_open)
+        collect(settings, args, closed, left_open, implausible)
     except Exception as exc:  # noqa: BLE001 - a repair reports why it could not run
         print(f"could not reach the stores: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 2
+    lengths = sorted(float(e["seconds"]) for e in closed)
     report = {
         "applied": args.apply,
         "closeable": len(closed),
         "left_open": len(left_open),
-        "longest_closed_seconds": max((e["seconds"] for e in closed), default=0),
+        "refused_as_implausible": len(implausible),
+        # The spread, not just the longest. One number cannot show that every
+        # closure came out identical, which is what a broken query looks like.
+        "shortest_closed_seconds": lengths[0] if lengths else 0,
+        "median_closed_seconds": lengths[len(lengths) // 2] if lengths else 0,
+        "longest_closed_seconds": lengths[-1] if lengths else 0,
         "still_open": left_open,
+        "implausible": implausible[:10],
     }
     if args.json:
         print(json.dumps(report, indent=2))
@@ -149,8 +184,17 @@ def main() -> int:
         verb = "closed" if args.apply else "would close"
         print(f"{verb} {len(closed)} silence(s) the store shows ended")
         print(f"left open {len(left_open)} with no event after them")
+        if implausible:
+            print(
+                f"REFUSED {len(implausible)}: the computed end was not after the start. "
+                "That is a query answering the wrong question, not a gap."
+            )
         if closed:
-            print(f"longest closed: {report['longest_closed_seconds']}s")
+            print(
+                f"length: shortest {report['shortest_closed_seconds']}s, "
+                f"median {report['median_closed_seconds']}s, "
+                f"longest {report['longest_closed_seconds']}s"
+            )
         for entry in left_open:
             print(f"  still open  {entry['stream']:<18} since {entry['started'][:19]}")
         if not args.apply:

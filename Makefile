@@ -107,7 +107,7 @@ explain-gaps: ## Print the raw timestamps behind the first few open gaps
 	$(UV) run python infrastructure/scripts/close_resolved_gaps.py --explain $(or $(N),3)
 
 close-gaps: ## Close silences the store shows ended (read-only; APPLY=1 to write)
-	$(UV) run python infrastructure/scripts/close_resolved_gaps.py $(if $(APPLY),--apply,)
+	$(UV) run python infrastructure/scripts/close_resolved_gaps.py --record-outages $(if $(APPLY),--apply,)
 
 watch: ## Ask the store once whether the recorder is still receiving
 	$(UV) run python infrastructure/scripts/watch_recording.py --no-restart

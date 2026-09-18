@@ -29,6 +29,8 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import uuid
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -40,7 +42,7 @@ if str(REPO_ROOT) not in sys.path:
 from libs.config import ConfigurationError, load_settings  # noqa: E402
 from libs.storage import clickhouse as ch  # noqa: E402
 from libs.storage import postgres as pg  # noqa: E402
-from services.market_data.watchdog import WATCHDOG_SOURCE  # noqa: E402
+from services.market_data.watchdog import ALL_STREAMS, WATCHDOG_SOURCE  # noqa: E402
 
 RESOLUTION = "closed retroactively: the store holds the event that ended this silence"
 
@@ -94,10 +96,10 @@ def resumed_at(client: Any, *, asset: str, event_type: str, after: datetime) -> 
             },
         ).result_rows
     )
-    found = rows[0][0] if rows else None
-    if found is None:
+    resumed = rows[0][0] if rows else None
+    if resumed is None:
         return None
-    return found.replace(tzinfo=UTC) if found.tzinfo is None else found
+    return resumed.replace(tzinfo=UTC) if resumed.tzinfo is None else resumed
 
 
 def close(connection: Any, gap_id: str, ended_at: datetime) -> None:
@@ -110,13 +112,17 @@ def close(connection: Any, gap_id: str, ended_at: datetime) -> None:
         )
 
 
-def collect(
-    settings: Any,
-    args: argparse.Namespace,
-    closed: list[dict[str, Any]],
-    left_open: list[dict[str, Any]],
-    implausible: list[dict[str, Any]],
-) -> None:
+@dataclass
+class Findings:
+    """What one pass over the registry concluded, grouped so it travels as one."""
+
+    closed: list[dict[str, Any]] = field(default_factory=list)
+    left_open: list[dict[str, Any]] = field(default_factory=list)
+    implausible: list[dict[str, Any]] = field(default_factory=list)
+    outages: list[dict[str, Any]] = field(default_factory=list)
+
+
+def collect(settings: Any, args: argparse.Namespace, found: Findings) -> None:
     """Walk the open gaps and decide each one, writing only under --apply."""
     with ch.connect_from_settings(settings) as client, pg.connect(settings.postgres_dsn) as conn:
         for gap_id, asset, event_type, gap_start in open_silences(conn):
@@ -130,7 +136,7 @@ def collect(
                 # No event after it. Either the stream never came back, or this
                 # is the tail of the recording — both stay open, and both are
                 # honest answers to "is data still missing?".
-                left_open.append(entry)
+                found.left_open.append(entry)
                 continue
 
             seconds = (ended - gap_start).total_seconds()
@@ -145,14 +151,104 @@ def collect(
             # would have written all of them.
             if seconds <= 0:
                 entry["refused"] = "the computed end is not after the start"
-                implausible.append(entry)
+                found.implausible.append(entry)
                 continue
 
-            closed.append(entry)
+            found.closed.append(entry)
             if args.apply:
                 close(conn, gap_id, ended)
+
+        if args.record_outages:
+            minimum = timedelta(minutes=args.outage_minutes)
+            for start, end in data_outages(client, asset=asset, minimum=minimum):
+                if already_recorded(conn, asset=asset, start=start, end=end):
+                    continue
+                entry = {
+                    "stream": f"{asset}/{ALL_STREAMS}",
+                    "started": start.isoformat(),
+                    "ended": end.isoformat(),
+                    "seconds": round((end - start).total_seconds(), 3),
+                }
+                found.outages.append(entry)
+                if args.apply:
+                    record_outage(conn, asset=asset, start=start, end=end)
         if args.apply:
             conn.commit()
+
+
+def data_outages(client: Any, *, asset: str, minimum: timedelta) -> list[tuple[datetime, datetime]]:
+    """Holes the data itself proves, whatever was or was not running at the time.
+
+    Asked of every stream at once rather than per stream: when the recorder
+    stops, every stream stops together, and a hole in all of them is a recorder
+    outage rather than a quiet market. A quiet market still carries mark-price
+    updates about once a second.
+
+    This exists because the registry can only hold what something was alive to
+    write. The thirty-nine-hour outage has no row anywhere — the recorder had
+    exited and the watchdog did not yet exist — so a dataset built across it
+    would have found nothing to declare and called the range clean. The store
+    remembers what no process was there to record.
+    """
+    rows = list(
+        client.query(
+            "SELECT previous, current FROM ("
+            "  SELECT local_receive_time AS current, "
+            "         lagInFrame(local_receive_time) OVER ("
+            "           ORDER BY local_receive_time "
+            "           ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS previous "
+            "  FROM (SELECT DISTINCT local_receive_time FROM market_events "
+            "        WHERE asset = %(asset)s ORDER BY local_receive_time)"
+            ") WHERE previous > toDateTime64(0, 9) "
+            "AND dateDiff('second', previous, current) >= %(minimum)s "
+            "ORDER BY previous",
+            parameters={"asset": asset, "minimum": int(minimum.total_seconds())},
+        ).result_rows
+    )
+    return [
+        (
+            a.replace(tzinfo=UTC) if a.tzinfo is None else a,
+            b.replace(tzinfo=UTC) if b.tzinfo is None else b,
+        )
+        for a, b in rows
+    ]
+
+
+def already_recorded(connection: Any, *, asset: str, start: datetime, end: datetime) -> bool:
+    """Whether some row already covers this hole, so it is not recorded twice."""
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT 1 FROM data_gaps WHERE asset = %s AND gap_start <= %s "
+            "AND (gap_end IS NULL OR gap_end >= %s) LIMIT 1",
+            (asset, start, end),
+        )
+        return cursor.fetchone() is not None
+
+
+def record_outage(connection: Any, *, asset: str, start: datetime, end: datetime) -> str:
+    gap_id = str(uuid.uuid4())
+    seconds = (end - start).total_seconds()
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "INSERT INTO data_gaps (gap_id, source, venue, asset, event_type, gap_start, "
+            "gap_end, detection_reason, backfill_status, quality_impact, resolution) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'UNRECOVERABLE', 'MATERIAL', %s)",
+            (
+                gap_id,
+                WATCHDOG_SOURCE,
+                "hyperliquid",
+                asset,
+                ALL_STREAMS,
+                start,
+                end,
+                f"no event of any type for {seconds:.0f}s; found in the data afterwards",
+                # Not recovered, and never will be. The venue published during
+                # those hours and this system did not capture it; Hyperliquid's
+                # public history is bounded, so it cannot be fetched back.
+                "the recorder was not running; these events were never captured",
+            ),
+        )
+    return gap_id
 
 
 def explain(settings: Any, count: int) -> None:
@@ -210,6 +306,17 @@ def main() -> int:
     parser.add_argument("--apply", action="store_true", help="write the closures")
     parser.add_argument("--json", action="store_true")
     parser.add_argument(
+        "--record-outages",
+        action="store_true",
+        help="also record holes the data proves but nothing was alive to write",
+    )
+    parser.add_argument(
+        "--outage-minutes",
+        type=float,
+        default=10.0,
+        help="how long a hole in every stream must be to count as an outage",
+    )
+    parser.add_argument(
         "--explain",
         type=int,
         default=0,
@@ -232,48 +339,53 @@ def main() -> int:
             return 2
         return 0
 
-    closed: list[dict[str, Any]] = []
-    left_open: list[dict[str, Any]] = []
-    implausible: list[dict[str, Any]] = []
+    found = Findings()
 
     try:
-        collect(settings, args, closed, left_open, implausible)
+        collect(settings, args, found)
     except Exception as exc:  # noqa: BLE001 - a repair reports why it could not run
         print(f"could not reach the stores: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 2
-    lengths = sorted(float(e["seconds"]) for e in closed)
+    lengths = sorted(float(e["seconds"]) for e in found.closed)
     report = {
         "applied": args.apply,
-        "closeable": len(closed),
-        "left_open": len(left_open),
-        "refused_as_implausible": len(implausible),
+        "closeable": len(found.closed),
+        "left_open": len(found.left_open),
+        "refused_as_implausible": len(found.implausible),
         # The spread, not just the longest. One number cannot show that every
         # closure came out identical, which is what a broken query looks like.
         "shortest_closed_seconds": lengths[0] if lengths else 0,
         "median_closed_seconds": lengths[len(lengths) // 2] if lengths else 0,
         "longest_closed_seconds": lengths[-1] if lengths else 0,
-        "still_open": left_open,
-        "implausible": implausible[:10],
+        "still_open": found.left_open,
+        "implausible": found.implausible[:10],
+        "outages_found": found.outages,
     }
     if args.json:
         print(json.dumps(report, indent=2))
     else:
         verb = "closed" if args.apply else "would close"
-        print(f"{verb} {len(closed)} silence(s) the store shows ended")
-        print(f"left open {len(left_open)} with no event after them")
-        if implausible:
+        print(f"{verb} {len(found.closed)} silence(s) the store shows ended")
+        print(f"left open {len(found.left_open)} with no event after them")
+        if found.implausible:
             print(
-                f"REFUSED {len(implausible)}: the computed end was not after the start. "
+                f"REFUSED {len(found.implausible)}: the computed end was not after the start. "
                 "That is a query answering the wrong question, not a gap."
             )
-        if closed:
+        if found.closed:
             print(
                 f"length: shortest {report['shortest_closed_seconds']}s, "
                 f"median {report['median_closed_seconds']}s, "
                 f"longest {report['longest_closed_seconds']}s"
             )
-        for entry in left_open:
+        for entry in found.left_open:
             print(f"  still open  {entry['stream']:<18} since {entry['started'][:19]}")
+        for entry in found.outages:
+            hours = float(entry["seconds"]) / 3600
+            print(
+                f"  OUTAGE      nothing arrived for {hours:.1f}h "
+                f"from {entry['started'][:19]} — no row existed for it"
+            )
         if not args.apply:
             print("\nnothing was written. Re-run with --apply to write these closures.")
     return 0

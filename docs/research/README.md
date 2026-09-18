@@ -11,6 +11,7 @@ this index.
 |-----------|---------|--------|----------------------|-------------------------|
 | [Trader Behavior Intelligence Engine (TBIE)](trader-behavior-intelligence-engine.md) | 1.1 — evidence-audited | High-Priority Experimental Candidate | None | No — but it constrains recorder and clock design |
 | [TBIE v1.0](trader-behavior-intelligence-engine-v1.0-superseded.md) | 1.0 | Superseded by 1.1, retained for traceability | None | — |
+| [Market Event Intelligence Engine (MEIE)](market-event-intelligence-engine.md) | 1 | Experimental Candidate | None | No — deferred behind M7 and M9 |
 
 ## TBIE in one paragraph
 
@@ -205,3 +206,57 @@ would manufacture (§67), cost stress at 2× fees / 2× slippage / 2× latency
 > latency before assuming executability. Buy infrastructure only after evidence
 > earns it. Treat predictive information and profitable execution as two
 > different hypotheses.
+
+---
+
+## MEIE in one paragraph
+
+MEIE asks whether a market-moving event still contains *executable* information
+by the time this system could act on it. Not "is this news bullish" but: given
+the event, the market state, how much of the reaction has already happened, the
+age of the information, and what execution costs — does defensible edge remain?
+`NO TRADE` and `NEWS_NO_EDGE` are first-class results. It proposes; the Risk
+Kernel disposes (§2.2), which matches the boundary this repository already
+enforces between the Risk Engine and execution.
+
+## What this project's own measurements say about it
+
+Recorded in the document itself, under *What this project has already
+measured*, and summarised here because it applies to TBIE identically.
+
+**Four rungs of MEIE's latency ladder do not exist for us.** §24 replays every
+candidate at 0, 50, 100 and 250 ms. The venue's publication delay to a public
+subscriber is p50 425 ms, min 325 ms — measured, and shown to be neither our
+clock (root dispersion 274 µs) nor our network (≈28 ms one way). Two independent
+specifications arrived at sub-second ladders without either having measured the
+floor.
+
+**Cost is the binding constraint, not latency.** A round trip costs 9.99 bps,
+of which 9 is fees. BTC's mid moves a median 0.066 bps over those 322 ms. So
+there is no fast edge of the required size to be taxed by the delay — which
+makes §16 (Already-Priced-In) and §17 (Information Decay) the load-bearing
+components, and makes `NEWS_RISK_ONLY` (§36) the most probable useful outcome
+rather than the consolation prize.
+
+Neither finding invalidates MEIE. Both relocate it: CPI prints, FOMC decisions,
+exchange incidents and regulatory rulings decay over minutes and hours, where
+the horizons are reachable and ten basis points is an ordinary move.
+
+## Why it is deferred rather than started
+
+Its cheapest and probably most valuable part is §30, Risk-Only Mode: block new
+entries and reduce exposure around scheduled releases. That needs no NLP, no
+LLM and no taxonomy — only a macro calendar. It is deferred anyway, because the
+system has no strategy to block yet, and a risk control with nothing to restrain
+cannot be shown to help. See [ADR-010](../ADR/ADR-010-market-event-intelligence-experimental.md).
+
+## What MEIE forbids, which this repository should hold to regardless
+
+§38 lists what must not be built. Three of them are live risks for any system
+that later adds an LLM anywhere near a trading decision:
+
+- `headline → GPT → BUY/SELL`, and `positive sentiment = LONG`
+- counting reposts as independent confirmation — five sites repeating one rumour
+  are not five sources (§13)
+- letting an LLM control risk, or return an executable command as an
+  authoritative action (§14)

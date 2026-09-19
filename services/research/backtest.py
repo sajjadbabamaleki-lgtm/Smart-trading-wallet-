@@ -58,9 +58,49 @@ class Quote:
     bid: Decimal
     ask: Decimal
 
+    bid_size: Decimal | None = None
+    ask_size: Decimal | None = None
+    """Resting quantity at each touch, when the source carried it.
+
+    Optional because a quote is still a quote without it, and a strategy that
+    does not look at depth should not be blocked by a source that omits it. But
+    a baseline without depth is not a serious baseline: the anonymous
+    microstructure benchmark this project's own research audit describes already
+    carries depth imbalance, so a strategy competing against nothing but price
+    is competing against a straw man.
+    """
+
+    flow: Decimal | None = None
+    """Signed taker quantity since the previous quote. Positive is buying.
+
+    The other half of what price alone cannot say. Two identical quotes mean
+    different things depending on whether aggressive buyers or sellers arrived
+    between them, and this carries that. Signed by the aggressor, because the
+    question is who chose to trade.
+
+    None means the source did not report flow. Zero means it reported none,
+    which is a different statement, and collapsing the two would turn a missing
+    feed into a quiet market.
+    """
+
     @property
     def mid(self) -> Decimal:
         return (self.bid + self.ask) / 2
+
+    @property
+    def book_imbalance(self) -> Decimal | None:
+        """Where the resting size is, from -1 (all ask) to +1 (all bid).
+
+        None when either side is missing or the book is empty — an imbalance
+        over an absent book is a fabricated feature, and this is the layer that
+        exists to keep fabricated features out of a cost-sensitive test.
+        """
+        if self.bid_size is None or self.ask_size is None:
+            return None
+        total = self.bid_size + self.ask_size
+        if total <= 0:
+            return None
+        return (self.bid_size - self.ask_size) / total
 
     def touch(self, side: Side) -> Decimal:
         """The price a crossing order of this side pays.

@@ -156,6 +156,7 @@ make watch-test-email  # prove the alert path works before an outage tests it
 make report            # write what the store holds into the repo, and push it
 make testnet-check     # decide a test order and show it, sending nothing
 make testnet-order     # place one test order on Hyperliquid testnet
+make strategy          # run the baseline strategies over recorded data
 make help              # all targets
 
 # Record from the live testnet feed without writing anything

@@ -133,12 +133,43 @@ class CostModel:
     rather than assumed, and `hurdle_bps` will say so when it is still zero.
     """
 
+    maker_fee_bps: Decimal = BASE_MAKER_FEE_BPS
+    """What resting costs per side instead of crossing.
+
+    Present and no longer hypothetical: the passive route is only cheaper if
+    adverse selection does not eat the fee saving, and that is now measured.
+    """
+
+    maker_adverse_selection_bps: Decimal = Decimal("0.0")
+    """Mean loss per passive fill from having been chosen to trade with.
+
+    Distinct from `adverse_drift_bps`, and the distinction is the reason both
+    exist. Drift is what happened to *our signal* while our order was in
+    flight, which cannot be known without a signal and belongs to M6. This is
+    what the price does after somebody decides to fill a resting order, which
+    is a property of the book and was measured from the recorded stream:
+    **0.2033 bps against, mean, over a 10-second markout on 9,854 fills**
+    (2026-09-19, 24 hours of BTC).
+
+    Charged per fill, so twice on a round trip — unlike drift, which is charged
+    once because a round trip has one decision that matters. Both fills of a
+    passive round trip are someone else's decision to trade with us.
+
+    Zero by default, because a figure this consequential must be passed in from
+    a measurement rather than inherited from a constant somebody once observed.
+    `measure_passive_fill_markout_bps` is where it comes from, and it is a
+    *lower* bound: queue position is unmodelled there, and a real queue fills
+    hardest exactly when the level is being cleared.
+    """
+
     def __post_init__(self) -> None:
         for name in (
             "taker_fee_bps",
             "half_spread_bps",
             "slippage_bps",
             "adverse_drift_bps",
+            "maker_fee_bps",
+            "maker_adverse_selection_bps",
         ):
             if getattr(self, name) < 0:
                 raise ValueError(f"{name} cannot be negative; a cost is not a rebate")
@@ -170,6 +201,33 @@ class CostModel:
         signal is a second decision and a second round trip.
         """
         return self.one_way_bps * 2 + self.adverse_drift_bps
+
+    @property
+    def maker_round_trip_bps(self) -> Decimal:
+        """Cost of a complete trade that rested on both sides.
+
+        No half-spread: a resting order is filled at its own quote, so it
+        collects the spread rather than paying it. What replaces it is adverse
+        selection, charged on each fill, and that trade — the spread for the
+        risk of being selected — is the whole of the maker question.
+
+        Measured on 2026-09-19 this comes to about 3.41 bps against 9.98 for
+        crossing, so resting is roughly three times cheaper even after adverse
+        selection. Two things it does not price, and both are why this number
+        must not become a plan on its own:
+
+        **Fill probability.** A resting order earns nothing if nobody trades
+        with it, and misses the move it was right about. Crossing pays more and
+        is certain; resting is cheap and conditional. Nothing here models the
+        difference.
+
+        **The left tail.** The mean is a fifth of a basis point, the median is
+        positive, and the tenth percentile is 2.3 against with a worst
+        observation near 30. Most passive fills are harmless and occasionally
+        one runs you over. A mean is the right input to a cost model and the
+        wrong input to a risk limit.
+        """
+        return (self.maker_fee_bps + self.maker_adverse_selection_bps) * 2
 
     def round_trip_cost(self, notional: Decimal) -> Decimal:
         """Cost of a round trip on this notional, in quote currency."""

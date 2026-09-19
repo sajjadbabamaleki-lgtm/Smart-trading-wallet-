@@ -492,3 +492,73 @@ spanning part of one day, and the cost measurement taken the same day says the
 tradable horizon is minutes rather than milliseconds — which makes 14 hours a
 small number of independent observations. A dataset being valid means it
 declares what it contains, not that it contains enough.
+
+---
+
+## M5 — the maker question, answered, 2026-09-19
+
+**Result: resting is roughly three times cheaper than crossing, even after
+adverse selection.** The measurement that decides how this system should
+execute.
+
+| | |
+|---|---|
+| Sample | 45,219 rows over 24 h of BTC, of which 9,854 locatable passive fills |
+| Markout horizon | 10 s |
+| Mean markout | **−0.2033 bps** (adverse) |
+| Median | **+0.0616 bps** (favourable) |
+| p10 / p25 | −2.278 / −0.307 |
+| p75 / p90 | +0.554 / +1.417 |
+| Worst / best | −29.88 / +15.59 |
+| Taker round trip | **9.98 bps** — 9.0 fees, 0.98 spread |
+| Maker round trip | **3.41 bps** — 3.0 fees, 0.41 adverse selection |
+
+### What it means
+
+The fee saving survives. Crossing pays 4.5 bps a side in fees and the spread;
+resting pays 1.5 and collects the spread, and gives back only a fifth of a
+basis point per fill to adverse selection. Resting is cheaper by a factor of
+about 2.9.
+
+**The distribution matters more than the mean.** The median passive fill is
+*favourable*. Most of the time nobody is picking you off; the mean is dragged
+negative by a left tail — a tenth of fills lose 2.3 bps or worse, and the worst
+in a day lost 29.9. That is the signature of adverse selection rather than an
+argument against it: you are usually fine and occasionally run over, which is
+why the mean is the right input to a cost model and the wrong input to a risk
+limit.
+
+### What this changes about the tradable horizon
+
+The earlier reasoning stands but its arithmetic moves. Required move scales
+with cost, and time to a given move scales with its square, so a cost of 3.41
+instead of 9.98 divides the required horizon by about eight.
+
+| | Taker, 9.98 bps | Maker, 3.41 bps |
+|---|---|---|
+| Horizon for a 1σ move ≈ cost | ≈ 60 s | ≈ 7 s |
+| Horizon for 3× cost | ≈ 9 min | ≈ 1 min |
+
+Seconds to minutes is reachable again. The conclusion that millisecond trading
+is dead is unchanged — 322 ms still buys a 0.066 bps median move against a 3.41
+bps floor — but the door that 9.98 bps closed on the seconds range is open at
+3.41.
+
+### What it does not establish, and both are load-bearing
+
+**Fill probability is not modelled at all.** A resting order earns nothing if
+nobody trades with it, and misses the move it was right about. Crossing costs
+three times more and is certain. Nothing here prices that trade-off, and a
+strategy that assumes it gets the maker fee whenever it wants one is assuming
+the part that was not measured.
+
+**This is a lower bound on adverse selection.** Queue position is unmodelled:
+the measurement treats any aggressive trade at our level as filling us, while a
+real queue fills hardest exactly as the level is cleared, which is the adverse
+case. Real adverse selection is worse than 0.2033 bps by an amount this data
+cannot bound. The cost model carries the figure with that stated, and
+`CostModel.maker_round_trip_bps` documents the crossover: about 4 bps of
+adverse selection would erase the advantage entirely, which is not far away.
+
+Both are M6's to settle, against a specific strategy, in an execution-aware
+backtest.

@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Any
 
 from libs.domain.candles import Candle, CandleRequest
 from libs.exchange.hyperliquid.candles import VENUE as DEFAULT_VENUE
+from libs.storage.batching import in_partition_batches, month_of
 
 if TYPE_CHECKING:  # pragma: no cover - import only for type checking
     from clickhouse_connect.driver.client import Client
@@ -50,7 +51,7 @@ def write_candles(client: Client, candles: Sequence[Candle], *, venue: str = DEF
     """
     if not candles:
         return 0
-    rows = [
+    rows: list[list[object]] = [
         [
             venue,
             candle.asset,
@@ -67,8 +68,26 @@ def write_candles(client: Client, candles: Sequence[Candle], *, venue: str = DEF
         ]
         for candle in candles
     ]
-    client.insert("candles", rows, column_names=list(COLUMNS))
-    return len(rows)
+    # Batched by partition. The table partitions by month, and ClickHouse
+    # refuses a single insert touching more than a hundred of them — which is
+    # exactly what nine years of history in one call does.
+    written = 0
+    for batch in in_partition_batches(rows, partition=_partition_of):
+        client.insert("candles", list(batch), column_names=list(COLUMNS))
+        written += len(batch)
+    return written
+
+
+def _partition_of(row: Sequence[object]) -> tuple[int, int]:
+    """Which monthly partition a built row lands in.
+
+    Reads `open_time` by its position in `COLUMNS` rather than by a literal
+    index, so reordering the columns cannot quietly start batching on a price.
+    """
+    moment = row[COLUMNS.index("open_time")]
+    if not isinstance(moment, datetime):
+        raise TypeError("open_time must be a datetime to determine its partition")
+    return month_of(moment)
 
 
 def as_utc(value: datetime) -> datetime:

@@ -9,7 +9,7 @@ SUDO := $(shell [ "$$(id -u)" = 0 ] || echo sudo)
 .PHONY: help setup format lint typecheck test test-unit test-integration audit check \
         stack-up stack-down stack-logs stack-verify migrate accept console inspect \
         record-install record-status record-stop clean \
-        ladder history history-all history-status chart evaluate evaluate-all
+        ladder history history-all history-status chart evaluate evaluate-all evaluate-report
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -120,6 +120,10 @@ evaluate: ## Run a rule over history against its controls (ASSET, INTERVAL, RULE
 	$(UV) run python -m services.strategy_engine.evaluate_candles_cli \
 		--asset $(or $(ASSET),SOL) --interval $(or $(INTERVAL),4h) \
 		--rule $(or $(RULE),trend-following) $(if $(HOLDOUT),--holdout,)
+
+evaluate-report: ## Run every rule on both assets, write it into the repo and push it
+	@HOLDOUT=$(or $(HOLDOUT),0) PUSH=$(or $(PUSH),1) UV=$(UV) \
+		bash infrastructure/scripts/publish_evaluation.sh
 
 evaluate-all: ## Run the rule on both assets, training period only
 	@for asset in BTC SOL; do \

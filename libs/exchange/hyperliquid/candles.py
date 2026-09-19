@@ -18,12 +18,16 @@ means acting on a number that did not exist at the moment of the decision,
 which is lookahead. So the venue's most recent candle is dropped unless the
 clock says its interval is over.
 
-**The venue caps a response at 5,000 candles**, which is undocumented in the
-sense that it is not an error — a request for two years of hours simply returns
-the first 5,000 and says nothing. That silence is why this paginates by the
-last candle received rather than by arithmetic on the range: a page that comes
-back short ends the walk, and a page that comes back full continues it from
-where it actually stopped.
+**The venue caps a response at 5,000 candles, and the cap is silent.** A
+request for two years of hourly candles does not fail — it returns 5,000 of
+them and says nothing about the rest. Worse, the 5,000 it keeps are the *most
+recent*, so the missing part is the beginning of the range, which is exactly
+the part a two-year request is asking for.
+
+So the range is walked in windows of fewer than 5,000 intervals each, computed
+arithmetically. A truncated response then cannot occur, the venue's truncation
+rule stops mattering, and the walk is guaranteed to progress regardless of what
+comes back.
 """
 
 from __future__ import annotations
@@ -197,46 +201,57 @@ async def fetch_candles(
 ) -> tuple[Candle, ...]:
     """Every closed candle the request covers.
 
-    Walks forward a page at a time. `now` is injected rather than read here so
-    that a test can decide what "closed" means without waiting.
+    Walks the range in windows narrow enough that the page cap cannot bite:
+    each request asks for at most `PAGE_LIMIT - 1` intervals, so a truncated
+    response is impossible and the venue's truncation rule stops mattering.
+
+    That rule is why this is written this way. The first version paged forward
+    from the last candle received, on the assumption that a capped response
+    keeps the *oldest* candles in the range. Hyperliquid keeps the newest: a
+    request for two years of hours returned the most recent 208 days and said
+    nothing, and the walk then finished in one page because its cursor had
+    already passed the end. Two years of hourly history came back as seven
+    months of it, with no error and no gap.
+
+    Windowing by arithmetic removes the assumption instead of replacing it with
+    the opposite one. It also guarantees progress — the cursor advances by a
+    fixed amount whatever the venue returns — so the walk cannot loop.
+
+    `now` is injected rather than read here so that a test can decide what
+    "closed" means without waiting.
     """
     moment = now or datetime.now(tz=UTC)
     owns_client = client is None
     http = client or httpx.AsyncClient(timeout=REQUEST_TIMEOUT_SECONDS)
     collected: dict[datetime, Candle] = {}
+    # One interval short of the cap, because the venue may count both ends of
+    # the window inclusively and a page at exactly the cap is indistinguishable
+    # from a truncated one.
+    window = request.step * (PAGE_LIMIT - 1)
     cursor = request.start
 
     try:
         while cursor < request.end:
-            page = await _fetch_page(http, request, cursor=cursor, endpoint=endpoint)
-            if not page:
-                break
+            window_end = min(cursor + window, request.end)
+            page = await _fetch_page(http, request, start=cursor, end=window_end, endpoint=endpoint)
             for entry in page:
                 candle = parse_candle(entry, asset=request.asset, interval=request.interval)
-                # Keyed by open time, so an overlapping page cannot double-count
-                # an hour. The venue returns the candle containing the cursor,
-                # which means every page after the first repeats the one before.
+                # Keyed by open time, so an overlapping window cannot
+                # double-count an hour.
                 collected[candle.open_time] = candle
-            newest = max(collected)
-            if len(page) < PAGE_LIMIT:
-                break
-            if newest + request.step <= cursor:
-                # The page was full but advanced nothing. Continuing would loop
-                # forever; stopping loses data. Say so instead of doing either
-                # silently.
-                raise CandleError(
-                    f"the venue returned a full page that did not advance past "
-                    f"{cursor.isoformat()}; the range cannot be walked"
-                )
-            cursor = newest + request.step
             logger.info(
-                "candle page fetched",
+                "candle window fetched",
                 extra={
                     "asset": request.asset,
                     "interval": request.interval,
-                    "through": newest.isoformat(),
+                    "window_end": window_end.isoformat(),
+                    "returned": len(page),
                 },
             )
+            # An empty or short window is not the end of the range — it is a
+            # hole in the archive, and `missing_intervals` declares those. The
+            # walk continues by arithmetic either way.
+            cursor = window_end
     finally:
         if owns_client:
             await http.aclose()
@@ -249,7 +264,8 @@ async def _fetch_page(
     client: httpx.AsyncClient,
     request: CandleRequest,
     *,
-    cursor: datetime,
+    start: datetime,
+    end: datetime,
     endpoint: str,
 ) -> list[dict[str, Any]]:
     """One `candleSnapshot` request, in the venue's own shape."""
@@ -258,15 +274,15 @@ async def _fetch_page(
         "req": {
             "coin": request.asset.upper(),
             "interval": request.interval,
-            "startTime": int(cursor.timestamp() * 1000),
-            "endTime": int(request.end.timestamp() * 1000),
+            "startTime": int(start.timestamp() * 1000),
+            "endTime": int(end.timestamp() * 1000),
         },
     }
     response = await client.post(endpoint, json=body)
     response.raise_for_status()
     payload = response.json()
     if payload is None:
-        # The venue answers an empty range with null rather than [].
+        # The venue answers a range it holds nothing for with null, not [].
         return []
     if not isinstance(payload, list):
         raise CandleError(f"expected a list of candles, got {type(payload).__name__}")

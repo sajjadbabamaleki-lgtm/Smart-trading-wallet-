@@ -116,9 +116,9 @@ history: ## Download price history a trader reasons over (ASSET, INTERVAL, DAYS)
 	$(UV) run python -m services.research.history_cli \
 		--asset $(or $(ASSET),SOL) --interval $(or $(INTERVAL),1h) --days $(or $(DAYS),730)
 
-history-all: ## Download every history this project reasons over: BTC and SOL, hourly and daily
+history-all: ## Download every history this project reasons over: BTC and SOL at 1h, 4h and 1d
 	@for asset in BTC SOL; do \
-		for interval in 1h 1d; do \
+		for interval in 1h 4h 1d; do \
 			echo "--- $$asset $$interval ---"; \
 			$(UV) run python -m services.research.history_cli \
 				--asset $$asset --interval $$interval --days $(or $(DAYS),730) || exit 1; \

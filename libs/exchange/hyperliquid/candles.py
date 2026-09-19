@@ -28,6 +28,14 @@ So the range is walked in windows of fewer than 5,000 intervals each, computed
 arithmetically. A truncated response then cannot occur, the venue's truncation
 rule stops mattering, and the walk is guaranteed to progress regardless of what
 comes back.
+
+**The same 5,000 is also a retention limit, which windowing cannot fix.** With
+the walk corrected, the windows covering 2024-09 to 2026-02 came back empty for
+both BTC and SOL at 1h: the venue does not hold hourly candles older than about
+5,000 hours, or 208 days. At 1d the same two-year request returns everything,
+because 5,000 days is thirteen years. Intraday history beyond seven months has
+to come from a longer interval — 4h reaches about 833 days — and this is a
+property of the source, not of the request.
 """
 
 from __future__ import annotations

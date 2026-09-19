@@ -46,8 +46,43 @@ def _median(values: list[Decimal]) -> Decimal:
     return (ordered[middle - 1] + ordered[middle]) / 2
 
 
-def _describe(candles: tuple[Candle, ...], *, interval: str, step: timedelta) -> None:
+RETENTION_CANDLES: Final = 5000
+"""How many candles of each interval Hyperliquid keeps, measured 2026-09-19.
+
+Not a page cap — a retention limit. A request for two years of hourly BTC
+returns nothing at all for the windows before roughly 208 days ago, which is
+exactly 5,000 hours. The same request at 1d returns two full years, because
+5,000 days is thirteen.
+
+The consequence for this project: intraday history beyond seven months has to
+come from a longer interval. 4h reaches about 833 days, which covers the two
+years the product objective asks about.
+"""
+
+
+def _report_shortfall(request: CandleRequest, *, first_open: datetime) -> None:
+    """Say plainly when the venue has less history than was asked for.
+
+    Without this the report says "no holes: every interval in the range is
+    present", which is true of the range that arrived and silently misleading
+    about the range that was requested. A missing eighteen months is not a hole
+    in the middle; it is an absence at the start, and it does not look like
+    anything.
+    """
+    asked = (request.end - request.start).days
+    delivered = (request.end - first_open).days
+    if delivered >= asked - 1:
+        return
+    print()
+    print(f"  ** asked for {asked:,} days, the venue holds {delivered:,} **")
+    print(f"  Hyperliquid keeps about {RETENTION_CANDLES:,} candles per interval, so")
+    print(f"  {request.interval} reaches no further back than this. A longer interval")
+    print("  reaches further: 4h covers about 833 days, 1d about 13 years.")
+
+
+def _describe(candles: tuple[Candle, ...], *, request: CandleRequest) -> None:
     """Say what was stored, in terms that do not require reading the code."""
+    interval, step = request.interval, request.step
     if not candles:
         print("no candles stored: the venue returned nothing for that range")
         return
@@ -63,6 +98,7 @@ def _describe(candles: tuple[Candle, ...], *, interval: str, step: timedelta) ->
     print(f"stored {len(candles):,} {interval} candles")
     print(f"  from {first.open_time:%Y-%m-%d %H:%M} to {last.close_time:%Y-%m-%d %H:%M} UTC")
     print(f"  {covered.days:,} days covered, {expected:,} intervals expected")
+    _report_shortfall(request, first_open=first.open_time)
     if holes:
         # Declared, never filled. A series with an invisible hole has been
         # tested over a market that skipped those days.
@@ -123,7 +159,7 @@ def main() -> int:
             print()
         stored = read_candles(client, request)
 
-    _describe(stored, interval=request.interval, step=request.step)
+    _describe(stored, request=request)
     return 0
 
 

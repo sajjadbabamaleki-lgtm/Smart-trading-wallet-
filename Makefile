@@ -111,6 +111,10 @@ strategy: ## Run the baseline strategies over recorded data (HOURS, HOLD, THRESH
 		--hours $(or $(HOURS),24) --hold $(or $(HOLD),30) \
 		--threshold $(or $(THRESHOLD),0.30)
 
+ladder: ## How far price moves at each horizon, against the cost floors (HOURS)
+	$(UV) run python -m services.research.calibrate_cli \
+		--hours $(or $(HOURS),24) --ladder
+
 close-gaps: ## Close silences the store shows ended (read-only; APPLY=1 to write)
 	$(UV) run python infrastructure/scripts/close_resolved_gaps.py --record-outages $(if $(APPLY),--apply,)
 

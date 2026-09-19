@@ -18,12 +18,21 @@ function did not hand it.
 reversing. A reversal is two fills, not one, and treating it as one understates
 the cost of a rule that flips often by exactly half.
 
-**Funding is not charged, and is reported instead.** Hyperliquid settles
-funding hourly, so a position held for days pays it many times, and at this
-horizon it is a real cost rather than a rounding error. This project has not
-downloaded funding-rate history, so charging a guessed rate would put an
-invented number inside the result. Position-hours are counted and reported so
-the exposure is visible, and `fundingHistory` from the venue is the honest fix.
+**Funding is charged from measured history, not guessed.** An earlier version
+of this engine reported position-hours and charged nothing, because no
+funding-rate history had been downloaded and an invented rate inside a result
+is worse than a missing one. Six years of it now exists, and it is not a
+rounding error: on BTC and ETH the long side paid in about 85% of settlements,
+a median 0.81 bps each, which is roughly 9% a year to hold a long.
+
+The sign follows the venue's. A positive rate means longs pay shorts, so a
+long position is debited and a short position is credited — which is why
+charging it makes long-biased rules look worse and short-biased ones better,
+and why leaving it out flattered every result this engine produced before now.
+
+Without a funding series nothing is charged and `funding_paid` is zero, which
+a report must not confuse with a period that happened to have no funding.
+`funding_charged` says which of the two it was.
 
 **Equity is marked to market every candle.** Not only at exits — a drawdown
 that happened inside an open position is a drawdown that happened, and Phase 1
@@ -83,6 +92,8 @@ class CandleTrade:
     exit_price: Decimal
     quantity: Decimal
     fees: Decimal
+    funding: Decimal = Decimal(0)
+    """Funding paid over the hold. Negative when the position was credited."""
 
     @property
     def gross_pnl(self) -> Decimal:
@@ -90,7 +101,8 @@ class CandleTrade:
 
     @property
     def net_pnl(self) -> Decimal:
-        return self.gross_pnl - self.fees
+        """After both costs. Funding is a cost like a fee, not a caveat."""
+        return self.gross_pnl - self.fees - self.funding
 
     @property
     def notional(self) -> Decimal:
@@ -127,6 +139,14 @@ class CandleBacktestResult:
     candles_seen: int
     candles_in_position: int
     position_hours: Decimal
+    funding_charged: bool = False
+    """Whether a funding series was supplied at all.
+
+    Zero funding paid and no funding series look identical in the total, and
+    they are different claims: one is a period that happened to settle nothing,
+    the other is a cost that was never applied. A report that cannot tell them
+    apart will eventually present the second as the first.
+    """
 
     @property
     def gross_pnl(self) -> Decimal:
@@ -137,8 +157,13 @@ class CandleBacktestResult:
         return sum((trade.fees for trade in self.trades), Decimal(0))
 
     @property
+    def funding_paid(self) -> Decimal:
+        """Total funding over the run. Negative means the rules were paid."""
+        return sum((trade.funding for trade in self.trades), Decimal(0))
+
+    @property
     def net_pnl(self) -> Decimal:
-        return self.gross_pnl - self.fees
+        return self.gross_pnl - self.fees - self.funding_paid
 
     @property
     def return_pct(self) -> Decimal:
@@ -224,6 +249,8 @@ class CandleBacktestResult:
             "win_rate_pct": None if self.win_rate is None else str(self.win_rate),
             "gross_pnl": str(self.gross_pnl),
             "fees": str(self.fees),
+            "funding_paid": str(self.funding_paid),
+            "funding_charged": self.funding_charged,
             "net_pnl": str(self.net_pnl),
             "return_pct": str(self.return_pct),
             "max_drawdown_pct": str(self.max_drawdown_pct),
@@ -246,6 +273,8 @@ class _OpenPosition:
     entry_price: Decimal
     quantity: Decimal
     fees_paid: Decimal
+    funding_paid: Decimal = Decimal(0)
+    """Accumulated while the position is held. Positive is a cost."""
 
 
 @dataclass
@@ -263,6 +292,8 @@ class CandleBacktest:
     costs: CostModel = field(default_factory=CostModel)
     notional: Decimal = Decimal(1000)
     starting_equity: Decimal = Decimal(10000)
+    funding: FundingHistory | None = None
+    """Measured settlement history. Without it, no funding is charged."""
 
     def run(
         self, candles: Sequence[Candle], config: FeatureConfig | None = None
@@ -312,8 +343,13 @@ class CandleBacktest:
             # the rest of the candle.
             unrealised = Decimal(0)
             if position is not None:
+                # Funding settled during this candle, charged to the position
+                # that was held through it. A long pays when the rate is
+                # positive; a short is credited. Charged before the mark, so
+                # the equity curve — and therefore the drawdown — includes it.
+                position.funding_paid += self._funding(position, fill)
                 moved = (fill.close - position.entry_price) * position.side.sign
-                unrealised = moved * position.quantity - position.fees_paid
+                unrealised = moved * position.quantity - position.fees_paid - position.funding_paid
                 in_position += 1
                 position_hours += hours_per_candle
             curve.append((fill.close_time, self.starting_equity + realised + unrealised))
@@ -337,7 +373,28 @@ class CandleBacktest:
             candles_seen=len(pairs),
             candles_in_position=in_position,
             position_hours=position_hours,
+            funding_charged=self.funding is not None,
         )
+
+    def _funding(self, position: _OpenPosition, fill: Candle) -> Decimal:
+        """Funding settled inside this candle, as a cost to the position held.
+
+        The notional is marked at the candle's close rather than the entry
+        price, because the venue charges on the position's current value. Using
+        the entry price would understate funding on a position that has run and
+        overstate it on one that has fallen.
+        """
+        if self.funding is None:
+            return Decimal(0)
+        rates = self.funding.settlements_between(
+            fill.close_time - timedelta(seconds=fill.interval_seconds), fill.close_time
+        )
+        if not rates:
+            return Decimal(0)
+        marked = fill.close * position.quantity
+        # A positive rate means longs pay shorts, so the cost carries the
+        # position's sign.
+        return sum(rates, Decimal(0)) * marked * position.side.sign
 
     def _fee(self, notional: Decimal) -> Decimal:
         """One side's cost: the fee plus the half-spread crossed to get filled.
@@ -374,4 +431,5 @@ class CandleBacktest:
             exit_price=price,
             quantity=position.quantity,
             fees=position.fees_paid + self._fee(price * position.quantity),
+            funding=position.funding_paid,
         )

@@ -9,7 +9,7 @@ SUDO := $(shell [ "$$(id -u)" = 0 ] || echo sudo)
 .PHONY: help setup format lint typecheck test test-unit test-integration audit check \
         stack-up stack-down stack-logs stack-verify migrate accept console inspect \
         record-install record-status record-stop clean \
-        ladder history history-all history-long history-status history-table chart evaluate evaluate-all evaluate-report evaluate-push evaluate-summary
+        ladder history history-all history-long history-status history-table chart signal signal-all evaluate evaluate-all evaluate-report evaluate-push evaluate-summary
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -145,6 +145,19 @@ evaluate-all: ## Run one unchanged rule across assets (ASSETS, INTERVAL, RULE, S
 			--rule $(or $(RULE),trend-following) --shuffles $(or $(SHUFFLES),20) \
 			--venue $(or $(VENUE),hyperliquid) --days $(or $(DAYS),730) \
 			$(if $(HALVES),--halves,) || exit 1; \
+		echo; \
+	done
+
+signal: ## What the bot thinks right now, with reasons (ASSET, INTERVAL, VENUE)
+	$(UV) run python -m services.strategy_engine.signal_cli \
+		--asset $(or $(ASSET),SOL) --interval $(or $(INTERVAL),4h) \
+		--venue $(or $(VENUE),binance)
+
+signal-all: ## The same, for every asset in the Phase 1 universe
+	@for asset in BTC ETH SOL BNB; do \
+		$(UV) run python -m services.strategy_engine.signal_cli \
+			--asset $$asset --interval $(or $(INTERVAL),4h) \
+			--venue $(or $(VENUE),binance) | head -14; \
 		echo; \
 	done
 

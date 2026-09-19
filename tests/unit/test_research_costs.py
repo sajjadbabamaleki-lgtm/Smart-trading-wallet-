@@ -107,3 +107,48 @@ class TestNotionalCost:
     def test_the_default_round_trip_on_btc(self) -> None:
         """The concrete number: 60 units on a 60000 notional."""
         assert CostModel().round_trip_cost(Decimal(60000)) == Decimal(60)
+
+
+class TestMakerPath:
+    """Resting instead of crossing, and what it trades away for the fee saving."""
+
+    def measured(self, **overrides: object) -> CostModel:
+        base: dict[str, object] = {
+            "half_spread_bps": Decimal("0.4924"),
+            "maker_adverse_selection_bps": Decimal("0.2033"),
+        }
+        base.update(overrides)
+        return CostModel(**base)  # type: ignore[arg-type]
+
+    def test_resting_is_about_three_times_cheaper_than_crossing(self) -> None:
+        """The measured figures, 2026-09-19: 3.41 bps against 9.98."""
+        model = self.measured()
+        assert model.maker_round_trip_bps == Decimal("3.4066")
+        assert model.round_trip_bps == Decimal("9.9848")
+        assert model.maker_round_trip_bps < model.round_trip_bps / 2
+
+    def test_a_maker_round_trip_pays_no_half_spread(self) -> None:
+        """A resting order is filled at its own quote, so it collects the spread."""
+        wide = self.measured(half_spread_bps=Decimal(50))
+        assert wide.maker_round_trip_bps == self.measured().maker_round_trip_bps
+
+    def test_adverse_selection_is_charged_on_both_fills(self) -> None:
+        """Unlike drift: both fills of a passive round trip are someone else's choice."""
+        free = self.measured(maker_adverse_selection_bps=Decimal(0))
+        charged = self.measured(maker_adverse_selection_bps=Decimal(1))
+        assert charged.maker_round_trip_bps - free.maker_round_trip_bps == Decimal(2)
+
+    def test_enough_adverse_selection_erases_the_advantage(self) -> None:
+        """The number is a lower bound, so the crossover has to be reachable."""
+        punished = self.measured(maker_adverse_selection_bps=Decimal(4))
+        assert punished.maker_round_trip_bps > punished.round_trip_bps
+
+    def test_adverse_selection_and_drift_stay_separate(self) -> None:
+        """One is the book's choice, the other is our signal going stale."""
+        passive = self.measured(maker_adverse_selection_bps=Decimal(2))
+        assert passive.adverse_drift_bps == Decimal(0)
+        assert passive.round_trip_bps == self.measured().round_trip_bps
+
+    def test_a_rebate_is_not_a_cost(self) -> None:
+        with pytest.raises(ValueError, match="not a rebate"):
+            self.measured(maker_adverse_selection_bps=Decimal("-1"))

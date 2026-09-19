@@ -137,6 +137,38 @@ def _describe(candles: tuple[Candle, ...], *, request: CandleRequest) -> None:
     )
 
 
+def _inventory() -> int:
+    """One line per stored series: what history this project actually holds.
+
+    Every other path here describes one asset at one interval, which means
+    answering "what do we have" reads twelve reports. This asks the store
+    directly. FINAL, because the table replaces duplicates at merge time and a
+    count without it can double a re-downloaded range.
+    """
+    settings = load_settings()
+    query = (
+        "SELECT venue, asset, interval, count() AS rows, "
+        "min(open_time) AS first, max(close_time) AS last "
+        "FROM candles FINAL GROUP BY venue, asset, interval "
+        "ORDER BY venue, asset, interval"
+    )
+    with ch.connect_from_settings(settings) as client:
+        result = client.query(query)
+
+    if not result.result_rows:
+        print("no candles stored. Run `make history-all` or `make history-long` first.")
+        return 1
+
+    print(f"{'venue':<12} {'asset':<5} {'int':<4} {'candles':>9}  {'from':<10} {'to':<10}  days")
+    for venue, asset, interval, rows, first, last in result.result_rows:
+        days = (last - first).days
+        print(
+            f"{venue:<12} {asset:<5} {interval:<4} {rows:>9,}  "
+            f"{first:%Y-%m-%d} {last:%Y-%m-%d}  {days:>5,}"
+        )
+    return 0
+
+
 def main() -> int:
     import argparse  # noqa: PLC0415 - CLI-local
 
@@ -161,9 +193,17 @@ def main() -> int:
         help="hyperliquid keeps about 5,000 candles per interval; binance reaches "
         "back years, at the cost of being a different venue's prices",
     )
+    parser.add_argument(
+        "--inventory",
+        action="store_true",
+        help="list every stored series and stop; ignores the other arguments",
+    )
     args = parser.parse_args()
 
     configure_logging()
+    if args.inventory:
+        return _inventory()
+
     settings = load_settings()
     end = datetime.now(tz=UTC)
     request = CandleRequest(

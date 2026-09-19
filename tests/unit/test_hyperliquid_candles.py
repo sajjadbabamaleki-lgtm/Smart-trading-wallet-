@@ -26,7 +26,7 @@ from libs.exchange.hyperliquid.candles import (
     fetch_candles,
     parse_candle,
 )
-from services.research.candle_store import missing_intervals
+from services.research.candle_store import as_utc, missing_intervals
 
 START = datetime(2026, 9, 1, tzinfo=UTC)
 HOUR = timedelta(hours=1)
@@ -198,3 +198,25 @@ class TestHoles:
 
     def test_an_unbroken_series_has_none(self) -> None:
         assert missing_intervals([candle(index) for index in range(4)], step=HOUR) == ()
+
+
+class TestStoredTimestamps:
+    """ClickHouse returns these columns naive, and a naive candle crashes.
+
+    It crashed in the report that was written to make a different silence
+    visible, which is the usual way: the guard finds the bug the guard was not
+    about.
+    """
+
+    def test_a_naive_timestamp_is_read_as_utc(self) -> None:
+        naive = datetime(2026, 9, 1, 12, 0)
+        assert as_utc(naive) == datetime(2026, 9, 1, 12, 0, tzinfo=UTC)
+
+    def test_an_aware_timestamp_is_not_relabelled(self) -> None:
+        """Re-stamping one that already has a zone is the same error, reversed."""
+        aware = datetime(2026, 9, 1, 12, 0, tzinfo=UTC)
+        assert as_utc(aware) == aware
+
+    def test_a_stored_candle_can_be_compared_with_now(self) -> None:
+        """The operation that failed: an aware/naive comparison."""
+        assert as_utc(datetime(2026, 9, 1)) < datetime.now(tz=UTC)

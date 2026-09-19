@@ -15,6 +15,7 @@ from decimal import Decimal
 import pytest
 
 from libs.domain.candles import Candle
+from libs.domain.funding import FundingHistory, FundingRate
 from services.research.costs import CostModel
 from services.strategy_engine.candle_backtest import (
     CandleBacktest,
@@ -25,6 +26,8 @@ from services.strategy_engine.decisions import (
     BuyAndHold,
     Confirmed,
     Decision,
+    FundingExtreme,
+    FundingWithTrend,
     LongWhenActive,
     MeanReversion,
     Shuffled,
@@ -455,3 +458,96 @@ class TestMeanReversion:
                 reading = _reading(trend_bps=trend_bps, slope=slope, distance=distance)
                 if trend.decide(reading) is not Decision.FLAT:
                     assert reversion.decide(reading) is Decision.FLAT
+
+
+class TestFundingRules:
+    """Positioning rather than pattern: the first input that is not price."""
+
+    def test_crowded_longs_are_faded(self) -> None:
+        crowded = _with_funding(Decimal("0.95"))
+        assert FundingExtreme().decide(crowded) is Decision.SHORT
+
+    def test_crowded_shorts_are_bought(self) -> None:
+        deserted = _with_funding(Decimal("0.05"))
+        assert FundingExtreme().decide(deserted) is Decision.LONG
+
+    def test_ordinary_positioning_is_no_reason_to_trade(self) -> None:
+        assert FundingExtreme().decide(_with_funding(Decimal("0.5"))) is Decision.FLAT
+
+    def test_a_missing_feed_is_not_neutral(self) -> None:
+        """None must not be read as 0.5, or an absent feed becomes a calm market."""
+        assert FundingExtreme().decide(_with_funding(None)) is Decision.FLAT
+
+    def test_impossible_thresholds_are_refused(self) -> None:
+        with pytest.raises(ValueError, match="deserted < crowded"):
+            FundingExtreme(crowded=Decimal("0.1"), deserted=Decimal("0.9"))
+
+    def test_the_trend_filter_stands_aside_when_the_crowd_agrees(self) -> None:
+        """A long the whole market is already maximally long is the one to skip."""
+        rule = FundingWithTrend()
+        fresh = _with_funding(Decimal("0.5"), trend=TrendRegime.UP)
+        crowded = _with_funding(Decimal("0.95"), trend=TrendRegime.UP)
+        assert rule.decide(fresh) is Decision.LONG
+        assert FundingWithTrend().decide(crowded) is Decision.FLAT
+
+    def test_the_trend_filter_passes_everything_through_with_no_feed(self) -> None:
+        """Without funding it must behave exactly as the rule it wraps."""
+        plain = _with_funding(None, trend=TrendRegime.UP)
+        assert FundingWithTrend().decide(plain) is TrendFollowing().decide(plain)
+
+
+def _with_funding(
+    percentile: Decimal | None, *, trend: TrendRegime = TrendRegime.RANGE
+) -> FeatureSet:
+    base = _reading(trend_bps=Decimal(100), slope=Decimal(5), distance=Decimal(20))
+    return FeatureSet(
+        moment=base.moment,
+        close=base.close,
+        trend_bps=base.trend_bps if trend is not TrendRegime.RANGE else Decimal(1),
+        trend_slope_bps=base.trend_slope_bps if trend is not TrendRegime.RANGE else Decimal(0),
+        distance_from_trend_bps=base.distance_from_trend_bps,
+        momentum_bps=base.momentum_bps,
+        momentum_acceleration_bps=base.momentum_acceleration_bps,
+        atr_bps=base.atr_bps,
+        realized_volatility_bps=base.realized_volatility_bps,
+        volatility_ratio=base.volatility_ratio,
+        relative_volume=base.relative_volume,
+        swing_high_bps=base.swing_high_bps,
+        swing_low_bps=base.swing_low_bps,
+        trend_regime=trend,
+        volatility_regime=VolatilityRegime.NORMAL,
+        funding_rate_bps=None if percentile is None else Decimal(1),
+        funding_percentile=percentile,
+    )
+
+
+class TestFundingReachesTheFeatures:
+    def test_a_funding_series_is_read_point_in_time_per_candle(self) -> None:
+        """The join that could leak: funding is not derived from the window.
+
+        The series rises through the run, so a reading at an early candle must
+        be lower than a reading at a late one — and each must be computed from
+        payments at or before its own candle.
+        """
+        candles = rising(320)
+        settlements = [
+            FundingRate(
+                asset="SOL",
+                moment=candles[0].open_time + timedelta(hours=8) * index,
+                rate=Decimal(index) / Decimal(100000),
+            )
+            for index in range(140)
+        ]
+        funding = FundingHistory.build(settlements)
+        readings = [reading for reading, _ in execution_pairs(candles, SMALL, funding)]
+        with_values = [r for r in readings if r.funding_percentile is not None]
+        assert with_values, "no candle received a funding percentile"
+        for reading in with_values:
+            latest = funding.latest_at(reading.moment)
+            assert latest is not None
+            assert reading.funding_rate_bps == latest * Decimal(10000)
+
+    def test_without_a_series_the_features_say_so(self) -> None:
+        readings = [reading for reading, _ in execution_pairs(rising(120), SMALL)]
+        assert all(reading.funding_percentile is None for reading in readings)
+        assert all(reading.funding_rate_bps is None for reading in readings)

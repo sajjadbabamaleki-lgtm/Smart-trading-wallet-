@@ -340,3 +340,90 @@ class MeanReversion:
         if features.distance_from_trend_bps >= self.entry_bps:
             return Decision.SHORT
         return Decision.FLAT
+
+
+FUNDING_CROWDED: Final = Decimal("0.90")
+FUNDING_DESERTED: Final = Decimal("0.10")
+"""Which percentiles count as crowded and deserted.
+
+The top and bottom tenth of the last thirty days. Conventional bounds for "an
+extreme", chosen before any result was seen and not revisited: the whole
+argument for this rule is that its mechanism is real, and a threshold tuned
+until the backtest smiled would replace that argument with a fitted number.
+"""
+
+
+@dataclass(slots=True)
+class FundingExtreme:
+    """Fade the crowded side.
+
+    The first rule here whose input is not a transformation of price. Funding
+    is what the long and short sides are paying each other to hold their
+    positions, so a rate in the top tenth of its own month means longs are
+    paying unusually hard to stay long — the position is crowded, and a crowded
+    position is what gets liquidated when price moves against it.
+
+    So this goes SHORT into crowded longs and LONG into crowded shorts. It is
+    contrarian by mechanism rather than by taste, and the mechanism is why it
+    is worth testing at all: unlike RSI or MACD it is not a statistic everyone
+    computes from the same public candles, so it is not priced in by
+    construction.
+
+    **It refuses to act on a missing feed.** `funding_percentile` is None when
+    no funding series was supplied or when too few payments have settled to
+    form a percentile. None is not neutral and must not be read as 0.5: a
+    missing feed would otherwise be indistinguishable from average positioning,
+    and the rule would trade on nothing.
+
+    The null hypothesis is unchanged: this loses money net of cost, and less
+    than buy-and-hold earns. That is what the six-year test is for.
+    """
+
+    name: str = "funding-extreme"
+    crowded: Decimal = FUNDING_CROWDED
+    deserted: Decimal = FUNDING_DESERTED
+
+    def __post_init__(self) -> None:
+        if not Decimal(0) <= self.deserted < self.crowded <= Decimal(1):
+            raise ValueError("thresholds must satisfy 0 <= deserted < crowded <= 1")
+
+    def decide(self, features: FeatureSet) -> Decision:
+        percentile = features.funding_percentile
+        if percentile is None:
+            return Decision.FLAT
+        if percentile >= self.crowded:
+            return Decision.SHORT
+        if percentile <= self.deserted:
+            return Decision.LONG
+        return Decision.FLAT
+
+
+@dataclass(slots=True)
+class FundingWithTrend:
+    """Trade the trend, but stand aside when the trend's own side is crowded.
+
+    Not a third hypothesis — a test of whether funding adds anything to a rule
+    that already failed. The trend family returned NO_EDGE_FOUND over six
+    years; if positioning carries information that price does not, then
+    refusing the trades where the crowd is already maximally committed should
+    improve it, and if it does not, funding has nothing to add to this signal.
+
+    Stated that way on purpose: this is a question with a clear negative
+    answer available, which is what makes it worth asking.
+    """
+
+    name: str = "funding-with-trend"
+    inner: Rule = field(default_factory=TrendFollowing)
+    crowded: Decimal = FUNDING_CROWDED
+    deserted: Decimal = FUNDING_DESERTED
+
+    def decide(self, features: FeatureSet) -> Decision:
+        wanted = self.inner.decide(features)
+        percentile = features.funding_percentile
+        if percentile is None or wanted is Decision.FLAT:
+            return wanted
+        if wanted is Decision.LONG and percentile >= self.crowded:
+            return Decision.FLAT
+        if wanted is Decision.SHORT and percentile <= self.deserted:
+            return Decision.FLAT
+        return wanted

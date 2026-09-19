@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import itertools
 from collections.abc import Sequence
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 from libs.exchange.hyperliquid.candles import VENUE, Candle, CandleRequest
@@ -70,6 +70,24 @@ def write_candles(client: Client, candles: Sequence[Candle]) -> int:
     return len(rows)
 
 
+def as_utc(value: datetime) -> datetime:
+    """Attach UTC to a timestamp that came back without it.
+
+    ClickHouse stores these columns as `DateTime64(3, 'UTC')` and the driver
+    returns them naive. A naive timestamp in a candle is not a cosmetic problem:
+    it cannot be compared with an aware one, so it crashes on contact with
+    anything that knows what time it is — which is how this was found — and if
+    it did not crash it would be read as local time and shift the whole series.
+
+    Coerced at the boundary, once, rather than defended against at each use.
+    A value that already carries a zone is returned as it is, because
+    re-labelling one would be the same class of error in the other direction.
+    """
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
+
+
 def read_candles(client: Client, request: CandleRequest) -> tuple[Candle, ...]:
     """Every stored candle the request covers, oldest first.
 
@@ -98,8 +116,8 @@ def read_candles(client: Client, request: CandleRequest) -> tuple[Candle, ...]:
         Candle(
             asset=request.asset,
             interval=request.interval,
-            open_time=row[0],
-            close_time=row[1],
+            open_time=as_utc(row[0]),
+            close_time=as_utc(row[1]),
             open=row[2],
             high=row[3],
             low=row[4],

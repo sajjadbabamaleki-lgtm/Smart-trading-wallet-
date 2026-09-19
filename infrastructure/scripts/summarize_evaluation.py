@@ -25,7 +25,13 @@ from pathlib import Path
 
 EVALUATIONS = Path("docs/evidence/build-0.1/evaluations")
 
-HEADER = re.compile(r"^(?P<asset>BTC|SOL|ETH|BNB) (?P<interval>\S+), rule: (?P<rule>\S+)\s*$")
+HEADER = re.compile(
+    # The trailing fields are optional and unanchored to a fixed set, because
+    # this line has already grown once (it gained the venue) and the parser
+    # must survive it growing again rather than silently matching nothing.
+    r"^(?P<asset>[A-Z]{2,10}) (?P<interval>\S+), rule: (?P<rule>[^,\s]+)"
+    r"(?:, venue: (?P<venue>[^,\s]+))?.*$"
+)
 PERIOD = re.compile(
     r"^(?P<label>TRAINING PERIOD|HOLDOUT PERIOD|TRAINING, FIRST HALF|"
     r"TRAINING, SECOND HALF): "
@@ -70,6 +76,7 @@ class Run:
     asset: str
     interval: str
     rule: str
+    venue: str = "hyperliquid"
     period: str = "TRAIN"
     trades: str = "-"
     win: str = "-"
@@ -84,7 +91,8 @@ class Run:
 
     def line(self) -> str:
         return (
-            f"{self.asset:<4} {self.interval:<3} {self.rule[:RULE_WIDTH]:<{RULE_WIDTH}} "
+            f"{self.venue[:4]:<4} {self.asset:<4} {self.interval:<3} "
+            f"{self.rule[:RULE_WIDTH]:<{RULE_WIDTH}} "
             f"{self.period:<5} {self.trades:>5} {self.win:>6} {self.ret:>6} "
             f"{self.drawdown:>6} {self.exposure:>5} {self.gross:>7} {self.cost:>6} "
             f"{self.beaten:>6} {self.versus_hold:>6}  {_short(self.verdict)}"
@@ -110,12 +118,17 @@ def parse(text: str) -> list[Run]:
     crash on an unexpected line is not.
     """
     runs: list[Run] = []
-    context: tuple[str, str, str] | None = None
+    context: tuple[str, str, str, str] | None = None
     current: Run | None = None
     for line in text.splitlines():
         header = HEADER.match(line)
         if header:
-            context = (header["asset"], header["interval"], header["rule"])
+            context = (
+                header["asset"],
+                header["interval"],
+                header["rule"],
+                header["venue"] or "hyperliquid",
+            )
             current = None
             continue
 
@@ -123,11 +136,12 @@ def parse(text: str) -> list[Run]:
         if period:
             if context is None:
                 continue
-            asset, interval, rule = context
+            asset, interval, rule, venue = context
             current = Run(
                 asset=asset,
                 interval=interval,
                 rule=rule,
+                venue=venue,
                 period=_period_label(period["label"]),
             )
             runs.append(current)
@@ -204,7 +218,7 @@ def main() -> int:
     print(f"# {len(runs)} runs")
     print()
     print(
-        f"{'asset':<4} {'int':<3} {'rule':<{RULE_WIDTH}} {'per':<5} {'trds':>5} "
+        f"{'src':<4} {'asset':<4} {'int':<3} {'rule':<{RULE_WIDTH}} {'per':<5} {'trds':>5} "
         f"{'win':>6} {'ret':>6} {'dd':>6} {'expo':>5} {'gross':>7} {'cost':>6} "
         f"{'shuf':>6} {'vsBH':>6}  verdict"
     )

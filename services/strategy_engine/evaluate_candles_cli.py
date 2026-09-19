@@ -133,6 +133,23 @@ def _decisions_of(rule: Rule, pairs: Pairs) -> list[Decision]:
     return [rule.decide(reading) for reading, _ in pairs]
 
 
+def run_header(*, asset: str, interval: str, rule: str, venue: str) -> str:
+    """The line that identifies a run, in one place.
+
+    Public and used by both `main` and the summarizer's tests. The format was
+    changed here to carry the venue, the summarizer still recognised only the
+    old shape, and its test compared against a sample written by hand — so the
+    parser found nothing and said so only after a full run. Any test that
+    builds its sample from this function fails the moment the format moves.
+    """
+    return f"{asset} {interval}, rule: {rule}, venue: {venue}"
+
+
+def period_header(*, label: str, start: datetime, end: datetime, candles: int) -> str:
+    """The line that identifies a period within a run. Same reasoning."""
+    return f"{label}: {start:%Y-%m-%d} to {end:%Y-%m-%d} ({candles:,} candles)"
+
+
 def _row(result: CandleBacktestResult) -> str:
     win = "     -" if result.win_rate is None else f"{result.win_rate:5.1f}%"
     return (
@@ -212,8 +229,12 @@ def _evaluate(
     pairs = list(execution_pairs(candles, config))
     print()
     print(
-        f"{label}: {candles[0].open_time:%Y-%m-%d} to {candles[-1].close_time:%Y-%m-%d} "
-        f"({len(candles):,} candles)"
+        period_header(
+            label=label,
+            start=candles[0].open_time,
+            end=candles[-1].close_time,
+            candles=len(candles),
+        )
     )
     print()
     print(
@@ -306,7 +327,14 @@ def main() -> int:
         )
         return 1
 
-    print(f"{request.asset} {request.interval}, rule: {args.rule}, venue: {args.venue}")
+    print(
+        run_header(
+            asset=request.asset,
+            interval=request.interval,
+            rule=args.rule,
+            venue=args.venue,
+        )
+    )
     _evaluate(args.rule, train, config=config, shuffle_count=args.shuffles, label="TRAINING PERIOD")
 
     if args.halves:

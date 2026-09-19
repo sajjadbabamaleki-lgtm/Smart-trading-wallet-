@@ -11,7 +11,10 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
+
+from services.strategy_engine import evaluate_candles_cli
 
 SCRIPT = Path("infrastructure/scripts/summarize_evaluation.py")
 
@@ -28,58 +31,97 @@ def _module() -> object:
 
 summarize = _module()
 
-ONE_PERIOD = """\
-BTC 4h, rule: trend-confirmed
+# Built from the CLI's own header functions rather than typed out. A sample
+# written by hand is a sample that goes stale silently: the header gained a
+# venue field, the parser still matched only the old shape, and the test kept
+# passing while a real run returned nothing. Anything that changes these
+# formats now fails here first.
+RUN = evaluate_candles_cli.run_header(
+    asset="BTC", interval="4h", rule="trend-confirmed", venue="binance"
+)
 
-TRAINING PERIOD: 2024-09-19 to 2026-03-23 (3,299 candles)
 
+def period(label: str, candles: int) -> str:
+    return evaluate_candles_cli.period_header(
+        label=label,
+        start=datetime(2020, 9, 10, tzinfo=UTC),
+        end=datetime(2026, 3, 23, tzinfo=UTC),
+        candles=candles,
+    )
+
+
+def body(
+    *,
+    trades: int,
+    win: str,
+    ret: str,
+    dd: str,
+    expo: str,
+    gross: str,
+    beaten: int,
+    versus: str,
+    verdict: str,
+) -> str:
+    """One period's rows, in the shapes the CLI prints them in."""
+    return f"""
   rule                       trades    win%    return  drawdown  in mkt
-  trend-following-confirmed-2    106   53.8%      2.6%      1.9%     47%
+  trend-following-confirmed-2 {trades:>6}   {win}      {ret}      {dd}     {expo}
   control-buy-and-hold            1  100.0%      1.2%      9.1%    100%
   control-always-flat             0       -      0.0%      0.0%      0%
 
   per-trade economics — is the signal worth its transaction?
-  trend-following-confirmed-2 gross  +34.76 bps/trade  cost   9.98  net  +24.78
+  trend-following-confirmed-2 gross  {gross} bps/trade  cost   9.98  net  +24.78
 
-  vs shuffled : 0 of 200 random orderings did as well or better
-  vs buy-hold : +1.5 points of return
+  vs shuffled : {beaten} of 200 random orderings did as well or better
+  vs buy-hold : {versus} points of return
 
-  VERDICT: candidate survived this period. Not evidence of an edge yet —
+  VERDICT: {verdict}
 """
+
+
+ONE_PERIOD = (
+    RUN
+    + "\n\n"
+    + period("TRAINING PERIOD", 13098)
+    + body(
+        trades=106,
+        win="53.8%",
+        ret="2.6%",
+        dd="1.9%",
+        expo="47%",
+        gross="+34.76",
+        beaten=0,
+        versus="+1.5",
+        verdict="candidate survived this period. Not evidence of an edge yet —",
+    )
+)
 
 THREE_PERIODS = (
     ONE_PERIOD
-    + """
-TRAINING, FIRST HALF: 2024-09-19 to 2025-06-20 (1,649 candles)
-
-  rule                       trades    win%    return  drawdown  in mkt
-  trend-following-confirmed-2     61   49.2%      3.9%      1.1%     52%
-  control-buy-and-hold            1  100.0%     22.0%      5.0%    100%
-  control-always-flat             0       -      0.0%      0.0%      0%
-
-  per-trade economics — is the signal worth its transaction?
-  trend-following-confirmed-2 gross  +73.90 bps/trade  cost   9.97  net  +63.93
-
-  vs shuffled : 2 of 200 random orderings did as well or better
-  vs buy-hold : -18.1 points of return
-
-  VERDICT: NO_EDGE_FOUND — profitable, but worse than simply holding.
-
-TRAINING, SECOND HALF: 2025-06-20 to 2026-03-23 (1,749 candles)
-
-  rule                       trades    win%    return  drawdown  in mkt
-  trend-following-confirmed-2     47   57.4%     -1.2%      1.8%     43%
-  control-buy-and-hold            1    0.0%    -17.0%      9.1%    100%
-  control-always-flat             0       -      0.0%      0.0%      0%
-
-  per-trade economics — is the signal worth its transaction?
-  trend-following-confirmed-2 gross  -15.60 bps/trade  cost   9.98  net  -25.58
-
-  vs shuffled : 44 of 200 random orderings did as well or better
-  vs buy-hold : +4.4 points of return
-
-  VERDICT: NO_EDGE_FOUND — the rule lost money net of costs.
-"""
+    + period("TRAINING, FIRST HALF", 6549)
+    + body(
+        trades=53,
+        win="49.2%",
+        ret="3.9%",
+        dd="1.1%",
+        expo="52%",
+        gross="+73.90",
+        beaten=2,
+        versus="-18.1",
+        verdict="NO_EDGE_FOUND — profitable, but worse than simply holding.",
+    )
+    + period("TRAINING, SECOND HALF", 6649)
+    + body(
+        trades=47,
+        win="57.4%",
+        ret="-1.2%",
+        dd="1.8%",
+        expo="43%",
+        gross="-15.60",
+        beaten=44,
+        versus="+4.4",
+        verdict="NO_EDGE_FOUND — the rule lost money net of costs.",
+    )
 )
 
 
@@ -90,6 +132,7 @@ class TestOnePeriod:
         assert run.interval == "4h"
         assert run.period == "TRAIN"
         assert run.trades == "106"
+        assert run.venue == "binance"
         assert run.ret == "2.6%"
         assert run.gross == "+34.76"
         assert run.beaten == "0/200"
@@ -148,3 +191,56 @@ class TestRobustness:
     def test_a_period_before_any_header_is_ignored(self) -> None:
         """Rather than attaching numbers to an asset nobody named."""
         assert summarize.parse("TRAINING PERIOD: x\n  vs shuffled : 1 of 2\n") == []  # type: ignore[attr-defined]
+
+
+class TestFormatDrift:
+    """The failure mode this file kept having: the format moved, the parser did not."""
+
+    def test_the_parser_reads_the_header_the_cli_actually_prints(self) -> None:
+        header = evaluate_candles_cli.run_header(
+            asset="ETH", interval="1d", rule="trend-following", venue="hyperliquid"
+        )
+        (run,) = summarize.parse(  # type: ignore[attr-defined]
+            header + "\n\nTRAINING PERIOD: x\n  vs shuffled : 4 of 200\n"
+        )
+        assert (run.asset, run.interval, run.rule, run.venue) == (
+            "ETH",
+            "1d",
+            "trend-following",
+            "hyperliquid",
+        )
+
+    def test_a_header_that_grows_another_field_still_parses(self) -> None:
+        """It has grown once already; the next time must not return nothing."""
+        grown = (
+            evaluate_candles_cli.run_header(
+                asset="BTC", interval="4h", rule="trend-confirmed", venue="binance"
+            )
+            + ", horizon: 4h, seed: 7"
+        )
+        (run,) = summarize.parse(grown + "\n\nTRAINING PERIOD: x\n")  # type: ignore[attr-defined]
+        assert (run.asset, run.rule, run.venue) == ("BTC", "trend-confirmed", "binance")
+
+    def test_a_header_without_a_venue_defaults_rather_than_failing(self) -> None:
+        """Older evaluation files on disk predate the venue field."""
+        (run,) = summarize.parse(  # type: ignore[attr-defined]
+            "SOL 4h, rule: trend-following\n\nTRAINING PERIOD: x\n"
+        )
+        assert run.venue == "hyperliquid"
+
+    def test_the_period_labels_the_parser_knows_are_the_ones_emitted(self) -> None:
+        """Every label the CLI can print must map to a short code, not to TRAIN.
+
+        A label the parser does not recognise silently becomes "TRAIN", which
+        would put a holdout row and a training row under the same name.
+        """
+        emitted = {
+            "TRAINING PERIOD": "TRAIN",
+            "TRAINING, FIRST HALF": "1st",
+            "TRAINING, SECOND HALF": "2nd",
+            "HOLDOUT PERIOD": "HOLD",
+        }
+        for label, expected in emitted.items():
+            text = RUN + "\n\n" + period(label, 100) + "\n  vs shuffled : 1 of 200\n"
+            (run,) = summarize.parse(text)  # type: ignore[attr-defined]
+            assert run.period == expected, label

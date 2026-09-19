@@ -1,0 +1,421 @@
+Strategy evaluation 20260919T173821Z
+shuffles per rule: 20
+holdout: reserved, not evaluated
+commit: 08f9d54
+
+=======================================================
+BTC 4h, rule: trend-following
+
+TRAINING PERIOD: 2024-09-19 to 2026-03-23 (3,299 candles)
+
+  rule                       trades    win%    return  drawdown  in mkt
+  trend-following               155   63.2%      0.1%      2.3%     47%
+  control-buy-and-hold            1  100.0%      1.2%      9.1%    100%
+  control-always-flat             0       -      0.0%      0.0%      0%
+  control-shuffled x20                         -11.5%  [-20.3% to -3.9%]
+
+  per-trade economics — is the signal worth its transaction?
+  trend-following            gross  +10.86 bps/trade  cost   9.97  net   +0.89
+  control-buy-and-hold       gross +1177.24 bps/trade  cost  10.57  net +1166.67
+
+  vs shuffled : 0 of 20 random orderings did as well or better
+                its timing carried information on this period
+  vs buy-hold : -1.0 points of return
+                but 6.8 points less drawdown
+
+  VERDICT: NO_EDGE_FOUND — profitable, but worse than simply holding.
+
+  The last 180 days (1,080 candles) were not evaluated.
+  Pass --holdout to spend them. Do it once, on one rule, after the
+  training period has given you something worth testing.
+
+=======================================================
+BTC 4h, rule: trend-confirmed
+
+TRAINING PERIOD: 2024-09-19 to 2026-03-23 (3,299 candles)
+
+  rule                       trades    win%    return  drawdown  in mkt
+  trend-following-confirmed-2    106   53.8%      2.6%      1.9%     47%
+  control-buy-and-hold            1  100.0%      1.2%      9.1%    100%
+  control-always-flat             0       -      0.0%      0.0%      0%
+  control-shuffled x20                         -11.9%  [-19.8% to 0.8%]
+
+  per-trade economics — is the signal worth its transaction?
+  trend-following-confirmed-2 gross  +34.76 bps/trade  cost   9.98  net  +24.78
+  control-buy-and-hold       gross +1177.24 bps/trade  cost  10.57  net +1166.67
+
+  vs shuffled : 0 of 20 random orderings did as well or better
+                its timing carried information on this period
+  vs buy-hold : +1.5 points of return
+                but 7.2 points less drawdown
+
+  VERDICT: candidate survived this period. Not evidence of an edge yet —
+           one period, one rule, and the holdout still has to agree.
+
+  The last 180 days (1,080 candles) were not evaluated.
+  Pass --holdout to spend them. Do it once, on one rule, after the
+  training period has given you something worth testing.
+
+=======================================================
+BTC 4h, rule: trend-confirmed-3
+
+TRAINING PERIOD: 2024-09-19 to 2026-03-23 (3,299 candles)
+
+  rule                       trades    win%    return  drawdown  in mkt
+  trend-following-confirmed-3     87   52.9%      2.4%      1.9%     46%
+  control-buy-and-hold            1  100.0%      1.2%      9.1%    100%
+  control-always-flat             0       -      0.0%      0.0%      0%
+  control-shuffled x20                         -11.6%  [-20.1% to -0.8%]
+
+  per-trade economics — is the signal worth its transaction?
+  trend-following-confirmed-3 gross  +38.12 bps/trade  cost   9.99  net  +28.13
+  control-buy-and-hold       gross +1177.24 bps/trade  cost  10.57  net +1166.67
+
+  vs shuffled : 0 of 20 random orderings did as well or better
+                its timing carried information on this period
+  vs buy-hold : +1.3 points of return
+                but 7.2 points less drawdown
+
+  VERDICT: candidate survived this period. Not evidence of an edge yet —
+           one period, one rule, and the holdout still has to agree.
+
+  The last 180 days (1,080 candles) were not evaluated.
+  Pass --holdout to spend them. Do it once, on one rule, after the
+  training period has given you something worth testing.
+
+=======================================================
+BTC 4h, rule: trend-following-calm
+
+TRAINING PERIOD: 2024-09-19 to 2026-03-23 (3,299 candles)
+
+  rule                       trades    win%    return  drawdown  in mkt
+  trend-following-calm          146   58.9%     -2.3%      3.5%     42%
+  control-buy-and-hold            1  100.0%      1.2%      9.1%    100%
+  control-always-flat             0       -      0.0%      0.0%      0%
+  control-shuffled x20                         -10.1%  [-18.0% to -3.8%]
+
+  per-trade economics — is the signal worth its transaction?
+  trend-following-calm       gross   -5.61 bps/trade  cost   9.97  net  -15.57
+  control-buy-and-hold       gross +1177.24 bps/trade  cost  10.57  net +1166.67
+
+  vs shuffled : 0 of 20 random orderings did as well or better
+                its timing carried information on this period
+  vs buy-hold : -3.4 points of return
+                but 5.6 points less drawdown
+
+  VERDICT: NO_EDGE_FOUND — the rule lost money net of costs.
+
+  The last 180 days (1,080 candles) were not evaluated.
+  Pass --holdout to spend them. Do it once, on one rule, after the
+  training period has given you something worth testing.
+
+=======================================================
+BTC 1d, rule: trend-following
+
+TRAINING PERIOD: 2024-09-20 to 2026-03-22 (549 candles)
+
+  rule                       trades    win%    return  drawdown  in mkt
+  trend-following                21   57.1%     -1.6%      3.3%     29%
+  control-buy-and-hold            1    0.0%     -2.8%      6.4%    100%
+  control-always-flat             0       -      0.0%      0.0%      0%
+  control-shuffled x20                          -2.9%  [-7.2% to 1.8%]
+
+  per-trade economics — is the signal worth its transaction?
+  trend-following            gross  -65.89 bps/trade  cost   9.94  net  -75.83
+  control-buy-and-hold       gross -2764.31 bps/trade  cost   8.60  net -2772.91
+
+  vs shuffled : 7 of 20 random orderings did as well or better
+                its timing carried nothing this data can distinguish
+  vs buy-hold : +1.2 points of return
+                but 3.0 points less drawdown
+
+  VERDICT: NO_EDGE_FOUND — the rule lost money net of costs.
+
+  The last 180 days (180 candles) were not evaluated.
+  Pass --holdout to spend them. Do it once, on one rule, after the
+  training period has given you something worth testing.
+
+=======================================================
+BTC 1d, rule: trend-confirmed
+
+TRAINING PERIOD: 2024-09-20 to 2026-03-22 (549 candles)
+
+  rule                       trades    win%    return  drawdown  in mkt
+  trend-following-confirmed-2     12   50.0%     -0.6%      3.5%     28%
+  control-buy-and-hold            1    0.0%     -2.8%      6.4%    100%
+  control-always-flat             0       -      0.0%      0.0%      0%
+  control-shuffled x20                          -2.1%  [-5.8% to 0.4%]
+
+  per-trade economics — is the signal worth its transaction?
+  trend-following-confirmed-2 gross  -40.04 bps/trade  cost   9.96  net  -50.00
+  control-buy-and-hold       gross -2764.31 bps/trade  cost   8.60  net -2772.91
+
+  vs shuffled : 4 of 20 random orderings did as well or better
+                its timing carried nothing this data can distinguish
+  vs buy-hold : +2.2 points of return
+                but 2.9 points less drawdown
+
+  VERDICT: NO_EDGE_FOUND — the rule lost money net of costs.
+
+  The last 180 days (180 candles) were not evaluated.
+  Pass --holdout to spend them. Do it once, on one rule, after the
+  training period has given you something worth testing.
+
+=======================================================
+BTC 1d, rule: trend-confirmed-3
+
+TRAINING PERIOD: 2024-09-20 to 2026-03-22 (549 candles)
+
+  rule                       trades    win%    return  drawdown  in mkt
+  trend-following-confirmed-3     12   58.3%     -0.4%      2.6%     28%
+  control-buy-and-hold            1    0.0%     -2.8%      6.4%    100%
+  control-always-flat             0       -      0.0%      0.0%      0%
+  control-shuffled x20                          -2.1%  [-5.9% to -0.3%]
+
+  per-trade economics — is the signal worth its transaction?
+  trend-following-confirmed-3 gross  -26.38 bps/trade  cost   9.92  net  -36.30
+  control-buy-and-hold       gross -2764.31 bps/trade  cost   8.60  net -2772.91
+
+  vs shuffled : 1 of 20 random orderings did as well or better
+  vs buy-hold : +2.3 points of return
+                but 3.8 points less drawdown
+
+  VERDICT: NO_EDGE_FOUND — the rule lost money net of costs.
+
+  The last 180 days (180 candles) were not evaluated.
+  Pass --holdout to spend them. Do it once, on one rule, after the
+  training period has given you something worth testing.
+
+=======================================================
+BTC 1d, rule: trend-following-calm
+
+TRAINING PERIOD: 2024-09-20 to 2026-03-22 (549 candles)
+
+  rule                       trades    win%    return  drawdown  in mkt
+  trend-following-calm           18   61.1%     -1.2%      2.9%     27%
+  control-buy-and-hold            1    0.0%     -2.8%      6.4%    100%
+  control-always-flat             0       -      0.0%      0.0%      0%
+  control-shuffled x20                          -3.1%  [-6.7% to 2.2%]
+
+  per-trade economics — is the signal worth its transaction?
+  trend-following-calm       gross  -55.52 bps/trade  cost   9.96  net  -65.47
+  control-buy-and-hold       gross -2764.31 bps/trade  cost   8.60  net -2772.91
+
+  vs shuffled : 5 of 20 random orderings did as well or better
+                its timing carried nothing this data can distinguish
+  vs buy-hold : +1.6 points of return
+                but 3.5 points less drawdown
+
+  VERDICT: NO_EDGE_FOUND — the rule lost money net of costs.
+
+  The last 180 days (180 candles) were not evaluated.
+  Pass --holdout to spend them. Do it once, on one rule, after the
+  training period has given you something worth testing.
+
+=======================================================
+SOL 4h, rule: trend-following
+
+TRAINING PERIOD: 2024-09-19 to 2026-03-23 (3,299 candles)
+
+  rule                       trades    win%    return  drawdown  in mkt
+  trend-following               150   65.3%     -0.1%      4.5%     31%
+  control-buy-and-hold            1    0.0%     -3.9%     13.1%    100%
+  control-always-flat             0       -      0.0%      0.0%      0%
+  control-shuffled x20                          -5.8%  [-17.0% to 3.8%]
+
+  per-trade economics — is the signal worth its transaction?
+  trend-following            gross   +9.17 bps/trade  cost   9.98  net   -0.80
+  control-buy-and-hold       gross -3842.89 bps/trade  cost   8.07  net -3850.95
+
+  vs shuffled : 1 of 20 random orderings did as well or better
+  vs buy-hold : +3.7 points of return
+                but 8.6 points less drawdown
+
+  VERDICT: NO_EDGE_FOUND — the rule lost money net of costs.
+  Rev.2 §25: profitable before costs, unprofitable after.
+
+  The last 180 days (1,080 candles) were not evaluated.
+  Pass --holdout to spend them. Do it once, on one rule, after the
+  training period has given you something worth testing.
+
+=======================================================
+SOL 4h, rule: trend-confirmed
+
+TRAINING PERIOD: 2024-09-19 to 2026-03-23 (3,299 candles)
+
+  rule                       trades    win%    return  drawdown  in mkt
+  trend-following-confirmed-2    103   58.3%      1.4%      4.4%     31%
+  control-buy-and-hold            1    0.0%     -3.9%     13.1%    100%
+  control-always-flat             0       -      0.0%      0.0%      0%
+  control-shuffled x20                          -6.3%  [-17.4% to 2.3%]
+
+  per-trade economics — is the signal worth its transaction?
+  trend-following-confirmed-2 gross  +23.54 bps/trade  cost   9.98  net  +13.56
+  control-buy-and-hold       gross -3842.89 bps/trade  cost   8.07  net -3850.95
+
+  vs shuffled : 1 of 20 random orderings did as well or better
+  vs buy-hold : +5.2 points of return
+                but 8.7 points less drawdown
+
+  VERDICT: NO_EDGE_FOUND — profitable, but not beyond its own shuffle.
+
+  The last 180 days (1,080 candles) were not evaluated.
+  Pass --holdout to spend them. Do it once, on one rule, after the
+  training period has given you something worth testing.
+
+=======================================================
+SOL 4h, rule: trend-confirmed-3
+
+TRAINING PERIOD: 2024-09-19 to 2026-03-23 (3,299 candles)
+
+  rule                       trades    win%    return  drawdown  in mkt
+  trend-following-confirmed-3     85   52.9%      0.9%      6.0%     31%
+  control-buy-and-hold            1    0.0%     -3.9%     13.1%    100%
+  control-always-flat             0       -      0.0%      0.0%      0%
+  control-shuffled x20                          -6.3%  [-18.6% to 4.3%]
+
+  per-trade economics — is the signal worth its transaction?
+  trend-following-confirmed-3 gross  +20.72 bps/trade  cost   9.98  net  +10.74
+  control-buy-and-hold       gross -3842.89 bps/trade  cost   8.07  net -3850.95
+
+  vs shuffled : 3 of 20 random orderings did as well or better
+                its timing carried nothing this data can distinguish
+  vs buy-hold : +4.8 points of return
+                but 7.0 points less drawdown
+
+  VERDICT: NO_EDGE_FOUND — profitable, but not beyond its own shuffle.
+
+  The last 180 days (1,080 candles) were not evaluated.
+  Pass --holdout to spend them. Do it once, on one rule, after the
+  training period has given you something worth testing.
+
+=======================================================
+SOL 4h, rule: trend-following-calm
+
+TRAINING PERIOD: 2024-09-19 to 2026-03-23 (3,299 candles)
+
+  rule                       trades    win%    return  drawdown  in mkt
+  trend-following-calm          145   62.8%      0.3%      3.1%     28%
+  control-buy-and-hold            1    0.0%     -3.9%     13.1%    100%
+  control-always-flat             0       -      0.0%      0.0%      0%
+  control-shuffled x20                          -5.1%  [-14.0% to 4.0%]
+
+  per-trade economics — is the signal worth its transaction?
+  trend-following-calm       gross  +12.24 bps/trade  cost   9.98  net   +2.26
+  control-buy-and-hold       gross -3842.89 bps/trade  cost   8.07  net -3850.95
+
+  vs shuffled : 3 of 20 random orderings did as well or better
+                its timing carried nothing this data can distinguish
+  vs buy-hold : +4.2 points of return
+                but 10.0 points less drawdown
+
+  VERDICT: NO_EDGE_FOUND — profitable, but not beyond its own shuffle.
+
+  The last 180 days (1,080 candles) were not evaluated.
+  Pass --holdout to spend them. Do it once, on one rule, after the
+  training period has given you something worth testing.
+
+=======================================================
+SOL 1d, rule: trend-following
+
+TRAINING PERIOD: 2024-09-20 to 2026-03-22 (549 candles)
+
+  rule                       trades    win%    return  drawdown  in mkt
+  trend-following                18   55.6%     -4.2%      4.9%     20%
+  control-buy-and-hold            1    0.0%     -5.5%      9.3%    100%
+  control-always-flat             0       -      0.0%      0.0%      0%
+  control-shuffled x20                          -1.3%  [-6.1% to 9.0%]
+
+  per-trade economics — is the signal worth its transaction?
+  trend-following            gross -223.37 bps/trade  cost  10.08  net -233.45
+  control-buy-and-hold       gross -5465.42 bps/trade  cost   7.26  net -5472.68
+
+  vs shuffled : 16 of 20 random orderings did as well or better
+                its timing carried nothing this data can distinguish
+  vs buy-hold : +1.3 points of return
+                but 4.5 points less drawdown
+
+  VERDICT: NO_EDGE_FOUND — the rule lost money net of costs.
+
+  The last 180 days (180 candles) were not evaluated.
+  Pass --holdout to spend them. Do it once, on one rule, after the
+  training period has given you something worth testing.
+
+=======================================================
+SOL 1d, rule: trend-confirmed
+
+TRAINING PERIOD: 2024-09-20 to 2026-03-22 (549 candles)
+
+  rule                       trades    win%    return  drawdown  in mkt
+  trend-following-confirmed-2     11   36.4%     -3.1%      6.4%     19%
+  control-buy-and-hold            1    0.0%     -5.5%      9.3%    100%
+  control-always-flat             0       -      0.0%      0.0%      0%
+  control-shuffled x20                          -1.4%  [-6.8% to 13.9%]
+
+  per-trade economics — is the signal worth its transaction?
+  trend-following-confirmed-2 gross -267.16 bps/trade  cost  10.30  net -277.47
+  control-buy-and-hold       gross -5465.42 bps/trade  cost   7.26  net -5472.68
+
+  vs shuffled : 12 of 20 random orderings did as well or better
+                its timing carried nothing this data can distinguish
+  vs buy-hold : +2.4 points of return
+                but 2.9 points less drawdown
+
+  VERDICT: NO_EDGE_FOUND — the rule lost money net of costs.
+
+  The last 180 days (180 candles) were not evaluated.
+  Pass --holdout to spend them. Do it once, on one rule, after the
+  training period has given you something worth testing.
+
+=======================================================
+SOL 1d, rule: trend-confirmed-3
+
+TRAINING PERIOD: 2024-09-20 to 2026-03-22 (549 candles)
+
+  rule                       trades    win%    return  drawdown  in mkt
+  trend-following-confirmed-3     10   30.0%     -3.2%      5.5%     19%
+  control-buy-and-hold            1    0.0%     -5.5%      9.3%    100%
+  control-always-flat             0       -      0.0%      0.0%      0%
+  control-shuffled x20                          -1.5%  [-7.5% to 10.0%]
+
+  per-trade economics — is the signal worth its transaction?
+  trend-following-confirmed-3 gross -312.08 bps/trade  cost  10.17  net -322.25
+  control-buy-and-hold       gross -5465.42 bps/trade  cost   7.26  net -5472.68
+
+  vs shuffled : 15 of 20 random orderings did as well or better
+                its timing carried nothing this data can distinguish
+  vs buy-hold : +2.3 points of return
+                but 3.9 points less drawdown
+
+  VERDICT: NO_EDGE_FOUND — the rule lost money net of costs.
+
+  The last 180 days (180 candles) were not evaluated.
+  Pass --holdout to spend them. Do it once, on one rule, after the
+  training period has given you something worth testing.
+
+=======================================================
+SOL 1d, rule: trend-following-calm
+
+TRAINING PERIOD: 2024-09-20 to 2026-03-22 (549 candles)
+
+  rule                       trades    win%    return  drawdown  in mkt
+  trend-following-calm           18   61.1%     -3.7%      4.4%     18%
+  control-buy-and-hold            1    0.0%     -5.5%      9.3%    100%
+  control-always-flat             0       -      0.0%      0.0%      0%
+  control-shuffled x20                          -1.5%  [-5.8% to 8.3%]
+
+  per-trade economics — is the signal worth its transaction?
+  trend-following-calm       gross -196.58 bps/trade  cost  10.13  net -206.71
+  control-buy-and-hold       gross -5465.42 bps/trade  cost   7.26  net -5472.68
+
+  vs shuffled : 18 of 20 random orderings did as well or better
+                its timing carried nothing this data can distinguish
+  vs buy-hold : +1.8 points of return
+                but 4.9 points less drawdown
+
+  VERDICT: NO_EDGE_FOUND — the rule lost money net of costs.
+
+  The last 180 days (180 candles) were not evaluated.
+  Pass --holdout to spend them. Do it once, on one rule, after the
+  training period has given you something worth testing.
+

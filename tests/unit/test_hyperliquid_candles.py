@@ -9,6 +9,7 @@ hour. Each of those would produce a number that is wrong and plausible.
 from __future__ import annotations
 
 import asyncio
+import json
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any
@@ -119,24 +120,34 @@ def fetch(pages: list[list[dict[str, Any]]], *, hours: int = 3) -> tuple[Candle,
 
 
 class TestFetching:
-    def test_a_short_page_ends_the_walk(self) -> None:
-        """Fewer candles than the cap means the venue has no more to give."""
+    def test_a_range_inside_the_cap_is_one_request(self) -> None:
+        """Three hours needs no windowing, so the walk asks once."""
         assert len(fetch([[venue_candle(0), venue_candle(1)]])) == 2
 
-    def test_a_full_page_is_followed_by_another_request(self) -> None:
-        """5,000 candles is truncation, not the end of history."""
-        first = [venue_candle(index) for index in range(PAGE_LIMIT)]
-        second = [venue_candle(PAGE_LIMIT), venue_candle(PAGE_LIMIT + 1)]
-        fetched = fetch([first, second], hours=PAGE_LIMIT + 3)
-        assert len(fetched) == PAGE_LIMIT + 2
-
-    def test_an_hour_repeated_across_pages_is_stored_once(self) -> None:
-        """Every page after the first re-sends the candle containing the cursor."""
-        first = [venue_candle(index) for index in range(PAGE_LIMIT)]
+    def test_a_range_wider_than_the_cap_is_split_into_windows(self) -> None:
+        """The cap is silent, so the range is narrowed until it cannot bite."""
+        first = [venue_candle(index) for index in range(PAGE_LIMIT - 1)]
         second = [venue_candle(PAGE_LIMIT - 1), venue_candle(PAGE_LIMIT)]
         fetched = fetch([first, second], hours=PAGE_LIMIT + 3)
         assert len(fetched) == PAGE_LIMIT + 1
+
+    def test_an_hour_returned_by_two_windows_is_stored_once(self) -> None:
+        """Window edges can overlap, and a duplicated hour corrupts averages."""
+        first = [venue_candle(index) for index in range(PAGE_LIMIT - 1)]
+        second = [venue_candle(PAGE_LIMIT - 2), venue_candle(PAGE_LIMIT - 1)]
+        fetched = fetch([first, second], hours=PAGE_LIMIT + 3)
         assert len({item.open_time for item in fetched}) == len(fetched)
+
+    def test_an_empty_window_does_not_end_the_walk(self) -> None:
+        """A hole in the archive is a hole, not the end of history.
+
+        This is the failure the first version shipped with, from the other
+        direction: a walk that stops at the first short response silently
+        returns part of the range as though it were all of it.
+        """
+        second = [venue_candle(PAGE_LIMIT - 1), venue_candle(PAGE_LIMIT)]
+        fetched = fetch([[], second], hours=PAGE_LIMIT + 3)
+        assert len(fetched) == 2
 
     def test_a_null_response_is_an_empty_range_not_an_error(self) -> None:
         """The venue answers a range it has nothing for with null."""
@@ -155,11 +166,28 @@ class TestFetching:
 
         assert asyncio.run(run()) == ()
 
-    def test_a_full_page_that_does_not_advance_is_refused(self) -> None:
-        """Otherwise the walk loops forever, or loses data silently."""
-        page = [venue_candle(0) for _ in range(PAGE_LIMIT)]
-        with pytest.raises(CandleError, match="did not advance"):
-            fetch([page, page], hours=PAGE_LIMIT + 3)
+    def test_no_window_ever_asks_for_more_than_the_cap(self) -> None:
+        """The whole point: a request that could be truncated is never sent."""
+        asked: list[tuple[int, int]] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            body = json.loads(request.content)["req"]
+            asked.append((body["startTime"], body["endTime"]))
+            return httpx.Response(200, json=[])
+
+        wide = CandleRequest(
+            asset="SOL", interval="1h", start=START, end=START + HOUR * (PAGE_LIMIT * 3)
+        )
+
+        async def run() -> None:
+            async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+                await fetch_candles(wide, now=START + HOUR * (PAGE_LIMIT * 4), client=client)
+
+        asyncio.run(run())
+        assert len(asked) >= 3
+        for window_start, window_end in asked:
+            hours = (window_end - window_start) / 1000 / 3600
+            assert hours < PAGE_LIMIT
 
 
 class TestHoles:

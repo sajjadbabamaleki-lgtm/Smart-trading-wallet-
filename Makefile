@@ -9,7 +9,7 @@ SUDO := $(shell [ "$$(id -u)" = 0 ] || echo sudo)
 .PHONY: help setup format lint typecheck test test-unit test-integration audit check \
         stack-up stack-down stack-logs stack-verify migrate accept console inspect \
         record-install record-status record-stop clean \
-        ladder history history-all history-long history-longest history-status history-table funding funding-all chart signal signal-all evaluate evaluate-all evaluate-report evaluate-push evaluate-summary
+        ladder history history-all history-long history-longest history-status history-table funding funding-all chart signal signal-all paper paper-report paper-tick paper-install paper-status paper-stop evaluate evaluate-all evaluate-report evaluate-push evaluate-summary
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -149,6 +149,33 @@ evaluate-all: ## Run one unchanged rule across assets (ASSETS, INTERVAL, RULE, S
 			$(if $(HALVES),--halves,) || exit 1; \
 		echo; \
 	done
+
+paper: ## One paper-trading tick by hand (ASSET, INTERVAL, VENUE, RULE, DRY=1)
+	$(UV) run python -m services.strategy_engine.paper_cli \
+		--asset $(or $(ASSET),BTC) --interval $(or $(INTERVAL),4h) \
+		--venue $(or $(VENUE),binance) --rule $(or $(RULE),funding-extreme) \
+		$(if $(DRY),--dry-run,)
+
+paper-report: ## What the paper trader has done and what it is holding
+	@$(UV) run python -m services.strategy_engine.paper_report_cli
+
+paper-tick: ## One full turn of the loop by hand: refresh, decide, report, push
+	@bash infrastructure/scripts/paper_tick.sh
+
+paper-install: ## Install the timer that runs the loop every 4 hours, by itself
+	$(SUDO) cp infrastructure/systemd/stw-paper.service /etc/systemd/system/
+	$(SUDO) cp infrastructure/systemd/stw-paper.timer /etc/systemd/system/
+	$(SUDO) systemctl daemon-reload
+	$(SUDO) systemctl enable --now stw-paper.timer
+	@$(SUDO) systemctl --no-pager list-timers stw-paper.timer
+
+paper-status: ## When did the loop last run, and what did it say?
+	@$(SUDO) systemctl --no-pager list-timers stw-paper.timer
+	@echo
+	@$(SUDO) journalctl -u stw-paper -n 40 --no-pager
+
+paper-stop: ## Stop the loop and leave it stopped across reboots
+	$(SUDO) systemctl disable --now stw-paper.timer
 
 signal: ## What the bot thinks right now, with reasons (ASSET, INTERVAL, VENUE)
 	$(UV) run python -m services.strategy_engine.signal_cli \

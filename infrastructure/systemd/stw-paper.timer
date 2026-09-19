@@ -1,0 +1,16 @@
+[Unit]
+Description=Run the paper trading tick shortly after each 4h candle closes
+
+[Timer]
+# Binance 4h candles close at 00:00, 04:00, 08:00, 12:00, 16:00 and 20:00 UTC.
+# Five minutes after, so the venue has published the closed candle before the
+# tick asks for it — the engine refuses stale data, and firing on the boundary
+# would make it refuse every time.
+OnCalendar=00/4:05
+Persistent=true
+# Spread the start slightly, so a restart does not fire every timer at once.
+RandomizedDelaySec=60
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target

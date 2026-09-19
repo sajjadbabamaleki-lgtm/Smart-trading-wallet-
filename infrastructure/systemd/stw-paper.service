@@ -1,0 +1,35 @@
+[Unit]
+Description=Smart Trading Wallet paper trading tick
+Documentation=https://github.com/sajjadbabamaleki-lgtm/Smart-trading-wallet-
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/Smart-trading-wallet-
+ExecStart=/bin/bash infrastructure/scripts/paper_tick.sh
+
+# The same execution config the recorder pins, and for the same reason: this
+# unit reads one .env with the rest of the project, and a TESTNET environment
+# with a key present makes the market-data guard refuse to start. Nothing here
+# reaches a venue or places an order, so it is pinned to the harmless case
+# rather than inheriting whichever case the file happens to hold.
+Environment=STW_EXECUTION_ENVIRONMENT=DEVELOPMENT
+Environment=STW_TRADING_ENABLED=false
+Environment=STW_TESTNET_API_WALLET_ADDRESS=
+Environment=STW_TESTNET_API_WALLET_PRIVATE_KEY=
+
+# A tick that hangs on a venue must not still be running when the next one
+# fires. Four hours is the interval; twenty minutes is far more than a tick
+# needs and far less than the gap between them.
+TimeoutStartSec=1200
+
+# Failure is expected sometimes — a venue refuses, a download times out — and
+# the script already counts and reports it. The unit should record it and let
+# the next tick try, not enter a restart loop against a venue that is down.
+Restart=no
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

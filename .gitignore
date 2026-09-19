@@ -58,6 +58,10 @@ docs/evidence/build-0.1/*
 # "which rules had already been tried" is not a question anyone should have to
 # answer from memory.
 !docs/evidence/build-0.1/evaluations/
+# The paper trader's report, for the same reason and one more: it is how the
+# loop tells everyone else what it decided, and the file's git history is the
+# loop's own history — a gap in it is a gap in the loop.
+!docs/evidence/build-0.1/paper/
 
 # Node
 node_modules/

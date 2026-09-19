@@ -52,6 +52,12 @@ docs/evidence/build-0.1/*
 # not regenerable in the sense the rule above assumes - and they are how the
 # recording host tells everyone else what it saw.
 !docs/evidence/build-0.1/recordings/
+# Strategy evaluations, for the same reason and a second one. They are the
+# record of what was tested against what data, and Phase 4's overfitting
+# discipline only works if that record exists: a holdout is spent once, and
+# "which rules had already been tried" is not a question anyone should have to
+# answer from memory.
+!docs/evidence/build-0.1/evaluations/
 
 # Node
 node_modules/

@@ -9,7 +9,7 @@ SUDO := $(shell [ "$$(id -u)" = 0 ] || echo sudo)
 .PHONY: help setup format lint typecheck test test-unit test-integration audit check \
         stack-up stack-down stack-logs stack-verify migrate accept console inspect \
         record-install record-status record-stop clean \
-        ladder history history-all history-status
+        ladder history history-all history-status chart
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -115,6 +115,10 @@ strategy: ## Run the baseline strategies over recorded data (HOURS, HOLD, THRESH
 history: ## Download price history a trader reasons over (ASSET, INTERVAL, DAYS)
 	$(UV) run python -m services.research.history_cli \
 		--asset $(or $(ASSET),SOL) --interval $(or $(INTERVAL),1h) --days $(or $(DAYS),730)
+
+chart: ## Print how the Feature Engine reads the chart now (ASSET, INTERVAL)
+	$(UV) run python -m services.strategy_engine.chart_cli \
+		--asset $(or $(ASSET),SOL) --interval $(or $(INTERVAL),4h)
 
 history-all: ## Download every history this project reasons over: BTC and SOL at 1h, 4h and 1d
 	@for asset in BTC SOL; do \

@@ -127,6 +127,19 @@ class FundingHistory:
             return None
         return self.rates[index - 1]
 
+    def settlements_between(
+        self, start: datetime, end: datetime
+    ) -> tuple[Decimal, ...]:
+        """Payments that settled after `start` and at or before `end`.
+
+        Half-open at the start so consecutive candles neither double-charge a
+        settlement nor drop one: candle N covers (close of N-1, close of N].
+        A position held across a boundary pays at that boundary exactly once.
+        """
+        first = bisect.bisect_right(self.moments, start)
+        last = bisect.bisect_right(self.moments, end)
+        return self.rates[first:last]
+
     def percentile_at(
         self,
         moment: datetime,

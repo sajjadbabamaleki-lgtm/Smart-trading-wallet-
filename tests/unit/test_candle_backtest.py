@@ -551,3 +551,104 @@ class TestFundingReachesTheFeatures:
         readings = [reading for reading, _ in execution_pairs(rising(120), SMALL)]
         assert all(reading.funding_percentile is None for reading in readings)
         assert all(reading.funding_rate_bps is None for reading in readings)
+
+
+class TestFundingCharged:
+    """Funding as a cost, from measured history rather than a guess.
+
+    Left uncharged, every long-biased result in this engine was flattered: on
+    BTC and ETH the long side paid in about 85% of settlements, a median 0.81
+    bps each, which is roughly 9% a year to hold a long.
+    """
+
+    def _series(self, candles: list[Candle], *, rate: str) -> FundingHistory:
+        """A settlement in every candle, so every held candle is charged."""
+        return FundingHistory.build(
+            [
+                FundingRate(asset="SOL", moment=candle.close_time, rate=Decimal(rate))
+                for candle in candles
+            ]
+        )
+
+    def test_a_long_pays_when_the_rate_is_positive(self) -> None:
+        candles = rising(40)
+        funding = self._series(candles, rate="0.001")
+        charged = CandleBacktest(rule=BuyAndHold(), costs=NO_COST, funding=funding).run(
+            candles, SMALL
+        )
+        free = CandleBacktest(rule=BuyAndHold(), costs=NO_COST).run(candles, SMALL)
+        assert charged.funding_paid > 0
+        assert charged.net_pnl < free.net_pnl
+
+    def test_a_short_is_credited_when_the_rate_is_positive(self) -> None:
+        """The sign follows the venue's: longs pay shorts."""
+        candles = rising(40)
+        funding = self._series(candles, rate="0.001")
+        shorts = CandleBacktest(rule=_AlwaysShort(), costs=NO_COST, funding=funding).run(
+            candles, SMALL
+        )
+        assert shorts.funding_paid < 0
+
+    def test_a_negative_rate_reverses_both(self) -> None:
+        candles = rising(40)
+        funding = self._series(candles, rate="-0.001")
+        longs = CandleBacktest(rule=BuyAndHold(), costs=NO_COST, funding=funding).run(
+            candles, SMALL
+        )
+        assert longs.funding_paid < 0
+
+    def test_nothing_is_charged_while_flat(self) -> None:
+        candles = rising(40)
+        result = CandleBacktest(
+            rule=AlwaysFlat(), costs=NO_COST, funding=self._series(candles, rate="0.01")
+        ).run(candles, SMALL)
+        assert result.funding_paid == 0
+
+    def test_a_settlement_is_charged_once_not_twice(self) -> None:
+        """Consecutive candles cover half-open intervals, so no double charge.
+
+        One settlement per candle at a known rate on a known notional: the
+        total must match the number of candles held, not twice it.
+        """
+        candles = rising(40)
+        rate = Decimal("0.001")
+        funding = self._series(candles, rate=str(rate))
+        result = CandleBacktest(
+            rule=BuyAndHold(), costs=NO_COST, notional=Decimal(1000), funding=funding
+        ).run(candles, SMALL)
+        # Each charge is rate x the marked notional, which is near 1,000 and
+        # rises with price. Held for `candles_in_position` candles, the total
+        # must sit between that count x rate x 1,000 and a modest multiple of
+        # it — and nowhere near twice.
+        floor = rate * Decimal(1000) * Decimal(result.candles_in_position)
+        assert floor < result.funding_paid < floor * Decimal("1.6")
+
+    def test_an_unsupplied_series_is_distinguishable_from_a_quiet_one(self) -> None:
+        """Zero paid and never charged are different claims."""
+        candles = rising(40)
+        absent = CandleBacktest(rule=BuyAndHold(), costs=NO_COST).run(candles, SMALL)
+        quiet = CandleBacktest(
+            rule=BuyAndHold(), costs=NO_COST, funding=self._series(candles, rate="0")
+        ).run(candles, SMALL)
+        assert absent.funding_paid == quiet.funding_paid == 0
+        assert absent.funding_charged is False
+        assert quiet.funding_charged is True
+
+    def test_the_drawdown_includes_funding(self) -> None:
+        """A cost paid while a position is open is lived through, not deferred."""
+        candles = series(["100"] * 40)
+        funding = self._series(candles, rate="0.01")
+        charged = CandleBacktest(rule=BuyAndHold(), costs=NO_COST, funding=funding).run(
+            candles, SMALL
+        )
+        flat_price = CandleBacktest(rule=BuyAndHold(), costs=NO_COST).run(candles, SMALL)
+        assert flat_price.max_drawdown_pct == 0
+        assert charged.max_drawdown_pct > 0
+
+
+@dataclass(slots=True)
+class _AlwaysShort:
+    name: str = "always-short"
+
+    def decide(self, features: FeatureSet) -> Decision:  # noqa: ARG002 - by design
+        return Decision.SHORT

@@ -147,9 +147,9 @@ def _halves(
     return parts
 
 
-def _run(rule: Rule, pairs: Pairs) -> CandleBacktestResult:
+def _run(rule: Rule, pairs: Pairs, funding: FundingHistory | None = None) -> CandleBacktestResult:
     costs = CostModel(half_spread_bps=MEASURED_HALF_SPREAD_BPS)
-    return CandleBacktest(rule=rule, costs=costs).run_pairs(pairs)
+    return CandleBacktest(rule=rule, costs=costs, funding=funding).run_pairs(pairs)
 
 
 def _decisions_of(rule: Rule, pairs: Pairs) -> list[Decision]:
@@ -181,6 +181,18 @@ def _row(result: CandleBacktestResult) -> str:
         f"{result.return_pct:>7.1f}%  {result.max_drawdown_pct:>7.1f}%  "
         f"{result.exposure_pct:>5.0f}%"
     )
+
+
+def _funding_line(result: CandleBacktestResult) -> str:
+    """What funding did to the run, or that it was not charged at all."""
+    if not result.funding_charged:
+        return "  funding: NOT CHARGED — no settlement history was supplied"
+    paid = result.funding_paid
+    if paid > 0:
+        return f"  funding: {paid:.2f} paid (a cost this rule carried)"
+    if paid < 0:
+        return f"  funding: {-paid:.2f} received (this rule was on the paid side)"
+    return "  funding: nothing settled while a position was open"
 
 
 def _economics(result: CandleBacktestResult) -> str:
@@ -293,9 +305,9 @@ def _evaluate(
         f"  {'rule':<26} {'trades':>6}  {'win%':>6}  {'return':>8}  {'drawdown':>8}  {'in mkt':>6}"
     )
 
-    candidate = _run(RULES[name](), pairs)
-    hold = _run(BuyAndHold(), pairs)
-    flat = _run(AlwaysFlat(), pairs)
+    candidate = _run(RULES[name](), pairs, setup.funding)
+    hold = _run(BuyAndHold(), pairs, setup.funding)
+    flat = _run(AlwaysFlat(), pairs, setup.funding)
     print(_row(candidate))
     print(_row(hold))
     print(_row(flat))
@@ -310,10 +322,11 @@ def _evaluate(
     # from the drift and so loses more, which reads as though the timing were
     # good even when the rule lost money. This control keeps the drift and
     # removes only the direction calls.
-    timing_only = _run(LongWhenActive(decisions=decisions), pairs)
+    timing_only = _run(LongWhenActive(decisions=decisions), pairs, setup.funding)
     print(_row(timing_only))
     shuffles = [
-        _run(Shuffled(decisions=decisions, seed=seed), pairs) for seed in range(setup.shuffle_count)
+        _run(Shuffled(decisions=decisions, seed=seed), pairs, setup.funding)
+        for seed in range(setup.shuffle_count)
     ]
     returns = sorted(float(run.return_pct) for run in shuffles)
     print(
@@ -321,6 +334,8 @@ def _evaluate(
         f"{'':>6}  {'':>6}  {statistics.median(returns):>7.1f}%  "
         f"[{returns[0]:.1f}% to {returns[-1]:.1f}%]"
     )
+    print()
+    print(_funding_line(candidate))
     print()
     print("  per-trade economics — is the signal worth its transaction?")
     print(_economics(candidate))
@@ -378,30 +393,40 @@ def main() -> int:
         candles = read_candles(client, request, venue=args.venue)
 
     config = FeatureConfig()
+    # Loaded for every rule, because funding is a cost every position pays and
+    # not only an input two rules read. On BTC and ETH the long side paid in
+    # about 85% of settlements, roughly 9% a year to hold a long, so a run
+    # without it flatters any long-biased rule.
     funding = None
-    if args.rule in FUNDING_RULES:
-        with ch.connect_from_settings(settings) as client:
-            settlements = read_funding(
-                client,
-                venue="binance",
-                asset=request.asset,
-                start=request.start,
-                end=request.end,
-            )
-        if not settlements:
-            print(
-                f"{args.rule} needs funding history and none is stored for "
-                f"{request.asset}. Run `make funding ASSET={request.asset}` first.\n"
-                f"Evaluating it without the feed would report a rule that never "
-                f"traded as a result."
-            )
-            return 1
+    with ch.connect_from_settings(settings) as client:
+        settlements = read_funding(
+            client,
+            venue="binance",
+            asset=request.asset,
+            start=request.start,
+            end=request.end,
+        )
+    if settlements:
         try:
             funding = FundingHistory.build(settlements)
         except FundingError as exc:
             print(f"the stored funding series cannot be used: {exc}")
             return 1
-        print(f"funding: {len(settlements):,} settlements loaded")
+        print(f"funding: {len(settlements):,} settlements, charged to every position")
+    elif args.rule in FUNDING_RULES:
+        print(
+            f"{args.rule} needs funding history and none is stored for "
+            f"{request.asset}. Run `make funding ASSET={request.asset}` first.\n"
+            f"Evaluating it without the feed would report a rule that never "
+            f"traded as a result."
+        )
+        return 1
+    else:
+        print(
+            f"funding: none stored for {request.asset}, so none is charged. "
+            f"Run `make funding ASSET={request.asset}` to include it — it is "
+            f"roughly 9% a year against a long."
+        )
 
     setup = Setup(config=config, shuffle_count=args.shuffles, funding=funding)
     train, test = _split(candles, holdout_days=args.holdout_days)

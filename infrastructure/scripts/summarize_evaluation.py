@@ -26,7 +26,10 @@ from pathlib import Path
 EVALUATIONS = Path("docs/evidence/build-0.1/evaluations")
 
 HEADER = re.compile(r"^(?P<asset>BTC|SOL|ETH|BNB) (?P<interval>\S+), rule: (?P<rule>\S+)\s*$")
-PERIOD = re.compile(r"^(?P<label>TRAINING PERIOD|HOLDOUT PERIOD): ")
+PERIOD = re.compile(
+    r"^(?P<label>TRAINING PERIOD|HOLDOUT PERIOD|TRAINING, FIRST HALF|"
+    r"TRAINING, SECOND HALF): "
+)
 ROW = re.compile(
     r"^  (?P<name>\S+)\s+(?P<trades>\d+)\s+(?P<win>[\d.]+%|-)\s+"
     r"(?P<ret>-?[\d.]+)%\s+(?P<dd>[\d.]+)%\s+(?P<expo>\d+)%\s*$"
@@ -91,30 +94,51 @@ class Run:
 def parse(text: str) -> list[Run]:
     """Read the runs out of a rendered evaluation.
 
-    Deliberately forgiving. A line that does not match is skipped rather than
-    raising, because a partial summary of a real file is useful and a crash on
-    an unexpected line is not — and the header of every run is unambiguous, so
-    a skipped line cannot silently attach numbers to the wrong run.
+    **One row per period, not per invocation.** A single CLI run prints the
+    asset/interval/rule header once and then evaluates several periods under
+    it — the full training period and, with --halves, each half. The first
+    version of this keyed a row on the header, so three periods collapsed into
+    one row: the guarded columns kept the first period's numbers while the
+    unguarded ones were overwritten by the last, and the row that came out was
+    two different periods wearing one label. A summary that mixes periods is
+    worse than no summary, because it reads like a result.
+
+    So the header only sets the context, and a period line starts the row.
+
+    Deliberately forgiving otherwise. An unrecognised line is skipped rather
+    than raised on, because a partial summary of a real file is useful and a
+    crash on an unexpected line is not.
     """
     runs: list[Run] = []
+    context: tuple[str, str, str] | None = None
     current: Run | None = None
     for line in text.splitlines():
         header = HEADER.match(line)
         if header:
-            current = Run(**header.groupdict())
-            runs.append(current)
-            continue
-        if current is None:
+            context = (header["asset"], header["interval"], header["rule"])
+            current = None
             continue
 
         period = PERIOD.match(line)
         if period:
-            current.period = "TRAIN" if period["label"].startswith("TRAINING") else "HOLD"
+            if context is None:
+                continue
+            asset, interval, rule = context
+            current = Run(
+                asset=asset,
+                interval=interval,
+                rule=rule,
+                period=_period_label(period["label"]),
+            )
+            runs.append(current)
             continue
-        # The candidate is identified by not being a control, not by its name.
-        # A wrapped rule renames itself — `--rule trend-confirmed` prints as
-        # `trend-following-confirmed-2` — so matching on the requested name
-        # silently picked up nothing at all.
+
+        if current is None:
+            continue
+
+        # The candidate is identified by not being a control, never by the
+        # requested rule name: a wrapped rule renames itself, so
+        # `--rule trend-confirmed` prints as `trend-following-confirmed-2`.
         row = ROW.match(line)
         if row and not row["name"].startswith("control-") and current.trades == "-":
             current.trades = row["trades"]
@@ -130,17 +154,28 @@ def parse(text: str) -> list[Run]:
             current.cost = economics["cost"]
             continue
         shuffle = SHUFFLE.match(line)
-        if shuffle:
+        if shuffle and current.beaten == "-":
             current.beaten = f"{shuffle['beaten']}/{shuffle['total']}"
             continue
         hold = HOLD.match(line)
-        if hold:
+        if hold and current.versus_hold == "-":
             current.versus_hold = hold["points"]
             continue
         verdict = VERDICT.match(line)
-        if verdict:
+        if verdict and current.verdict == "-":
             current.verdict = verdict["verdict"]
     return runs
+
+
+def _period_label(raw: str) -> str:
+    """Short labels, so a row fits a line and the periods cannot be confused."""
+    if raw.startswith("TRAINING, FIRST"):
+        return "1st"
+    if raw.startswith("TRAINING, SECOND"):
+        return "2nd"
+    if raw.startswith("HOLDOUT"):
+        return "HOLD"
+    return "TRAIN"
 
 
 def newest() -> Path:

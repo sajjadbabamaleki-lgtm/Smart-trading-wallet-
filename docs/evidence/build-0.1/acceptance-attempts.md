@@ -916,3 +916,112 @@ belonging to the next.
 `funding-extreme`, `funding-with-trend` — on 1h/4h/1d, BTC/ETH/SOL/BNB,
 Hyperliquid 2y and Binance 6y, with and without funding charged. The 180-day
 holdout has never been evaluated.
+
+---
+
+## The funding edge decayed: nine years, four periods, 2026-09-20
+
+The six-year run could not separate two explanations for a rule that worked
+before 2023 and not after — markets became more efficient, or the regime
+changed — because a single split has one boundary and both stories predict the
+same thing either side of it. Nine years of BTC, ETH and BNB with the training
+period split four ways can.
+
+### A data fact that limited the question
+
+Binance perpetual futures launched in September 2019, so funding history begins
+there regardless of how far the candles reach:
+
+| asset | funding from | settlements |
+|-------|--------------|-------------|
+| BTC | 2019-09-10 | 7,700 |
+| ETH | 2019-11-27 | 7,466 |
+| BNB | 2020-02-10 | 7,241 |
+
+The first quarter of the nine-year candle range therefore has no funding at
+all, the rule correctly stayed flat through it, and BTC made 7 trades there
+while ETH and BNB made none. That period is not evidence either way, and the
+question cannot be pushed further back at this venue.
+
+The candle archive also has eight holes, the largest about a day in February
+2018 — declared by the loader, not filled.
+
+### Three usable periods
+
+| period | BTC | ETH | BNB |
+|--------|-----|-----|-----|
+| ~2019–2021 | +7.9% | −3.9% | +13.9% |
+| **~2021–2023** | **+2.1%** (vsBH **+4.2**) | **+4.0%** (vsBH **+8.8**) | **+0.8%** (vsBH **+2.2**) |
+| ~2023–2026 | −0.2% | −9.9% | −3.9% |
+
+The middle period — which contains the 2022 collapse — is profitable on all
+three assets *and* beats buy-and-hold on all three, at 0/200, 1/200 and 3/200
+shuffles. BTC's row there is the project's second `SURVIVED`.
+
+The most recent period is negative on all three.
+
+### What settles efficiency against regime
+
+Gross profit per trade, in time order:
+
+```
+BTC:  +43.35  →  +18.34  →   +8.58
+BNB:  +66.80  →   +7.51  →  −13.78
+ETH:  −17.77  →  +25.82  →  −25.74
+```
+
+Two of three decay monotonically. A regime explanation predicts oscillation —
+a contrarian rule should do badly in trends and well in ranges, and those
+alternate. Monotonic decay across three consecutive multi-year periods is what
+an edge being competed away looks like.
+
+ETH does not decay monotonically, so this is a weight of evidence rather than
+a proof. But the direction is consistent, it holds on the two assets with the
+cleanest data, and no period after 2023 is positive on any asset.
+
+### The result
+
+**`NO_EDGE_FOUND` for the funding family in the current market**, and the
+reason is specific rather than a shrug: the edge was real, it beat
+buy-and-hold on three assets across the 2021–2023 period at better than 1-in-50
+against its own shuffles, and it has decayed to nothing.
+
+**The holdout has still never been evaluated.** Eight rules have now been
+tested and none reached it.
+
+### What this implies beyond the rule
+
+Both families tested so far take inputs that anyone can compute from public
+data: candles through standard indicators, and a funding rate the venue
+publishes. One of them demonstrably worked and was competed away over four
+years. That is the mechanism by which any publicly computable signal ends, and
+it is a reason to stop looking for more of them rather than to try a ninth.
+
+What is left is inputs that are not uniformly available:
+
+1. **News and its interpretation.** A language model's reading of an event is
+   not a statistic everyone derives identically from the same series, which is
+   the property every failed signal here lacked. It is also the product owner's
+   original requirement.
+2. **This project's own recorded microstructure.** The tick recorder holds
+   order-book and trade data at a grain nobody else has in this exact form, and
+   ADR-011 §6 already assigns it to cost and execution rather than signal.
+3. **Execution quality.** Not an edge in direction, but a real and measurable
+   saving, and Phase 8 requires the slippage model be recalibrated against
+   observation anyway.
+
+### A reporting artifact worth naming
+
+Periods where the rule made no trades report `200/200` shuffles and a 0.0%
+return. That is arithmetically correct — every shuffle of an all-FLAT decision
+sequence also returns zero — and it reads like a catastrophic failure rather
+than an absence of data. The zero-trade rows above should be read as "no
+funding history", which the settlement dates confirm.
+
+### Rules evaluated, cumulative
+
+`trend-following`, `trend-following-calm`, `trend-confirmed`,
+`trend-confirmed-3`, `mean-reversion`, `reversion-confirmed`,
+`funding-extreme`, `funding-with-trend` — on 1h/4h/1d, BTC/ETH/SOL/BNB,
+Hyperliquid 2y, Binance 6y and 9y, with and without funding charged, split in
+two and in four.

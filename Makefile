@@ -116,10 +116,11 @@ history: ## Download price history a trader reasons over (ASSET, INTERVAL, DAYS)
 	$(UV) run python -m services.research.history_cli \
 		--asset $(or $(ASSET),SOL) --interval $(or $(INTERVAL),1h) --days $(or $(DAYS),730)
 
-evaluate: ## Run a rule over history against its controls (ASSET, INTERVAL, RULE, HOLDOUT=1)
+evaluate: ## Run a rule against its controls (ASSET, INTERVAL, RULE, SHUFFLES, HALVES=1, HOLDOUT=1)
 	$(UV) run python -m services.strategy_engine.evaluate_candles_cli \
 		--asset $(or $(ASSET),SOL) --interval $(or $(INTERVAL),4h) \
-		--rule $(or $(RULE),trend-following) $(if $(HOLDOUT),--holdout,)
+		--rule $(or $(RULE),trend-following) --shuffles $(or $(SHUFFLES),20) \
+		$(if $(HALVES),--halves,) $(if $(HOLDOUT),--holdout,)
 
 evaluate-summary: ## Compress the newest evaluation to one line per run, small enough to send
 	@$(UV) run python infrastructure/scripts/summarize_evaluation.py $(FILE)
@@ -135,11 +136,12 @@ evaluate-report: ## Run every rule on both assets, write it into the repo and pu
 	@HOLDOUT=$(or $(HOLDOUT),0) PUSH=$(or $(PUSH),1) UV=$(UV) \
 		bash infrastructure/scripts/publish_evaluation.sh
 
-evaluate-all: ## Run the rule on both assets, training period only
+evaluate-all: ## Run the rule on both assets (INTERVAL, RULE, SHUFFLES, HALVES=1)
 	@for asset in BTC SOL; do \
 		$(UV) run python -m services.strategy_engine.evaluate_candles_cli \
 			--asset $$asset --interval $(or $(INTERVAL),4h) \
-			--rule $(or $(RULE),trend-following) || exit 1; \
+			--rule $(or $(RULE),trend-following) --shuffles $(or $(SHUFFLES),20) \
+			$(if $(HALVES),--halves,) || exit 1; \
 		echo; \
 	done
 

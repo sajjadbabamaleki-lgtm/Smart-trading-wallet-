@@ -9,7 +9,7 @@ SUDO := $(shell [ "$$(id -u)" = 0 ] || echo sudo)
 .PHONY: help setup format lint typecheck test test-unit test-integration audit check \
         stack-up stack-down stack-logs stack-verify migrate accept console inspect \
         record-install record-status record-stop clean \
-        ladder history history-all history-long history-status history-table funding funding-all chart signal signal-all evaluate evaluate-all evaluate-report evaluate-push evaluate-summary
+        ladder history history-all history-long history-longest history-status history-table funding funding-all chart signal signal-all evaluate evaluate-all evaluate-report evaluate-push evaluate-summary
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -122,6 +122,7 @@ evaluate: ## Run a rule against its controls (ASSET, INTERVAL, RULE, SHUFFLES, V
 		--asset $(or $(ASSET),SOL) --interval $(or $(INTERVAL),4h) \
 		--rule $(or $(RULE),trend-following) --shuffles $(or $(SHUFFLES),20) \
 		--venue $(or $(VENUE),hyperliquid) --days $(or $(DAYS),730) \
+		--periods $(or $(PERIODS),0) \
 		$(if $(HALVES),--halves,) $(if $(HOLDOUT),--holdout,)
 
 evaluate-summary: ## Compress the newest evaluation to one line per run, small enough to send
@@ -144,6 +145,7 @@ evaluate-all: ## Run one unchanged rule across assets (ASSETS, INTERVAL, RULE, S
 			--asset $$asset --interval $(or $(INTERVAL),4h) \
 			--rule $(or $(RULE),trend-following) --shuffles $(or $(SHUFFLES),20) \
 			--venue $(or $(VENUE),hyperliquid) --days $(or $(DAYS),730) \
+			--periods $(or $(PERIODS),0) \
 			$(if $(HALVES),--halves,) || exit 1; \
 		echo; \
 	done
@@ -179,6 +181,12 @@ history-all: ## Download history for the Phase 1 universe (ASSETS, DAYS, SOURCE,
 history-long: ## Download years of 4h history from Binance, for the regime question
 	@$(MAKE) --no-print-directory history-all \
 		SOURCE=binance INTERVALS=4h DAYS=$(or $(DAYS),2200)
+
+history-longest: ## Nine years of 4h history and funding, for BTC ETH BNB (SOL lists 2020)
+	@$(MAKE) --no-print-directory history-all \
+		ASSETS="BTC ETH BNB" SOURCE=binance INTERVALS=4h DAYS=$(or $(DAYS),3300)
+	@$(MAKE) --no-print-directory funding-all \
+		ASSETS="BTC ETH BNB" DAYS=$(or $(DAYS),3300)
 
 funding: ## Download funding-rate history: positioning, not pattern (ASSET, DAYS)
 	$(UV) run python -m services.research.funding_cli \

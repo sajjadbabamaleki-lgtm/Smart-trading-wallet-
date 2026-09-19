@@ -244,3 +244,28 @@ class TestFormatDrift:
             text = RUN + "\n\n" + period(label, 100) + "\n  vs shuffled : 1 of 200\n"
             (run,) = summarize.parse(text)  # type: ignore[attr-defined]
             assert run.period == expected, label
+
+
+class TestManyPeriods:
+    """Splitting into three or four parts, which is how "when did it stop" gets asked."""
+
+    def test_each_ordinal_gets_its_own_short_label(self) -> None:
+        labels = [
+            "TRAINING, FIRST OF 4",
+            "TRAINING, SECOND OF 4",
+            "TRAINING, THIRD OF 4",
+            "TRAINING, FOURTH OF 4",
+        ]
+        text = (
+            RUN
+            + "\n\n"
+            + "".join(period(label, 3000) + "\n  vs shuffled : 1 of 200\n\n" for label in labels)
+        )
+        runs = summarize.parse(text)  # type: ignore[attr-defined]
+        assert [run.period for run in runs] == ["1st", "2nd", "3rd", "4th"]
+
+    def test_an_unknown_part_does_not_become_the_full_period(self) -> None:
+        """A label falling through to TRAIN would report a part as the whole."""
+        text = RUN + "\n\n" + period("TRAINING, PART 9 OF 12", 300) + "\n"
+        (run,) = summarize.parse(text)  # type: ignore[attr-defined]
+        assert run.period != "TRAIN"

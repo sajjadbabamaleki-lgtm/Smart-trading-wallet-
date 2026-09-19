@@ -102,6 +102,27 @@ def _split(
 Pairs = Sequence[tuple[FeatureSet, Candle]]
 
 
+def _halves(
+    candles: Sequence[Candle], *, config: FeatureConfig
+) -> list[tuple[str, tuple[Candle, ...]]]:
+    """Split a period in two, each half carrying its own warmup.
+
+    The second half starts `warmup` candles early so its features are complete
+    from its first decision, and those extra candles are read but never decided
+    on. Either half could instead be warmed from the data before it; this is
+    simpler to reason about, and no feature reaches forward under either.
+    """
+    midpoint = len(candles) // 2
+    first = tuple(candles[:midpoint])
+    second = tuple(candles[max(0, midpoint - config.warmup) :])
+    parts: list[tuple[str, tuple[Candle, ...]]] = []
+    if len(first) >= config.warmup + 2:
+        parts.append(("TRAINING, FIRST HALF", first))
+    if len(second) >= config.warmup + 2:
+        parts.append(("TRAINING, SECOND HALF", second))
+    return parts
+
+
 def _run(rule: Rule, pairs: Pairs) -> CandleBacktestResult:
     costs = CostModel(half_spread_bps=MEASURED_HALF_SPREAD_BPS)
     return CandleBacktest(rule=rule, costs=costs).run_pairs(pairs)
@@ -249,6 +270,12 @@ def main() -> int:
         action="store_true",
         help="also evaluate the reserved period; spends it, so pass it deliberately",
     )
+    parser.add_argument(
+        "--halves",
+        action="store_true",
+        help="evaluate the training period in two halves, to see whether the rule "
+        "worked throughout it or only in part of it",
+    )
     args = parser.parse_args()
 
     configure_logging()
@@ -275,6 +302,15 @@ def main() -> int:
 
     print(f"{request.asset} {request.interval}, rule: {args.rule}")
     _evaluate(args.rule, train, config=config, shuffle_count=args.shuffles, label="TRAINING PERIOD")
+
+    if args.halves:
+        # A rule that made all of its money in one half of the training period
+        # and none in the other has not found a durable regularity; it found
+        # one episode. This costs nothing — the training period is already
+        # spent — and it is the cheapest way to fail a rule before the holdout
+        # has to.
+        for label, part in _halves(train, config=config):
+            _evaluate(args.rule, part, config=config, shuffle_count=args.shuffles, label=label)
 
     if not args.holdout:
         print()

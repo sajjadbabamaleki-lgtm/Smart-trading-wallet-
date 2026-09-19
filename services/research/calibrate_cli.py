@@ -65,7 +65,11 @@ def main() -> int:
         asset=args.asset,
         range_start=end - timedelta(hours=args.hours),
         range_end=end,
-        data_types=("BBO", "L2_SNAPSHOT"),
+        # TRADE is here for the passive-fill markout, which needs to know who
+        # chose to trade and at what price. The two quote-only measurements
+        # ignore these rows; without them the markout has nothing to locate a
+        # fill against and reports "not measured", which is what it did.
+        data_types=("BBO", "L2_SNAPSHOT", "TRADE"),
     )
 
     with ch.connect_from_settings(settings) as client:

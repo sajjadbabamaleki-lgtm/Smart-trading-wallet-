@@ -9,7 +9,7 @@ SUDO := $(shell [ "$$(id -u)" = 0 ] || echo sudo)
 .PHONY: help setup format lint typecheck test test-unit test-integration audit check \
         stack-up stack-down stack-logs stack-verify migrate accept console inspect \
         record-install record-status record-stop clean \
-        ladder history history-all history-long history-status chart evaluate evaluate-all evaluate-report evaluate-push evaluate-summary
+        ladder history history-all history-long history-status history-table chart evaluate evaluate-all evaluate-report evaluate-push evaluate-summary
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -166,6 +166,9 @@ history-all: ## Download history for the Phase 1 universe (ASSETS, DAYS, SOURCE,
 history-long: ## Download years of 4h history from Binance, for the regime question
 	@$(MAKE) --no-print-directory history-all \
 		SOURCE=binance INTERVALS=4h DAYS=$(or $(DAYS),2200)
+
+history-table: ## One line per stored series: what history this project holds
+	@$(UV) run python -m services.research.history_cli --inventory
 
 history-status: ## What history is already stored, without downloading (ASSET, INTERVAL)
 	$(UV) run python -m services.research.history_cli \

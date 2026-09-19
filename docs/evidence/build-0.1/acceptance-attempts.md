@@ -444,3 +444,51 @@ was wrong is discovering it too late.
 The credential lives in `.env` and nowhere else. Nothing logs the recipient,
 the sender or the password; the run report says only whether alerting is
 configured.
+
+---
+
+## M4 — the first valid research dataset, 2026-09-18
+
+**Result: VALID.** The first dataset this project has produced that it is
+willing to train on.
+
+| | |
+|---|---|
+| Dataset | `hyperliquid-btc-20260916T101500Z-20260917T001000Z-b2394b6bc775` |
+| Range | 2026-09-16T10:15Z → 2026-09-17T00:10Z (13 h 55 m, continuous) |
+| Rows | 44,694 — BBO 26,029, L2_SNAPSHOT 9,575, TRADE 9,090 |
+| Quality | `VALID` |
+| Point-in-time | `PIT_SAFE` |
+| Gaps overlapping | 264, **0 open, 0 unrecovered** |
+| Excluded by quality filter | 206 |
+| Checksum | `b2394b6bc77599e04af01f1f1a8821cae1c06156befd13ab69180eb608cf7044` |
+
+### What had to be true first
+
+The same builder returned `NOT USABLE FOR TRAINING` earlier the same day, over
+a 48-hour range, on 320 unrecovered gaps. Both answers were correct, and the
+difference between them is the whole of what M4's gate is for.
+
+**The 48-hour range genuinely contained a 40-hour hole.** Nothing had recorded
+it: the recorder had exited and the watchdog did not yet exist. It is now in
+`data_gaps`, found from the data itself, `UNRECOVERABLE` — so any dataset
+spanning it is refused rather than quietly averaged across. Two older holes
+were found the same way, including the 24-minute one that opened this whole
+line of investigation on 15 September.
+
+**The 320 open gaps were real detections that nobody had closed.** Routine
+30-to-116-second silences, median 47 s, each of which resumed seconds later.
+The monitor only learned to close a silence after they were written, so they
+sat open, and an open gap is a claim that data is still missing. 376 were
+closed retroactively against the event in the store that ended each one.
+
+The window chosen here is the one that is continuous: 16 September 10:15 to
+17 September 00:10, between two outages rather than across one.
+
+### What this does not establish
+
+Nothing about whether the data is *useful*. It is 14 hours of one asset,
+spanning part of one day, and the cost measurement taken the same day says the
+tradable horizon is minutes rather than milliseconds — which makes 14 hours a
+small number of independent observations. A dataset being valid means it
+declares what it contains, not that it contains enough.

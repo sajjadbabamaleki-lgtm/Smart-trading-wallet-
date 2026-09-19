@@ -28,6 +28,7 @@ from libs.config import load_settings
 from libs.domain.clock import SystemClock
 from libs.observability.logging import configure_logging
 from libs.storage import clickhouse as ch
+from services.research.costs import BASE_MAKER_FEE_BPS as MAKER_FEE_BPS
 from services.research.costs import MEASURED_DATA_ARRIVAL_FLOOR_MS, CostModel, hurdle
 from services.research.dataset import DatasetSpec
 from services.research.measure import calibrate
@@ -97,8 +98,39 @@ def main() -> int:
     for key, value in result.mid_move_bps.as_dict().items():
         print(f"  {key:6} {value}")
     print()
-    print(f"round trip now costs {threshold.round_trip_bps} bps with the measured spread")
+    print(f"round trip now costs {threshold.round_trip_bps} bps by crossing (taker)")
     print(f"fully measured: {threshold.is_fully_measured} (adverse drift is M6's question)")
+
+    markout = result.passive_markout_bps
+    if markout is not None and result.markout_horizon is not None:
+        seconds = result.markout_horizon.total_seconds()
+        print()
+        print(f"passive fill markout over {seconds:.0f}s (bps, signed; negative is adverse)")
+        for key, value in markout.as_dict().items():
+            print(f"  {key:6} {value}")
+        print()
+        # The comparison the maker question turns on, written out rather than
+        # left for the reader to assemble from two tables.
+        maker_round_trip = MAKER_FEE_BPS * 2 - markout.mean * 2
+        print(f"  resting instead of crossing pays {MAKER_FEE_BPS * 2} bps in fees,")
+        print(f"  and a mean markout of {markout.mean} bps on each of two fills,")
+        print(f"  so a maker round trip costs about {maker_round_trip:.2f} bps")
+        print(f"  against {threshold.round_trip_bps} bps by crossing.")
+        print()
+        print(
+            "  This markout is optimistic: it assumes any aggressive trade at our\n"
+            "  level fills us, when a real queue fills us hardest exactly when the\n"
+            "  level is about to be cleared. Treat it as a lower bound on adverse\n"
+            "  selection — the number to beat, not the number to bank."
+        )
+    else:
+        print()
+        print(
+            "passive fill markout: not measured. The sample holds no trade at the\n"
+            "touch with a quote a horizon later, so nothing here can say whether\n"
+            "resting is cheaper than crossing."
+        )
+
     print()
     print(
         "Read these together: if mid routinely moves further over the delay than a\n"

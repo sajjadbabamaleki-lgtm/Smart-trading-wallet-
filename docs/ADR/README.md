@@ -19,6 +19,7 @@ advance.
 | [ADR-007](ADR-007-clock-abstraction-and-latency-instrumentation.md) | Clock abstraction and receipt-time latency instrumentation | Accepted |
 | [ADR-008](ADR-008-sql-migrations-without-a-framework.md) | SQL migrations without a framework | Accepted |
 | [ADR-009](ADR-009-market-data-separate-from-execution.md) | Market-data environment separate from execution environment | Accepted |
+| [ADR-010](ADR-010-market-event-intelligence-experimental.md) | Market event intelligence as an experimental feature family | Accepted |
 
 ## Namespace resolution
 

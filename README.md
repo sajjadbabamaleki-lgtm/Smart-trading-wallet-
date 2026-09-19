@@ -125,6 +125,19 @@ executable profitability unproven, so latency viability becomes its Gate 0. It
 constrains M0 clock design and M2 recorder scope — identity-linked events and
 receipt timestamps discarded now may be impossible to reconstruct later.
 
+**[Market Event Intelligence Engine](docs/research/market-event-intelligence-engine.md)**
+(v1) asks the same question of information rather than identity: given an event,
+how much of the reaction has already happened, and does executable edge remain
+after latency and cost? Deferred behind M7 and M9 — its cheapest component is a
+risk-only mode that blocks entries around scheduled releases, and the system has
+no strategy to block yet.
+
+Both specifications assume a sub-second latency ladder. This project has since
+measured the venue's own publication delay to a public subscriber at p50 425 ms,
+min 325 ms — so the first rungs of both ladders describe a machine nobody
+reading this feed has. The correction is recorded against each rather than
+edited into either.
+
 ## Development
 
 Requires [uv](https://docs.astral.sh/uv/) and Docker.
@@ -215,9 +228,9 @@ asset allowlist defaults to BTC only.
 |------|-------|
 | Specifications, phases 1–10 | Approved, in this repository |
 | Implementation program | Build 0.1 Rev.2 approved; Rev.1 superseded, retained |
-| Research candidates | TBIE v1.1 accepted as experimental feature family; predictive information supported, executable alpha unproven; no production authority |
+| Research candidates | TBIE v1.1 and MEIE v1 accepted as experimental feature families; no production authority. Both assume sub-second executability the measured 325 ms venue floor denies |
 | Implementation code | **M0–M5 implemented.** M1 (storage) and M2 (BTC recorder) are **ACCEPTED** against a real stack and the live venue, 2026-09-14. M3 (capture, deterministic replay, monitor loop, gap registry) unblocked, its own acceptance still owed. M4 (research datasets with identity, checksum and manifest) and M5 (transaction cost model, measured from recorded data) implemented, unrun against a real dataset |
-| First research question | Open. A round trip costs 10 bps at the base fee tier — 60 on BTC at 60,000 — and whether any signal clears that after realistic costs is what M5–M6 exist to answer. `NO_EDGE_FOUND` remains a valid outcome |
+| First research question | **Measured, 2026-09-18.** A round trip costs 9.99 bps with the observed spread, 90% of it fees. BTC's mid moves a median 0.066 bps over the 322 ms it takes information to arrive, and 3.40 bps at p99 — so no sub-second edge of the required size exists to be captured. The tradable horizon is minutes, not milliseconds, and the constraint is cost rather than latency. `NO_EDGE_FOUND` remains a valid outcome |
 | Production | **Not approved.** Architecture approval is not production approval (Phase 10 §114) |
 | Provider contracts, coverage, licensing, pricing | Unverified — required before procurement (Phase 3 §36) |
 | Venue validation, security audit, penetration test, legal review | Outstanding (Phases 9, 10) |

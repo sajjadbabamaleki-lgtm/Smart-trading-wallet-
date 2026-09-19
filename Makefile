@@ -8,7 +8,8 @@ SUDO := $(shell [ "$$(id -u)" = 0 ] || echo sudo)
 
 .PHONY: help setup format lint typecheck test test-unit test-integration audit check \
         stack-up stack-down stack-logs stack-verify migrate accept console inspect \
-        record-install record-status record-stop clean
+        record-install record-status record-stop clean \
+        ladder history history-all history-status
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -110,6 +111,25 @@ strategy: ## Run the baseline strategies over recorded data (HOURS, HOLD, THRESH
 	$(UV) run python -m services.strategy_engine.evaluate_cli \
 		--hours $(or $(HOURS),24) --hold $(or $(HOLD),30) \
 		--threshold $(or $(THRESHOLD),0.30)
+
+history: ## Download price history a trader reasons over (ASSET, INTERVAL, DAYS)
+	$(UV) run python -m services.research.history_cli \
+		--asset $(or $(ASSET),SOL) --interval $(or $(INTERVAL),1h) --days $(or $(DAYS),730)
+
+history-all: ## Download every history this project reasons over: BTC and SOL, hourly and daily
+	@for asset in BTC SOL; do \
+		for interval in 1h 1d; do \
+			echo "--- $$asset $$interval ---"; \
+			$(UV) run python -m services.research.history_cli \
+				--asset $$asset --interval $$interval --days $(or $(DAYS),730) || exit 1; \
+			echo; \
+		done; \
+	done
+
+history-status: ## What history is already stored, without downloading (ASSET, INTERVAL)
+	$(UV) run python -m services.research.history_cli \
+		--asset $(or $(ASSET),SOL) --interval $(or $(INTERVAL),1h) \
+		--days $(or $(DAYS),730) --read-only
 
 ladder: ## How far price moves at each horizon, against the cost floors (HOURS)
 	$(UV) run python -m services.research.calibrate_cli \

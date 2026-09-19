@@ -111,6 +111,15 @@ strategy: ## Run the baseline strategies over recorded data (HOURS, HOLD, THRESH
 		--hours $(or $(HOURS),24) --hold $(or $(HOLD),30) \
 		--threshold $(or $(THRESHOLD),0.30)
 
+history: ## Download price history a trader reasons over (ASSET, INTERVAL, DAYS)
+	$(UV) run python -m services.research.history_cli \
+		--asset $(or $(ASSET),SOL) --interval $(or $(INTERVAL),1h) --days $(or $(DAYS),730)
+
+history-status: ## What history is already stored, without downloading (ASSET, INTERVAL)
+	$(UV) run python -m services.research.history_cli \
+		--asset $(or $(ASSET),SOL) --interval $(or $(INTERVAL),1h) \
+		--days $(or $(DAYS),730) --read-only
+
 ladder: ## How far price moves at each horizon, against the cost floors (HOURS)
 	$(UV) run python -m services.research.calibrate_cli \
 		--hours $(or $(HOURS),24) --ladder

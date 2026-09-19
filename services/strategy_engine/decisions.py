@@ -264,3 +264,166 @@ class Confirmed:
             self._pending = None
             self._count = 0
         return self._held
+
+
+@dataclass(slots=True)
+class LongWhenActive:
+    """The candidate's own market timing, with its direction calls removed.
+
+    **Why this control had to exist.** Over six years of crypto, `Shuffled`
+    said 0 of 200 random orderings matched a rule that lost 10%. Both
+    statements were true: shuffling separates a long-biased rule's direction
+    from a market that rose 55%, so the shuffles lost even more. The control
+    was measuring drift capture, not timing, and nothing in the report said so.
+
+    This one holds the exposure fixed and drops the direction. It is LONG
+    whenever the candidate wanted a position of either sign, and FLAT whenever
+    the candidate wanted none — same trades, same fee bill, same time in the
+    market, no opinion about which way. A candidate that cannot beat it has
+    short calls worth nothing, and its return came from being in a rising
+    market at roughly the right times.
+
+    Stateful and replay-ordered, like `Shuffled`, and for the same reason: it
+    is replaying a fixed sequence the candidate already produced.
+    """
+
+    decisions: Sequence[Decision]
+    name: str = "control-long-when-active"
+    _index: int = 0
+
+    def decide(self, features: FeatureSet) -> Decision:  # noqa: ARG002 - by design
+        if self._index >= len(self.decisions):
+            return Decision.FLAT
+        wanted = self.decisions[self._index]
+        self._index += 1
+        return Decision.FLAT if wanted is Decision.FLAT else Decision.LONG
+
+
+REVERSION_ENTRY_BPS: Final = Decimal(200)
+"""How far from its own average price must be before reversion is expected.
+
+Two percent, conventional and not searched for on this data. A smaller
+threshold trades constantly on noise; a larger one waits for moves that rarely
+come. The rule below is the next hypothesis family rather than a tuned version
+of the last one, so its parameters are declared once and left alone.
+"""
+
+
+@dataclass(slots=True)
+class MeanReversion:
+    """Buy what has fallen far below its average, sell what has risen far above.
+
+    The opposite hypothesis to trend-following, and it is worth testing for a
+    reason the data supplied rather than for symmetry: on daily candles the
+    trend rule's gross profit per trade was deeply negative, -26 to -312 bps
+    — which is not a weak signal but an inverted one. A signal that is
+    reliably wrong is a signal.
+
+    It only acts in a range. In a trend, "far from the average" is where price
+    is supposed to be, and betting against it is how a reversion rule loses
+    everything in one move. So RANGE is required, which also means this rule
+    and the trend rule are never both in the market, and the two together
+    cover the regimes neither covers alone.
+
+    The null hypothesis stays what it was: this loses money net of cost, and
+    less than buy-and-hold earns.
+    """
+
+    name: str = "mean-reversion"
+    entry_bps: Decimal = REVERSION_ENTRY_BPS
+
+    def decide(self, features: FeatureSet) -> Decision:
+        if features.trend_regime is not TrendRegime.RANGE:
+            return Decision.FLAT
+        if features.distance_from_trend_bps <= -self.entry_bps:
+            return Decision.LONG
+        if features.distance_from_trend_bps >= self.entry_bps:
+            return Decision.SHORT
+        return Decision.FLAT
+
+
+FUNDING_CROWDED: Final = Decimal("0.90")
+FUNDING_DESERTED: Final = Decimal("0.10")
+"""Which percentiles count as crowded and deserted.
+
+The top and bottom tenth of the last thirty days. Conventional bounds for "an
+extreme", chosen before any result was seen and not revisited: the whole
+argument for this rule is that its mechanism is real, and a threshold tuned
+until the backtest smiled would replace that argument with a fitted number.
+"""
+
+
+@dataclass(slots=True)
+class FundingExtreme:
+    """Fade the crowded side.
+
+    The first rule here whose input is not a transformation of price. Funding
+    is what the long and short sides are paying each other to hold their
+    positions, so a rate in the top tenth of its own month means longs are
+    paying unusually hard to stay long — the position is crowded, and a crowded
+    position is what gets liquidated when price moves against it.
+
+    So this goes SHORT into crowded longs and LONG into crowded shorts. It is
+    contrarian by mechanism rather than by taste, and the mechanism is why it
+    is worth testing at all: unlike RSI or MACD it is not a statistic everyone
+    computes from the same public candles, so it is not priced in by
+    construction.
+
+    **It refuses to act on a missing feed.** `funding_percentile` is None when
+    no funding series was supplied or when too few payments have settled to
+    form a percentile. None is not neutral and must not be read as 0.5: a
+    missing feed would otherwise be indistinguishable from average positioning,
+    and the rule would trade on nothing.
+
+    The null hypothesis is unchanged: this loses money net of cost, and less
+    than buy-and-hold earns. That is what the six-year test is for.
+    """
+
+    name: str = "funding-extreme"
+    crowded: Decimal = FUNDING_CROWDED
+    deserted: Decimal = FUNDING_DESERTED
+
+    def __post_init__(self) -> None:
+        if not Decimal(0) <= self.deserted < self.crowded <= Decimal(1):
+            raise ValueError("thresholds must satisfy 0 <= deserted < crowded <= 1")
+
+    def decide(self, features: FeatureSet) -> Decision:
+        percentile = features.funding_percentile
+        if percentile is None:
+            return Decision.FLAT
+        if percentile >= self.crowded:
+            return Decision.SHORT
+        if percentile <= self.deserted:
+            return Decision.LONG
+        return Decision.FLAT
+
+
+@dataclass(slots=True)
+class FundingWithTrend:
+    """Trade the trend, but stand aside when the trend's own side is crowded.
+
+    Not a third hypothesis — a test of whether funding adds anything to a rule
+    that already failed. The trend family returned NO_EDGE_FOUND over six
+    years; if positioning carries information that price does not, then
+    refusing the trades where the crowd is already maximally committed should
+    improve it, and if it does not, funding has nothing to add to this signal.
+
+    Stated that way on purpose: this is a question with a clear negative
+    answer available, which is what makes it worth asking.
+    """
+
+    name: str = "funding-with-trend"
+    inner: Rule = field(default_factory=TrendFollowing)
+    crowded: Decimal = FUNDING_CROWDED
+    deserted: Decimal = FUNDING_DESERTED
+
+    def decide(self, features: FeatureSet) -> Decision:
+        wanted = self.inner.decide(features)
+        percentile = features.funding_percentile
+        if percentile is None or wanted is Decision.FLAT:
+            return wanted
+        if wanted is Decision.LONG and percentile >= self.crowded:
+            return Decision.FLAT
+        if wanted is Decision.SHORT and percentile <= self.deserted:
+            return Decision.FLAT
+        return wanted

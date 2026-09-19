@@ -33,16 +33,19 @@ from __future__ import annotations
 
 import statistics
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Final
 
 from libs.config import load_settings
 from libs.domain.candles import Candle, CandleRequest
+from libs.domain.funding import FundingError, FundingHistory
 from libs.observability import configure_logging
 from libs.storage import clickhouse as ch
 from services.research.candle_store import read_candles
 from services.research.costs import CostModel
+from services.research.funding_store import read_funding
 from services.strategy_engine.candle_backtest import (
     CandleBacktest,
     CandleBacktestResult,
@@ -53,6 +56,10 @@ from services.strategy_engine.decisions import (
     BuyAndHold,
     Confirmed,
     Decision,
+    FundingExtreme,
+    FundingWithTrend,
+    LongWhenActive,
+    MeanReversion,
     Rule,
     Shuffled,
     TrendFollowing,
@@ -75,12 +82,29 @@ def _confirmed(candles: int = 2) -> Callable[[], Rule]:
     return lambda: Confirmed(inner=TrendFollowing(), confirm=candles)
 
 
+def _confirmed_reversion(candles: int = 2) -> Callable[[], Rule]:
+    return lambda: Confirmed(inner=MeanReversion(), confirm=candles)
+
+
 RULES: Final[dict[str, Callable[[], Rule]]] = {
     "trend-following": TrendFollowing,
     "trend-following-calm": TrendFollowingCalm,
     "trend-confirmed": _confirmed(2),
     "trend-confirmed-3": _confirmed(3),
+    "mean-reversion": MeanReversion,
+    "reversion-confirmed": _confirmed_reversion(2),
+    "funding-extreme": FundingExtreme,
+    "funding-with-trend": FundingWithTrend,
 }
+
+FUNDING_RULES: Final = frozenset({"funding-extreme", "funding-with-trend"})
+"""Rules that are meaningless without a funding series.
+
+Named so the runner can refuse rather than evaluate one against a feed that
+is not there. `FundingExtreme` returns FLAT on a missing percentile, which is
+correct behaviour and would otherwise read as a rule that simply never traded
+— a silent no-op reported as a result.
+"""
 
 
 def _split(
@@ -179,6 +203,7 @@ def _verdict(
     candidate: CandleBacktestResult,
     *,
     hold: CandleBacktestResult,
+    timing_only: CandleBacktestResult,
     shuffles: list[CandleBacktestResult],
 ) -> list[str]:
     """State what the numbers support, and nothing beyond it."""
@@ -187,10 +212,23 @@ def _verdict(
     lines.append(
         f"  vs shuffled : {beaten} of {len(shuffles)} random orderings did as well or better"
     )
-    if beaten == 0:
+    if beaten == 0 and candidate.return_pct > timing_only.return_pct:
         lines.append("                its timing carried information on this period")
+    elif beaten == 0:
+        # Beating every shuffle while not beating the same trades held long
+        # means the shuffles lost to the market's drift rather than to this
+        # rule's timing. Saying "carried information" here was the error this
+        # control exists to stop.
+        lines.append("                but only by keeping the drift; see vs timing below")
     elif beaten > len(shuffles) // 20:
         lines.append("                its timing carried nothing this data can distinguish")
+
+    direction = candidate.return_pct - timing_only.return_pct
+    lines.append(
+        f"  vs timing   : {direction:+.1f} points from the direction calls (same trades, long only)"
+    )
+    if direction <= 0:
+        lines.append("                the short calls added nothing")
 
     difference = candidate.return_pct - hold.return_pct
     lines.append(f"  vs buy-hold : {difference:+.1f} points of return")
@@ -215,18 +253,32 @@ def _verdict(
     return lines
 
 
+@dataclass(frozen=True, slots=True)
+class Setup:
+    """Everything an evaluation needs that is not the rule or the candles.
+
+    A small object rather than four keyword arguments, because they travel
+    together through the full period and both halves and the holdout, and a
+    call site that has to repeat them is one that eventually repeats them
+    wrong.
+    """
+
+    config: FeatureConfig
+    shuffle_count: int
+    funding: FundingHistory | None = None
+
+
 def _evaluate(
     name: str,
     candles: Sequence[Candle],
     *,
-    config: FeatureConfig,
-    shuffle_count: int,
+    setup: Setup,
     label: str,
 ) -> None:
     # Built once and shared by every rule below. Features are a property of
     # the candles and never of the rule, so computing them per rule did the
     # same work twenty-three times per evaluation.
-    pairs = list(execution_pairs(candles, config))
+    pairs = list(execution_pairs(candles, setup.config, setup.funding))
     print()
     print(
         period_header(
@@ -253,12 +305,19 @@ def _evaluate(
         return
 
     decisions = _decisions_of(RULES[name](), pairs)
+    # Same exposure, no opinion about direction. Over a strongly trending
+    # period `Shuffled` alone is misleading — it separates a long-biased rule
+    # from the drift and so loses more, which reads as though the timing were
+    # good even when the rule lost money. This control keeps the drift and
+    # removes only the direction calls.
+    timing_only = _run(LongWhenActive(decisions=decisions), pairs)
+    print(_row(timing_only))
     shuffles = [
-        _run(Shuffled(decisions=decisions, seed=seed), pairs) for seed in range(shuffle_count)
+        _run(Shuffled(decisions=decisions, seed=seed), pairs) for seed in range(setup.shuffle_count)
     ]
     returns = sorted(float(run.return_pct) for run in shuffles)
     print(
-        f"  {'control-shuffled x' + str(shuffle_count):<26} "
+        f"  {'control-shuffled x' + str(setup.shuffle_count):<26} "
         f"{'':>6}  {'':>6}  {statistics.median(returns):>7.1f}%  "
         f"[{returns[0]:.1f}% to {returns[-1]:.1f}%]"
     )
@@ -267,7 +326,7 @@ def _evaluate(
     print(_economics(candidate))
     print(_economics(hold))
     print()
-    for line in _verdict(candidate, hold=hold, shuffles=shuffles):
+    for line in _verdict(candidate, hold=hold, timing_only=timing_only, shuffles=shuffles):
         print(line)
 
 
@@ -319,6 +378,32 @@ def main() -> int:
         candles = read_candles(client, request, venue=args.venue)
 
     config = FeatureConfig()
+    funding = None
+    if args.rule in FUNDING_RULES:
+        with ch.connect_from_settings(settings) as client:
+            settlements = read_funding(
+                client,
+                venue="binance",
+                asset=request.asset,
+                start=request.start,
+                end=request.end,
+            )
+        if not settlements:
+            print(
+                f"{args.rule} needs funding history and none is stored for "
+                f"{request.asset}. Run `make funding ASSET={request.asset}` first.\n"
+                f"Evaluating it without the feed would report a rule that never "
+                f"traded as a result."
+            )
+            return 1
+        try:
+            funding = FundingHistory.build(settlements)
+        except FundingError as exc:
+            print(f"the stored funding series cannot be used: {exc}")
+            return 1
+        print(f"funding: {len(settlements):,} settlements loaded")
+
+    setup = Setup(config=config, shuffle_count=args.shuffles, funding=funding)
     train, test = _split(candles, holdout_days=args.holdout_days)
     if len(train) < config.warmup + 2:
         print(
@@ -335,7 +420,7 @@ def main() -> int:
             venue=args.venue,
         )
     )
-    _evaluate(args.rule, train, config=config, shuffle_count=args.shuffles, label="TRAINING PERIOD")
+    _evaluate(args.rule, train, setup=setup, label="TRAINING PERIOD")
 
     if args.halves:
         # A rule that made all of its money in one half of the training period
@@ -344,7 +429,7 @@ def main() -> int:
         # spent — and it is the cheapest way to fail a rule before the holdout
         # has to.
         for label, part in _halves(train, config=config):
-            _evaluate(args.rule, part, config=config, shuffle_count=args.shuffles, label=label)
+            _evaluate(args.rule, part, setup=setup, label=label)
 
     if not args.holdout:
         print()
@@ -360,7 +445,7 @@ def main() -> int:
         print()
         print(f"the holdout has {len(test)} candles, too few to evaluate")
         return 1
-    _evaluate(args.rule, test, config=config, shuffle_count=args.shuffles, label="HOLDOUT PERIOD")
+    _evaluate(args.rule, test, setup=setup, label="HOLDOUT PERIOD")
     return 0
 
 

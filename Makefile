@@ -9,7 +9,7 @@ SUDO := $(shell [ "$$(id -u)" = 0 ] || echo sudo)
 .PHONY: help setup format lint typecheck test test-unit test-integration audit check \
         stack-up stack-down stack-logs stack-verify migrate accept console inspect \
         record-install record-status record-stop clean \
-        ladder history history-all history-long history-status history-table chart evaluate evaluate-all evaluate-report evaluate-push evaluate-summary
+        ladder history history-all history-long history-status history-table funding funding-all chart signal signal-all evaluate evaluate-all evaluate-report evaluate-push evaluate-summary
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -148,6 +148,19 @@ evaluate-all: ## Run one unchanged rule across assets (ASSETS, INTERVAL, RULE, S
 		echo; \
 	done
 
+signal: ## What the bot thinks right now, with reasons (ASSET, INTERVAL, VENUE)
+	$(UV) run python -m services.strategy_engine.signal_cli \
+		--asset $(or $(ASSET),SOL) --interval $(or $(INTERVAL),4h) \
+		--venue $(or $(VENUE),binance)
+
+signal-all: ## The same, for every asset in the Phase 1 universe
+	@for asset in BTC ETH SOL BNB; do \
+		$(UV) run python -m services.strategy_engine.signal_cli \
+			--asset $$asset --interval $(or $(INTERVAL),4h) \
+			--venue $(or $(VENUE),binance) | head -14; \
+		echo; \
+	done
+
 chart: ## Print how the Feature Engine reads the chart now (ASSET, INTERVAL)
 	$(UV) run python -m services.strategy_engine.chart_cli \
 		--asset $(or $(ASSET),SOL) --interval $(or $(INTERVAL),4h)
@@ -166,6 +179,17 @@ history-all: ## Download history for the Phase 1 universe (ASSETS, DAYS, SOURCE,
 history-long: ## Download years of 4h history from Binance, for the regime question
 	@$(MAKE) --no-print-directory history-all \
 		SOURCE=binance INTERVALS=4h DAYS=$(or $(DAYS),2200)
+
+funding: ## Download funding-rate history: positioning, not pattern (ASSET, DAYS)
+	$(UV) run python -m services.research.funding_cli \
+		--asset $(or $(ASSET),SOL) --days $(or $(DAYS),2200)
+
+funding-all: ## The same for every asset in the Phase 1 universe
+	@for asset in $(or $(ASSETS),BTC ETH SOL BNB); do \
+		$(UV) run python -m services.research.funding_cli \
+			--asset $$asset --days $(or $(DAYS),2200) | tail -8 || exit 1; \
+		echo; \
+	done
 
 history-table: ## One line per stored series: what history this project holds
 	@$(UV) run python -m services.research.history_cli --inventory

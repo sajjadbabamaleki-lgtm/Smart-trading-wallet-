@@ -42,6 +42,7 @@ from enum import StrEnum
 from typing import Final
 
 from libs.domain.candles import Candle
+from libs.domain.funding import FundingHistory
 
 BPS: Final = Decimal(10000)
 
@@ -174,6 +175,25 @@ class FeatureSet:
     # Regime
     trend_regime: TrendRegime
     volatility_regime: VolatilityRegime
+
+    # Positioning
+    funding_rate_bps: Decimal | None = None
+    """The most recent settled funding payment, in basis points.
+
+    None when no funding series was supplied, which is a different statement
+    from a funding rate of zero: one means "we do not know what the two sides
+    are paying each other", the other means "they are paying nothing". A rule
+    that treated the first as the second would read a missing feed as a calm
+    market.
+    """
+
+    funding_percentile: Decimal | None = None
+    """Where that payment sits in its own recent range, 0 to 1.
+
+    The reading that matters, because the absolute level means different things
+    in different regimes. 1 is the most crowded the long side has been in the
+    window; 0 the most crowded the short side has been.
+    """
 
     def describe(self) -> dict[str, object]:
         """A form a research note or a log line can carry without re-deriving."""
@@ -337,12 +357,21 @@ def _regimes(
     return trend, volatility
 
 
-def compute(window: Sequence[Candle], config: FeatureConfig | None = None) -> FeatureSet:
+def compute(
+    window: Sequence[Candle],
+    config: FeatureConfig | None = None,
+    funding: FundingHistory | None = None,
+) -> FeatureSet:
     """Read the chart as of the last candle in `window`.
 
     The window is history: it ends at the candle being decided on and contains
     nothing after it. That is the whole lookahead guarantee, and it is enforced
     by this function having no access to anything else.
+
+    `funding` is the one input that is not derived from the window, so it is
+    the one that could leak. It is queried by `percentile_at`, which cuts on
+    the candle's close time and cannot see a settlement after it — the same
+    guarantee, moved into the series that needs it.
     """
     resolved = config or FeatureConfig()
     if len(window) < resolved.warmup:
@@ -362,6 +391,7 @@ def compute(window: Sequence[Candle], config: FeatureConfig | None = None) -> Fe
         trend_bps=trend_bps, trend_slope_bps=trend_slope_bps, volatility_ratio=ratio
     )
 
+    funding_rate = funding.latest_at(current.close_time) if funding else None
     return FeatureSet(
         moment=current.close_time,
         close=current.close,
@@ -378,11 +408,15 @@ def compute(window: Sequence[Candle], config: FeatureConfig | None = None) -> Fe
         swing_low_bps=low_bps,
         trend_regime=trend_regime,
         volatility_regime=volatility_regime,
+        funding_rate_bps=None if funding_rate is None else funding_rate * BPS,
+        funding_percentile=(funding.percentile_at(current.close_time) if funding else None),
     )
 
 
 def feature_series(
-    candles: Sequence[Candle], config: FeatureConfig | None = None
+    candles: Sequence[Candle],
+    config: FeatureConfig | None = None,
+    funding: FundingHistory | None = None,
 ) -> Iterator[FeatureSet]:
     """Features for every candle that has enough history behind it.
 
@@ -393,4 +427,4 @@ def feature_series(
     """
     resolved = config or FeatureConfig()
     for index in range(resolved.warmup - 1, len(candles)):
-        yield compute(candles[: index + 1], resolved)
+        yield compute(candles[: index + 1], resolved, funding)

@@ -39,7 +39,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
-from libs.exchange.hyperliquid.candles import Candle
+from libs.domain.candles import Candle
 from services.research.costs import BPS, CostModel
 from services.strategy_engine.decisions import Decision, Rule
 from services.strategy_engine.features import FeatureConfig, FeatureSet, feature_series

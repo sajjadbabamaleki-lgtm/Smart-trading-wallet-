@@ -20,7 +20,7 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 from libs.config import load_settings
-from libs.exchange.hyperliquid.candles import CandleRequest
+from libs.domain.candles import CandleRequest
 from libs.observability import configure_logging
 from libs.storage import clickhouse as ch
 from services.research.candle_store import read_candles
@@ -93,6 +93,12 @@ def main() -> int:
     parser.add_argument("--asset", default="SOL")
     parser.add_argument("--interval", default="4h")
     parser.add_argument("--days", type=int, default=730)
+    parser.add_argument(
+        "--venue",
+        default="hyperliquid",
+        choices=["hyperliquid", "binance"],
+        help="which venue's stored history to read; binance reaches back years",
+    )
     args = parser.parse_args()
 
     configure_logging()
@@ -106,7 +112,7 @@ def main() -> int:
     )
 
     with ch.connect_from_settings(settings) as client:
-        candles = read_candles(client, request)
+        candles = read_candles(client, request, venue=args.venue)
 
     config = FeatureConfig()
     if len(candles) < config.warmup:

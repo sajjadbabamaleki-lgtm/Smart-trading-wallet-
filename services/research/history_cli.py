@@ -21,10 +21,25 @@ from decimal import Decimal
 from typing import Final
 
 from libs.config import load_settings
-from libs.exchange.hyperliquid.candles import Candle, CandleRequest, fetch_candles
+from libs.domain.candles import Candle, CandleRequest
+from libs.exchange.binance import candles as binance
+from libs.exchange.hyperliquid import candles as hyperliquid
 from libs.observability import configure_logging
 from libs.storage import clickhouse as ch
 from services.research.candle_store import missing_intervals, read_candles, write_candles
+
+SOURCES: Final = {
+    "hyperliquid": (hyperliquid.fetch_candles, hyperliquid.VENUE),
+    "binance": (binance.fetch_candles, binance.VENUE),
+}
+"""Where history can come from, and the venue name each one's rows carry.
+
+Two sources because one is not enough history. Hyperliquid is the venue this
+project trades and retains about 5,000 candles per interval; Binance is not
+and reaches back years. Rows are stored under the venue that supplied them, so
+the two are never mixed in a single backtest, and a result always says which
+it read.
+"""
 
 ROUND_TRIP_COST_BPS: Final = Decimal("9.62")
 """What one round trip costs, measured: 4.5 bps taker each way plus spread.
@@ -139,6 +154,13 @@ def main() -> int:
         action="store_true",
         help="describe what is already stored without downloading anything",
     )
+    parser.add_argument(
+        "--source",
+        default="hyperliquid",
+        choices=sorted(SOURCES),
+        help="hyperliquid keeps about 5,000 candles per interval; binance reaches "
+        "back years, at the cost of being a different venue's prices",
+    )
     args = parser.parse_args()
 
     configure_logging()
@@ -151,13 +173,14 @@ def main() -> int:
         end=end,
     )
 
+    fetch, venue = SOURCES[args.source]
     with ch.connect_from_settings(settings) as client:
         if not args.read_only:
-            downloaded = asyncio.run(fetch_candles(request, now=end))
-            written = write_candles(client, downloaded)
-            print(f"downloaded {len(downloaded):,} closed candles, wrote {written:,}")
+            downloaded = asyncio.run(fetch(request, now=end))
+            written = write_candles(client, downloaded, venue=venue)
+            print(f"downloaded {len(downloaded):,} closed candles from {venue}, wrote {written:,}")
             print()
-        stored = read_candles(client, request)
+        stored = read_candles(client, request, venue=venue)
 
     _describe(stored, request=request)
     return 0

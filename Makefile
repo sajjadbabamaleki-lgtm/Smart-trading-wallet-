@@ -9,7 +9,7 @@ SUDO := $(shell [ "$$(id -u)" = 0 ] || echo sudo)
 .PHONY: help setup format lint typecheck test test-unit test-integration audit check \
         stack-up stack-down stack-logs stack-verify migrate accept console inspect \
         record-install record-status record-stop clean \
-        ladder history history-all history-status chart evaluate evaluate-all evaluate-report evaluate-push evaluate-summary
+        ladder history history-all history-long history-status chart evaluate evaluate-all evaluate-report evaluate-push evaluate-summary
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -112,14 +112,16 @@ strategy: ## Run the baseline strategies over recorded data (HOURS, HOLD, THRESH
 		--hours $(or $(HOURS),24) --hold $(or $(HOLD),30) \
 		--threshold $(or $(THRESHOLD),0.30)
 
-history: ## Download price history a trader reasons over (ASSET, INTERVAL, DAYS)
+history: ## Download price history (ASSET, INTERVAL, DAYS, SOURCE=binance for years of it)
 	$(UV) run python -m services.research.history_cli \
-		--asset $(or $(ASSET),SOL) --interval $(or $(INTERVAL),1h) --days $(or $(DAYS),730)
+		--asset $(or $(ASSET),SOL) --interval $(or $(INTERVAL),1h) \
+		--days $(or $(DAYS),730) --source $(or $(SOURCE),hyperliquid)
 
-evaluate: ## Run a rule against its controls (ASSET, INTERVAL, RULE, SHUFFLES, HALVES=1, HOLDOUT=1)
+evaluate: ## Run a rule against its controls (ASSET, INTERVAL, RULE, SHUFFLES, VENUE, DAYS, HALVES=1, HOLDOUT=1)
 	$(UV) run python -m services.strategy_engine.evaluate_candles_cli \
 		--asset $(or $(ASSET),SOL) --interval $(or $(INTERVAL),4h) \
 		--rule $(or $(RULE),trend-following) --shuffles $(or $(SHUFFLES),20) \
+		--venue $(or $(VENUE),hyperliquid) --days $(or $(DAYS),730) \
 		$(if $(HALVES),--halves,) $(if $(HOLDOUT),--holdout,)
 
 evaluate-summary: ## Compress the newest evaluation to one line per run, small enough to send
@@ -141,6 +143,7 @@ evaluate-all: ## Run one unchanged rule across assets (ASSETS, INTERVAL, RULE, S
 		$(UV) run python -m services.strategy_engine.evaluate_candles_cli \
 			--asset $$asset --interval $(or $(INTERVAL),4h) \
 			--rule $(or $(RULE),trend-following) --shuffles $(or $(SHUFFLES),20) \
+			--venue $(or $(VENUE),hyperliquid) --days $(or $(DAYS),730) \
 			$(if $(HALVES),--halves,) || exit 1; \
 		echo; \
 	done
@@ -149,15 +152,20 @@ chart: ## Print how the Feature Engine reads the chart now (ASSET, INTERVAL)
 	$(UV) run python -m services.strategy_engine.chart_cli \
 		--asset $(or $(ASSET),SOL) --interval $(or $(INTERVAL),4h)
 
-history-all: ## Download history for the Phase 1 universe at 1h, 4h and 1d (ASSETS)
+history-all: ## Download history for the Phase 1 universe (ASSETS, DAYS, SOURCE, INTERVALS)
 	@for asset in $(or $(ASSETS),BTC ETH SOL BNB); do \
-		for interval in 1h 4h 1d; do \
+		for interval in $(or $(INTERVALS),1h 4h 1d); do \
 			echo "--- $$asset $$interval ---"; \
 			$(UV) run python -m services.research.history_cli \
-				--asset $$asset --interval $$interval --days $(or $(DAYS),730) || exit 1; \
+				--asset $$asset --interval $$interval --days $(or $(DAYS),730) \
+				--source $(or $(SOURCE),hyperliquid) || exit 1; \
 			echo; \
 		done; \
 	done
+
+history-long: ## Download years of 4h history from Binance, for the regime question
+	@$(MAKE) --no-print-directory history-all \
+		SOURCE=binance INTERVALS=4h DAYS=$(or $(DAYS),2200)
 
 history-status: ## What history is already stored, without downloading (ASSET, INTERVAL)
 	$(UV) run python -m services.research.history_cli \

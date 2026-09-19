@@ -20,7 +20,8 @@ from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
-from libs.exchange.hyperliquid.candles import VENUE, Candle, CandleRequest
+from libs.domain.candles import Candle, CandleRequest
+from libs.exchange.hyperliquid.candles import VENUE as DEFAULT_VENUE
 
 if TYPE_CHECKING:  # pragma: no cover - import only for type checking
     from clickhouse_connect.driver.client import Client
@@ -41,7 +42,7 @@ COLUMNS: Sequence[str] = (
 )
 
 
-def write_candles(client: Client, candles: Sequence[Candle]) -> int:
+def write_candles(client: Client, candles: Sequence[Candle], *, venue: str = DEFAULT_VENUE) -> int:
     """Store candles, replacing any already held for the same interval.
 
     Returns the number written. Re-running a backfill is expected and safe:
@@ -51,7 +52,7 @@ def write_candles(client: Client, candles: Sequence[Candle]) -> int:
         return 0
     rows = [
         [
-            VENUE,
+            venue,
             candle.asset,
             candle.interval,
             candle.interval_seconds,
@@ -88,7 +89,9 @@ def as_utc(value: datetime) -> datetime:
     return value.astimezone(UTC)
 
 
-def read_candles(client: Client, request: CandleRequest) -> tuple[Candle, ...]:
+def read_candles(
+    client: Client, request: CandleRequest, *, venue: str = DEFAULT_VENUE
+) -> tuple[Candle, ...]:
     """Every stored candle the request covers, oldest first.
 
     Ordered here rather than by the caller because a strategy replayed over
@@ -105,7 +108,7 @@ def read_candles(client: Client, request: CandleRequest) -> tuple[Candle, ...]:
     result = client.query(
         query,
         parameters={
-            "venue": VENUE,
+            "venue": venue,
             "asset": request.asset,
             "interval": request.interval,
             "range_start": request.start,

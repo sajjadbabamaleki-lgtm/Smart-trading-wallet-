@@ -14,7 +14,7 @@ from decimal import Decimal
 
 import pytest
 
-from libs.exchange.hyperliquid.candles import Candle
+from libs.domain.candles import Candle
 from services.research.costs import CostModel
 from services.strategy_engine.candle_backtest import (
     CandleBacktest,

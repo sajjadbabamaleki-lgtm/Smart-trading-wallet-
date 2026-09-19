@@ -38,7 +38,7 @@ from decimal import Decimal
 from typing import Final
 
 from libs.config import load_settings
-from libs.exchange.hyperliquid.candles import Candle, CandleRequest
+from libs.domain.candles import Candle, CandleRequest
 from libs.observability import configure_logging
 from libs.storage import clickhouse as ch
 from services.research.candle_store import read_candles
@@ -259,6 +259,12 @@ def main() -> int:
     parser.add_argument("--rule", default="trend-following", choices=sorted(RULES))
     parser.add_argument("--days", type=int, default=730)
     parser.add_argument(
+        "--venue",
+        default="hyperliquid",
+        choices=["hyperliquid", "binance"],
+        help="which venue's stored history to read; binance reaches back years",
+    )
+    parser.add_argument(
         "--holdout-days",
         type=int,
         default=180,
@@ -289,7 +295,7 @@ def main() -> int:
     )
 
     with ch.connect_from_settings(settings) as client:
-        candles = read_candles(client, request)
+        candles = read_candles(client, request, venue=args.venue)
 
     config = FeatureConfig()
     train, test = _split(candles, holdout_days=args.holdout_days)
@@ -300,7 +306,7 @@ def main() -> int:
         )
         return 1
 
-    print(f"{request.asset} {request.interval}, rule: {args.rule}")
+    print(f"{request.asset} {request.interval}, rule: {args.rule}, venue: {args.venue}")
     _evaluate(args.rule, train, config=config, shuffle_count=args.shuffles, label="TRAINING PERIOD")
 
     if args.halves:

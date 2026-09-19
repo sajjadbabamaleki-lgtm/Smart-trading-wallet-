@@ -41,7 +41,7 @@ from decimal import Decimal
 from enum import StrEnum
 from typing import Final
 
-from libs.exchange.hyperliquid.candles import Candle
+from libs.domain.candles import Candle
 
 BPS: Final = Decimal(10000)
 

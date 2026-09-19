@@ -17,15 +17,8 @@ from typing import Any
 import httpx
 import pytest
 
-from libs.exchange.hyperliquid.candles import (
-    PAGE_LIMIT,
-    Candle,
-    CandleError,
-    CandleRequest,
-    closed_only,
-    fetch_candles,
-    parse_candle,
-)
+from libs.domain.candles import Candle, CandleError, CandleRequest, closed_only
+from libs.exchange.hyperliquid.candles import PAGE_LIMIT, fetch_candles, parse_candle
 from services.research.candle_store import as_utc, missing_intervals
 
 START = datetime(2026, 9, 1, tzinfo=UTC)

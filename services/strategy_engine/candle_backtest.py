@@ -264,7 +264,18 @@ class CandleBacktest:
     def run(
         self, candles: Sequence[Candle], config: FeatureConfig | None = None
     ) -> CandleBacktestResult:
-        pairs = list(execution_pairs(candles, config))
+        """Convenience: build the decision/fill pairs, then replay them."""
+        return self.run_pairs(list(execution_pairs(candles, config)))
+
+    def run_pairs(self, pairs: Sequence[tuple[FeatureSet, Candle]]) -> CandleBacktestResult:
+        """Replay pairs that were built once and shared across rules.
+
+        Features depend on the candles, never on the rule, so computing them
+        per rule was doing the same work twenty-three times for every
+        evaluation — one candidate, two controls, twenty shuffles. The pairs
+        still come from `execution_pairs` and nowhere else, so sharing them
+        changes the cost and not the lookahead guarantee.
+        """
         if not pairs:
             raise ValueError(
                 "not enough candles to produce a single decision with somewhere to "
@@ -277,9 +288,10 @@ class CandleBacktest:
         realised = Decimal(0)
         in_position = 0
         position_hours = Decimal(0)
-        asset = candles[0].asset
-        interval = candles[0].interval
-        hours_per_candle = Decimal(candles[0].interval_seconds) / Decimal(3600)
+        first_fill = pairs[0][1]
+        asset = first_fill.asset
+        interval = first_fill.interval
+        hours_per_candle = Decimal(first_fill.interval_seconds) / Decimal(3600)
 
         for reading, fill in pairs:
             target = self.rule.decide(reading)

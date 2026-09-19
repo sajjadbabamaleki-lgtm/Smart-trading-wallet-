@@ -58,7 +58,7 @@ from services.strategy_engine.decisions import (
     TrendFollowing,
     TrendFollowingCalm,
 )
-from services.strategy_engine.features import FeatureConfig
+from services.strategy_engine.features import FeatureConfig, FeatureSet
 
 MEASURED_HALF_SPREAD_BPS: Final = Decimal("0.4924")
 """Median half-spread measured on the recorded BTC book, 2026-09-19.
@@ -99,14 +99,17 @@ def _split(
     return train, test
 
 
-def _run(rule: Rule, candles: Sequence[Candle], config: FeatureConfig) -> CandleBacktestResult:
+Pairs = Sequence[tuple[FeatureSet, Candle]]
+
+
+def _run(rule: Rule, pairs: Pairs) -> CandleBacktestResult:
     costs = CostModel(half_spread_bps=MEASURED_HALF_SPREAD_BPS)
-    return CandleBacktest(rule=rule, costs=costs).run(candles, config)
+    return CandleBacktest(rule=rule, costs=costs).run_pairs(pairs)
 
 
-def _decisions_of(rule: Rule, candles: Sequence[Candle], config: FeatureConfig) -> list[Decision]:
+def _decisions_of(rule: Rule, pairs: Pairs) -> list[Decision]:
     """What the candidate decided, in order, for the shuffled control to reuse."""
-    return [rule.decide(reading) for reading, _ in execution_pairs(candles, config)]
+    return [rule.decide(reading) for reading, _ in pairs]
 
 
 def _row(result: CandleBacktestResult) -> str:
@@ -182,6 +185,10 @@ def _evaluate(
     shuffle_count: int,
     label: str,
 ) -> None:
+    # Built once and shared by every rule below. Features are a property of
+    # the candles and never of the rule, so computing them per rule did the
+    # same work twenty-three times per evaluation.
+    pairs = list(execution_pairs(candles, config))
     print()
     print(
         f"{label}: {candles[0].open_time:%Y-%m-%d} to {candles[-1].close_time:%Y-%m-%d} "
@@ -192,9 +199,9 @@ def _evaluate(
         f"  {'rule':<26} {'trades':>6}  {'win%':>6}  {'return':>8}  {'drawdown':>8}  {'in mkt':>6}"
     )
 
-    candidate = _run(RULES[name](), candles, config)
-    hold = _run(BuyAndHold(), candles, config)
-    flat = _run(AlwaysFlat(), candles, config)
+    candidate = _run(RULES[name](), pairs)
+    hold = _run(BuyAndHold(), pairs)
+    flat = _run(AlwaysFlat(), pairs)
     print(_row(candidate))
     print(_row(hold))
     print(_row(flat))
@@ -203,10 +210,9 @@ def _evaluate(
         print("  ** the flat control traded: the harness is wrong, ignore every number **")
         return
 
-    decisions = _decisions_of(RULES[name](), candles, config)
+    decisions = _decisions_of(RULES[name](), pairs)
     shuffles = [
-        _run(Shuffled(decisions=decisions, seed=seed), candles, config)
-        for seed in range(shuffle_count)
+        _run(Shuffled(decisions=decisions, seed=seed), pairs) for seed in range(shuffle_count)
     ]
     returns = sorted(float(run.return_pct) for run in shuffles)
     print(

@@ -23,6 +23,7 @@ from __future__ import annotations
 import json
 from datetime import timedelta
 from decimal import Decimal
+from typing import Final
 
 from libs.config import load_settings
 from libs.domain.clock import SystemClock
@@ -31,7 +32,7 @@ from libs.storage import clickhouse as ch
 from services.research.costs import BASE_MAKER_FEE_BPS as MAKER_FEE_BPS
 from services.research.costs import MEASURED_DATA_ARRIVAL_FLOOR_MS, CostModel, hurdle
 from services.research.dataset import DatasetSpec
-from services.research.measure import calibrate
+from services.research.measure import MeasurementError, calibrate, measure_mid_move_bps
 from services.research.store import fetch_rows
 
 REFERENCE_PRICE = Decimal(60000)
@@ -41,6 +42,70 @@ A round-trip cost in basis points is the real quantity and is
 price-independent; this turns it into something a person can picture.
 Nothing is computed from it.
 """
+
+
+# Horizons worth asking about, given that a taker round trip costs about 10 bps
+# and a maker round trip about 3.4. Deliberately spanning three orders of
+# magnitude: the question is where the available move crosses the cost, and
+# guessing the answer's neighbourhood is how you measure only inside it.
+LADDER_SECONDS: Final = (1, 5, 10, 30, 60, 300, 900, 1800, 3600)
+
+
+def _ladder(rows: list[dict[str, object]]) -> int:
+    """How far price actually moves at each horizon, measured rather than scaled.
+
+    This exists because extrapolating from one horizon is not defensible here.
+    Scaling the 322 ms measurement forward by the square root of time gives an
+    answer that differs by a factor of fifty depending on whether the median or
+    the p90 is scaled from — 0.098 bps of implied sigma against 0.711 — which
+    means the distribution is nowhere near Gaussian and the square-root rule
+    has nothing to stand on.
+
+    So each horizon is measured on its own. No rule, no fitting, and every row
+    is one the recorder actually captured.
+
+    What the result is, and is not: the move is unsigned, so the median at a
+    horizon is the *ceiling* on what a strategy with perfect direction could
+    capture there. A horizon whose ceiling is below the cost is closed to any
+    signal. A horizon whose ceiling is above it is merely not closed — clearing
+    the cost is necessary, never sufficient, and the direction still has to be
+    predicted.
+    """
+    taker = hurdle(CostModel(half_spread_bps=Decimal("0.4924"))).round_trip_bps
+    maker = CostModel(
+        half_spread_bps=Decimal("0.4924"), maker_adverse_selection_bps=Decimal("0.2033")
+    ).maker_round_trip_bps
+
+    print(f"mid move by horizon, measured over {len(rows):,} rows (bps, unsigned)")
+    print(f"cost to beat: {maker:.2f} bps resting, {taker:.2f} bps crossing")
+    print()
+    print(f"  {'horizon':>9}  {'count':>8}  {'p50':>8}  {'p90':>8}  {'p95':>9}  {'p99':>9}  clears")
+    for seconds in LADDER_SECONDS:
+        try:
+            moved = measure_mid_move_bps(rows, delay=timedelta(seconds=seconds))
+        except MeasurementError as exc:
+            print(f"  {seconds:>8}s  not measurable: {exc}")
+            continue
+        # Which cost the median move clears, if either. The median rather than
+        # the mean: a strategy trades at a typical moment, not an average one.
+        clears = "resting" if moved.p50 > maker else "-"
+        if moved.p50 > taker:
+            clears = "both"
+        print(
+            f"  {seconds:>8}s  {moved.count:>8,}  {moved.p50:>8.2f}  "
+            f"{moved.p90:>8.2f}  {moved.p95:>9.2f}  {moved.p99:>9.2f}  {clears}"
+        )
+    print()
+    print(
+        "Read the p50 column, not a mean: a strategy trades at a typical moment,\n"
+        "and a mean here is carried by the tail.\n"
+        "\n"
+        "The move is unsigned, so each figure is a ceiling — what a strategy that\n"
+        "called direction perfectly could have captured. Below the cost the\n"
+        "horizon is closed to every signal. Above it the horizon is only open,\n"
+        "and the direction still has to be predicted."
+    )
+    return 0
 
 
 def main() -> int:
@@ -56,6 +121,11 @@ def main() -> int:
         help="Decision delay to measure price movement over.",
     )
     parser.add_argument("--json", action="store_true")
+    parser.add_argument(
+        "--ladder",
+        action="store_true",
+        help="measure the mid-move distribution at a range of horizons, and stop",
+    )
     args = parser.parse_args()
 
     configure_logging()
@@ -74,6 +144,9 @@ def main() -> int:
 
     with ch.connect_from_settings(settings) as client:
         rows = fetch_rows(client, spec)
+
+    if args.ladder:
+        return _ladder(list(rows))
 
     result = calibrate(list(rows), delay=timedelta(milliseconds=args.delay_ms))
     measured = CostModel(half_spread_bps=result.half_spread_bps.p50)

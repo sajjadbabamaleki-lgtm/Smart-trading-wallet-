@@ -1,0 +1,19 @@
+Paper trading, as of 2026-09-19 22:00 UTC
+
+  asset rule                 decisions  closed   win%   realised holding                last decision
+  BNB   funding-extreme              1       0      -       0.00 flat                   2.0h ago
+  BTC   funding-extreme              1       0      -       0.00 flat                   2.0h ago
+  ETH   funding-extreme              1       0      -       0.00 flat                   2.0h ago
+  SOL   funding-extreme              1       0      -       0.00 flat                   2.0h ago
+
+  last decisions:
+    2026-09-19 20:00  BNB   funding-extreme      FLAT  @ 763.08000000
+    2026-09-19 20:00  BTC   funding-extreme      FLAT  @ 81354.01000000
+    2026-09-19 20:00  ETH   funding-extreme      FLAT  @ 2634.88000000
+    2026-09-19 20:00  SOL   funding-extreme      FLAT  @ 111.18000000
+
+  the loop is current on every book.
+
+  These rules have already failed a backtest. This is a forward record
+  of what they do next, which is the one test that cannot be fitted —
+  not a claim that any of them works.

@@ -53,6 +53,8 @@ from services.strategy_engine.decisions import (
     BuyAndHold,
     Confirmed,
     Decision,
+    LongWhenActive,
+    MeanReversion,
     Rule,
     Shuffled,
     TrendFollowing,
@@ -75,11 +77,17 @@ def _confirmed(candles: int = 2) -> Callable[[], Rule]:
     return lambda: Confirmed(inner=TrendFollowing(), confirm=candles)
 
 
+def _confirmed_reversion(candles: int = 2) -> Callable[[], Rule]:
+    return lambda: Confirmed(inner=MeanReversion(), confirm=candles)
+
+
 RULES: Final[dict[str, Callable[[], Rule]]] = {
     "trend-following": TrendFollowing,
     "trend-following-calm": TrendFollowingCalm,
     "trend-confirmed": _confirmed(2),
     "trend-confirmed-3": _confirmed(3),
+    "mean-reversion": MeanReversion,
+    "reversion-confirmed": _confirmed_reversion(2),
 }
 
 
@@ -179,6 +187,7 @@ def _verdict(
     candidate: CandleBacktestResult,
     *,
     hold: CandleBacktestResult,
+    timing_only: CandleBacktestResult,
     shuffles: list[CandleBacktestResult],
 ) -> list[str]:
     """State what the numbers support, and nothing beyond it."""
@@ -187,10 +196,23 @@ def _verdict(
     lines.append(
         f"  vs shuffled : {beaten} of {len(shuffles)} random orderings did as well or better"
     )
-    if beaten == 0:
+    if beaten == 0 and candidate.return_pct > timing_only.return_pct:
         lines.append("                its timing carried information on this period")
+    elif beaten == 0:
+        # Beating every shuffle while not beating the same trades held long
+        # means the shuffles lost to the market's drift rather than to this
+        # rule's timing. Saying "carried information" here was the error this
+        # control exists to stop.
+        lines.append("                but only by keeping the drift; see vs timing below")
     elif beaten > len(shuffles) // 20:
         lines.append("                its timing carried nothing this data can distinguish")
+
+    direction = candidate.return_pct - timing_only.return_pct
+    lines.append(
+        f"  vs timing   : {direction:+.1f} points from the direction calls (same trades, long only)"
+    )
+    if direction <= 0:
+        lines.append("                the short calls added nothing")
 
     difference = candidate.return_pct - hold.return_pct
     lines.append(f"  vs buy-hold : {difference:+.1f} points of return")
@@ -253,6 +275,13 @@ def _evaluate(
         return
 
     decisions = _decisions_of(RULES[name](), pairs)
+    # Same exposure, no opinion about direction. Over a strongly trending
+    # period `Shuffled` alone is misleading — it separates a long-biased rule
+    # from the drift and so loses more, which reads as though the timing were
+    # good even when the rule lost money. This control keeps the drift and
+    # removes only the direction calls.
+    timing_only = _run(LongWhenActive(decisions=decisions), pairs)
+    print(_row(timing_only))
     shuffles = [
         _run(Shuffled(decisions=decisions, seed=seed), pairs) for seed in range(shuffle_count)
     ]
@@ -267,7 +296,7 @@ def _evaluate(
     print(_economics(candidate))
     print(_economics(hold))
     print()
-    for line in _verdict(candidate, hold=hold, shuffles=shuffles):
+    for line in _verdict(candidate, hold=hold, timing_only=timing_only, shuffles=shuffles):
         print(line)
 
 

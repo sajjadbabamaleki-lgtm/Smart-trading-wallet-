@@ -264,3 +264,79 @@ class Confirmed:
             self._pending = None
             self._count = 0
         return self._held
+
+
+@dataclass(slots=True)
+class LongWhenActive:
+    """The candidate's own market timing, with its direction calls removed.
+
+    **Why this control had to exist.** Over six years of crypto, `Shuffled`
+    said 0 of 200 random orderings matched a rule that lost 10%. Both
+    statements were true: shuffling separates a long-biased rule's direction
+    from a market that rose 55%, so the shuffles lost even more. The control
+    was measuring drift capture, not timing, and nothing in the report said so.
+
+    This one holds the exposure fixed and drops the direction. It is LONG
+    whenever the candidate wanted a position of either sign, and FLAT whenever
+    the candidate wanted none — same trades, same fee bill, same time in the
+    market, no opinion about which way. A candidate that cannot beat it has
+    short calls worth nothing, and its return came from being in a rising
+    market at roughly the right times.
+
+    Stateful and replay-ordered, like `Shuffled`, and for the same reason: it
+    is replaying a fixed sequence the candidate already produced.
+    """
+
+    decisions: Sequence[Decision]
+    name: str = "control-long-when-active"
+    _index: int = 0
+
+    def decide(self, features: FeatureSet) -> Decision:  # noqa: ARG002 - by design
+        if self._index >= len(self.decisions):
+            return Decision.FLAT
+        wanted = self.decisions[self._index]
+        self._index += 1
+        return Decision.FLAT if wanted is Decision.FLAT else Decision.LONG
+
+
+REVERSION_ENTRY_BPS: Final = Decimal(200)
+"""How far from its own average price must be before reversion is expected.
+
+Two percent, conventional and not searched for on this data. A smaller
+threshold trades constantly on noise; a larger one waits for moves that rarely
+come. The rule below is the next hypothesis family rather than a tuned version
+of the last one, so its parameters are declared once and left alone.
+"""
+
+
+@dataclass(slots=True)
+class MeanReversion:
+    """Buy what has fallen far below its average, sell what has risen far above.
+
+    The opposite hypothesis to trend-following, and it is worth testing for a
+    reason the data supplied rather than for symmetry: on daily candles the
+    trend rule's gross profit per trade was deeply negative, -26 to -312 bps
+    — which is not a weak signal but an inverted one. A signal that is
+    reliably wrong is a signal.
+
+    It only acts in a range. In a trend, "far from the average" is where price
+    is supposed to be, and betting against it is how a reversion rule loses
+    everything in one move. So RANGE is required, which also means this rule
+    and the trend rule are never both in the market, and the two together
+    cover the regimes neither covers alone.
+
+    The null hypothesis stays what it was: this loses money net of cost, and
+    less than buy-and-hold earns.
+    """
+
+    name: str = "mean-reversion"
+    entry_bps: Decimal = REVERSION_ENTRY_BPS
+
+    def decide(self, features: FeatureSet) -> Decision:
+        if features.trend_regime is not TrendRegime.RANGE:
+            return Decision.FLAT
+        if features.distance_from_trend_bps <= -self.entry_bps:
+            return Decision.LONG
+        if features.distance_from_trend_bps >= self.entry_bps:
+            return Decision.SHORT
+        return Decision.FLAT

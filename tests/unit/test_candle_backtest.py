@@ -25,6 +25,8 @@ from services.strategy_engine.decisions import (
     BuyAndHold,
     Confirmed,
     Decision,
+    LongWhenActive,
+    MeanReversion,
     Shuffled,
     TrendFollowing,
 )
@@ -380,3 +382,76 @@ class TestPerTradeEconomics:
         result = CandleBacktest(rule=AlwaysFlat()).run(rising(30), SMALL)
         assert result.gross_bps_per_trade is None
         assert result.fee_bps_per_trade is None
+
+
+class TestDirectionFreeControl:
+    """Same exposure, no opinion about direction.
+
+    Added because `Shuffled` alone said 0 of 200 orderings matched a rule that
+    lost 10% over six years: shuffling separates a long-biased rule from a
+    market that rose, so the shuffles lost more, and the report read as though
+    the timing were good.
+    """
+
+    def test_it_is_long_wherever_the_candidate_held_anything(self) -> None:
+        decisions = [Decision.LONG, Decision.SHORT, Decision.FLAT, Decision.SHORT]
+        control = LongWhenActive(decisions=decisions)
+        assert [control.decide(_FAKE) for _ in decisions] == [
+            Decision.LONG,
+            Decision.LONG,
+            Decision.FLAT,
+            Decision.LONG,
+        ]
+
+    def test_exposure_matches_the_candidate_it_was_built_from(self) -> None:
+        """The point of the control: trades and time in market held fixed."""
+        candles = rising(40)
+        candidate = _Flipper()
+        theirs = CandleBacktest(rule=candidate, costs=NO_COST).run(candles, SMALL)
+        decisions = [_Flipper().decide(reading) for reading, _ in execution_pairs(candles, SMALL)]
+        control = CandleBacktest(rule=LongWhenActive(decisions=decisions), costs=NO_COST).run(
+            candles, SMALL
+        )
+        assert control.exposure_pct == theirs.exposure_pct
+
+    def test_a_long_only_control_beats_a_flipper_on_a_rising_series(self) -> None:
+        """Which is the finding: the short calls were the losing half."""
+        candles = rising(40)
+        decisions = [_Flipper().decide(reading) for reading, _ in execution_pairs(candles, SMALL)]
+        theirs = CandleBacktest(rule=_Flipper(), costs=NO_COST).run(candles, SMALL)
+        control = CandleBacktest(rule=LongWhenActive(decisions=decisions), costs=NO_COST).run(
+            candles, SMALL
+        )
+        assert control.net_pnl > theirs.net_pnl
+
+
+class TestMeanReversion:
+    def test_it_buys_a_market_far_below_its_average(self) -> None:
+        stretched = _reading(trend_bps=Decimal(0), slope=Decimal(0), distance=Decimal(-400))
+        assert MeanReversion(entry_bps=Decimal(200)).decide(stretched) is Decision.LONG
+
+    def test_it_sells_a_market_far_above_its_average(self) -> None:
+        stretched = _reading(trend_bps=Decimal(0), slope=Decimal(0), distance=Decimal(400))
+        assert MeanReversion(entry_bps=Decimal(200)).decide(stretched) is Decision.SHORT
+
+    def test_it_stands_aside_in_a_trend(self) -> None:
+        """In a trend, far from the average is where price is supposed to be.
+
+        Betting against that is how a reversion rule loses everything in one
+        move, so the range requirement is not a filter but the premise.
+        """
+        trending = _reading(trend_bps=Decimal(100), slope=Decimal(5), distance=Decimal(-400))
+        assert MeanReversion(entry_bps=Decimal(200)).decide(trending) is Decision.FLAT
+
+    def test_it_stands_aside_near_the_average(self) -> None:
+        close = _reading(trend_bps=Decimal(0), slope=Decimal(0), distance=Decimal(50))
+        assert MeanReversion(entry_bps=Decimal(200)).decide(close) is Decision.FLAT
+
+    def test_it_never_holds_where_the_trend_rule_does(self) -> None:
+        """The two families are complementary by construction, not by luck."""
+        trend, reversion = TrendFollowing(), MeanReversion()
+        for distance in (Decimal(-500), Decimal(-100), Decimal(0), Decimal(100), Decimal(500)):
+            for trend_bps, slope in ((Decimal(100), Decimal(5)), (Decimal(0), Decimal(0))):
+                reading = _reading(trend_bps=trend_bps, slope=slope, distance=distance)
+                if trend.decide(reading) is not Decision.FLAT:
+                    assert reversion.decide(reading) is Decision.FLAT

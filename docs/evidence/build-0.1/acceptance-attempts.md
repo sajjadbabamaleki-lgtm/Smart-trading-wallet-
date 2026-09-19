@@ -749,3 +749,80 @@ Phase 4's discipline needs this list to exist, because the holdout is spent
 once and "how many things had already been tried" cannot be answered from
 memory: `trend-following`, `trend-following-calm`, `trend-confirmed`
 (confirm=2), `trend-confirmed-3`, each on 4h and 1d, on BTC and SOL.
+
+---
+
+## Trend-following: NO_EDGE_FOUND over six years, 2026-09-19
+
+The 18-month Hyperliquid window said confirmation converted a marginal signal
+into a small profit on BTC, consistently across both its halves. Six years of
+4h candles from Binance, same unchanged rule, four assets, say it did not.
+
+| 4h, confirmed | full 6y | first half | second half | gross/trade |
+|---------------|---------|-----------|-------------|-------------|
+| BTC | **−10.0%** | −7.6% | −2.4% | **−17.19** |
+| ETH | **−8.1%** | −3.2% | −4.9% | **−12.33** |
+| SOL | **−5.1%** | −5.7% | +0.6% | **−5.04** |
+| BNB | **−1.8%** | −1.9% | +0.1% | +5.13 |
+
+Win rates: 49.7%, 51.5%, 54.6%, 53.8%. A coin flip.
+
+**Gross per trade is the column that settles it.** That is profit before fees,
+and it is negative on three assets of four. The rule does not lose to costs;
+it loses to being wrong. Two of twelve period-rows are positive and both are
+under a percent.
+
+And against buy-and-hold: −65, −58, −282, −234 points.
+
+So the +34.76 bps per trade on BTC in the 18-month window was a property of
+that window, not of the rule. Downloading six years was the right call and it
+did the job it was for — it made the test harder and the rule failed it.
+
+**Result: `NO_EDGE_FOUND` for the trend-following family** (Rev.2 §§30–32),
+across `trend-following`, `trend-following-calm`, `trend-confirmed` and
+`trend-confirmed-3`, on 1h, 4h and 1d, on four assets, on two venues' history.
+
+**The 180-day holdout was never spent.** It remains unexamined, and for this
+family it no longer needs to be.
+
+### A method error this run exposed
+
+BTC's full-period row reads `0/200` — no shuffled ordering of the rule's own
+decisions did as well — next to a 10% loss. Both are true, and the
+juxtaposition is the lesson: over a period where the market rose about 55%,
+shuffling separates a long-biased rule's direction from the drift, so the
+shuffles lose more than the rule does. `Shuffled` was measuring drift capture,
+not timing, and the report said nothing about that.
+
+Earlier conclusions leaned on that column. In the 18-month window the rule
+also beat buy-and-hold, so nothing was concluded that the evidence did not
+support — but the number I weighted was the weaker one, and `vsBH` at −65 was
+the one that mattered.
+
+`LongWhenActive` is the fix: the candidate's own positions with the direction
+calls removed — LONG wherever it wanted a position of either sign, FLAT
+wherever it wanted none. Same trades, same fees, same time in market, no
+opinion about which way. A candidate that cannot beat it has short calls worth
+nothing. The verdict no longer claims a shuffle win as evidence of timing
+unless the candidate also beats this control.
+
+### Next family: mean reversion
+
+Chosen because the data proposed it rather than for symmetry. On daily candles
+the trend rule's gross per trade ran −26 to −312 bps, which is not a weak
+signal but an inverted one, and a signal that is reliably wrong is a signal.
+
+`MeanReversion` acts only in a range, because in a trend "far from the
+average" is where price belongs and betting against it is how this family
+loses everything in one move. That requirement also makes the two families
+complementary by construction — tested, not hoped: wherever the trend rule
+holds a position, the reversion rule is flat.
+
+The null hypothesis is unchanged: it loses money net of cost, and less than
+buy-and-hold earns.
+
+### Rules evaluated, cumulative
+
+`trend-following`, `trend-following-calm`, `trend-confirmed`,
+`trend-confirmed-3` — on 1h/4h/1d, BTC/ETH/SOL/BNB, Hyperliquid 2y and
+Binance 6y. Now adding `mean-reversion` and `reversion-confirmed`.

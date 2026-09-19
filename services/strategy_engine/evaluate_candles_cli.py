@@ -32,7 +32,7 @@ default.
 from __future__ import annotations
 
 import statistics
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Final
@@ -51,6 +51,7 @@ from services.strategy_engine.candle_backtest import (
 from services.strategy_engine.decisions import (
     AlwaysFlat,
     BuyAndHold,
+    Confirmed,
     Decision,
     Rule,
     Shuffled,
@@ -68,9 +69,17 @@ declared rather than hidden — and it is small enough at this horizon that it
 changes nothing about the conclusion either way.
 """
 
-RULES: Final = {
+
+def _confirmed(candles: int = 2) -> Callable[[], Rule]:
+    """A trend rule that waits for a regime change to hold before acting."""
+    return lambda: Confirmed(inner=TrendFollowing(), confirm=candles)
+
+
+RULES: Final[dict[str, Callable[[], Rule]]] = {
     "trend-following": TrendFollowing,
     "trend-following-calm": TrendFollowingCalm,
+    "trend-confirmed": _confirmed(2),
+    "trend-confirmed-3": _confirmed(3),
 }
 
 
@@ -106,6 +115,22 @@ def _row(result: CandleBacktestResult) -> str:
         f"  {result.rule:<26} {len(result.trades):>6}  {win}  "
         f"{result.return_pct:>7.1f}%  {result.max_drawdown_pct:>7.1f}%  "
         f"{result.exposure_pct:>5.0f}%"
+    )
+
+
+def _economics(result: CandleBacktestResult) -> str:
+    """Gross and cost per trade, which is where a fix is chosen.
+
+    A rule can fail two ways that look identical in the return column: the
+    signal is worthless, or the signal is fine and trades too often. These two
+    numbers tell them apart, and they point at different work.
+    """
+    gross, fee = result.gross_bps_per_trade, result.fee_bps_per_trade
+    if gross is None or fee is None:
+        return f"  {result.rule:<26} no trades"
+    return (
+        f"  {result.rule:<26} gross {gross:>+7.2f} bps/trade  "
+        f"cost {fee:>6.2f}  net {gross - fee:>+7.2f}"
     )
 
 
@@ -189,6 +214,10 @@ def _evaluate(
         f"{'':>6}  {'':>6}  {statistics.median(returns):>7.1f}%  "
         f"[{returns[0]:.1f}% to {returns[-1]:.1f}%]"
     )
+    print()
+    print("  per-trade economics — is the signal worth its transaction?")
+    print(_economics(candidate))
+    print(_economics(hold))
     print()
     for line in _verdict(candidate, hold=hold, shuffles=shuffles):
         print(line)

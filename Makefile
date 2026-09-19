@@ -136,8 +136,8 @@ evaluate-report: ## Run every rule on both assets, write it into the repo and pu
 	@HOLDOUT=$(or $(HOLDOUT),0) PUSH=$(or $(PUSH),1) UV=$(UV) \
 		bash infrastructure/scripts/publish_evaluation.sh
 
-evaluate-all: ## Run the rule on both assets (INTERVAL, RULE, SHUFFLES, HALVES=1)
-	@for asset in BTC SOL; do \
+evaluate-all: ## Run one unchanged rule across assets (ASSETS, INTERVAL, RULE, SHUFFLES, HALVES=1)
+	@for asset in $(or $(ASSETS),BTC ETH SOL BNB); do \
 		$(UV) run python -m services.strategy_engine.evaluate_candles_cli \
 			--asset $$asset --interval $(or $(INTERVAL),4h) \
 			--rule $(or $(RULE),trend-following) --shuffles $(or $(SHUFFLES),20) \
@@ -149,8 +149,8 @@ chart: ## Print how the Feature Engine reads the chart now (ASSET, INTERVAL)
 	$(UV) run python -m services.strategy_engine.chart_cli \
 		--asset $(or $(ASSET),SOL) --interval $(or $(INTERVAL),4h)
 
-history-all: ## Download every history this project reasons over: BTC and SOL at 1h, 4h and 1d
-	@for asset in BTC SOL; do \
+history-all: ## Download history for the Phase 1 universe at 1h, 4h and 1d (ASSETS)
+	@for asset in $(or $(ASSETS),BTC ETH SOL BNB); do \
 		for interval in 1h 4h 1d; do \
 			echo "--- $$asset $$interval ---"; \
 			$(UV) run python -m services.research.history_cli \

@@ -660,3 +660,92 @@ What carries forward unchanged: the cost model, the calibration, the ladder, the
 backtest engine's point-in-time discipline, the control-strategy harness, and
 the finding that latency is irrelevant to this project. What changes is which
 data the strategy reads.
+
+---
+
+## The first candle rule, and why its holdout was not spent, 2026-09-19
+
+Textbook trend-following on stored candles, with the decision taken at a
+close and filled at the next open. Sixteen runs: two assets, 4h and 1d, four
+rule variants. The reserved 180 days were not evaluated.
+
+### What the matrix found
+
+**1d is not weak, it is inverted.** Every variant lost, gross profit per trade
+ran from −26 to −312 bps, and shuffled orderings of the rule's own decisions
+beat it up to 18 times in 20. Closed.
+
+**4h carries a signal, and confirmation converts it.** Requiring a regime
+change to hold for two candles before acting on it:
+
+| 4h | trades | return | gross/trade | drawdown |
+|----|--------|--------|-------------|----------|
+| BTC, no confirmation | 155 | +0.1% | +10.86 | 2.3% |
+| BTC, confirmed | 106 | **+2.6%** | **+34.76** | 1.9% |
+| SOL, no confirmation | 150 | −0.1% | +9.17 | 4.5% |
+| SOL, confirmed | 103 | **+1.4%** | **+23.54** | 4.4% |
+
+Cost is 9.98 bps per trade throughout. Buy-and-hold returned +1.2% on BTC and
+−3.9% on SOL over the same period, with drawdowns of 9.1% and 13.1%.
+
+**The prediction recorded before the change was wrong in its reasoning.** The
+`Confirmed` docstring predicted that the trade count and fee bill would fall
+while gross per trade stayed roughly flat. Gross per trade roughly tripled.
+Exposure was unchanged at 47%, so the removed flips were not merely paying
+fees — they were cutting winning positions short. Average hold went from 10
+candles to 15. The mechanism was right and the stated cause was not the main
+one.
+
+**The calm filter is rejected.** Standing aside in high volatility cut BTC to
+−2.3%: it removed the periods where trends pay.
+
+### Why the holdout was not spent
+
+Two tests were run first, both on data already spent, and one failed.
+
+Twenty shuffles cannot support a significance claim, so it was raised to 200.
+And the training period was split in half, because a rule that earned
+everything in one part of it found an episode rather than a regularity.
+
+| 4h, confirmed | first half | second half | full |
+|---------------|-----------|-------------|------|
+| BTC | +1.3% (3/200) | +1.2% (0/200) | +2.6% (0/200) |
+| SOL | **−1.2% (48/200)** | +2.6% (6/200) | +1.4% (9/200) |
+
+BTC is consistent to an unusual degree: return positive in both halves,
+drawdown 1.9% in all three periods, gross per trade between 31.60 and 35.09.
+
+SOL is not. It lost in the first nine months, and 48 of 200 random orderings
+of its own decisions did better there — no information at all in that half.
+All of its profit came from the second half. Over the same nine months BTC
+made +1.3% at 3/200 on a correlated asset, which is what makes this fragility
+rather than a market that offered nothing.
+
+The pass criterion was written before the numbers were seen: both halves
+positive, and fewer than 10 of 200 shuffles matching over the full period. It
+did not say whether "both halves" meant per asset or across assets. That
+ambiguity is resolved by ADR-011 §5, written the previous day:
+
+> A rule that works on one asset and not the other has demonstrated a property
+> of that asset's recent past, not an edge.
+
+So: **not ready for the holdout.** The 180 days remain unexamined.
+
+### What was done instead
+
+The test set was widened rather than the rule set. Trying further variants
+until one passes is the overfitting this project's gates exist to prevent;
+adding assets tunes nothing, leaves the rule untouched, and only exposes it to
+more opportunities to fail.
+
+Phase 1 §2 names BTC, ETH, SOL and BNB. History for ETH and BNB costs a
+download, and four assets across two halves is eight tests rather than four.
+ADR-011 §5's out-of-sample reasoning extends to them unchanged: this is
+research, not the experimental trading pipeline Rev.2 §3 scopes to BTC.
+
+### Rules evaluated so far, for the record
+
+Phase 4's discipline needs this list to exist, because the holdout is spent
+once and "how many things had already been tried" cannot be answered from
+memory: `trend-following`, `trend-following-calm`, `trend-confirmed`
+(confirm=2), `trend-confirmed-3`, each on 4h and 1d, on BTC and SOL.

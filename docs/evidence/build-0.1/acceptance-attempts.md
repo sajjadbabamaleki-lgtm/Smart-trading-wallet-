@@ -826,3 +826,93 @@ buy-and-hold earns.
 `trend-following`, `trend-following-calm`, `trend-confirmed`,
 `trend-confirmed-3` — on 1h/4h/1d, BTC/ETH/SOL/BNB, Hyperliquid 2y and
 Binance 6y. Now adding `mean-reversion` and `reversion-confirmed`.
+
+---
+
+## Funding extremes: the edge existed and stopped, 2026-09-20
+
+Positioning rather than pattern: `FundingExtreme` shorts when funding sits in
+the top tenth of its own month — the long side paying unusually hard to stay
+long — and buys the opposite extreme. Six years, four assets, 200 shuffles,
+funding charged to every position from measured history.
+
+| 4h | first half | second half | full | gross/trade |
+|----|-----------|-------------|------|-------------|
+| BTC | **+9.8%** (0/200) | −1.6% | +8.2% | +20.75 |
+| BNB | **+12.4%** (0/200) | −3.7% | +8.7% | +18.98 |
+| ETH | **+1.1%** (8/200) | −8.5% | −7.4% | −4.00 |
+| SOL | −8.9% (103/200) | −3.8% | −12.7% | −19.59 |
+
+The criterion was written before the numbers: three of four assets positive in
+both halves. **Zero of four.** The holdout stays unexamined.
+
+### What charging funding changed
+
+The previous run charged none, and this rule sits systematically on the
+receiving side — it shorts when funding is highest, which is when shorts are
+paid most. Charging it helped every period, by 0.3 to 4.6 points, and it
+changed one verdict outright: BTC's first half went from −5.7 against
+buy-and-hold to **+12.3**, the first and so far only `SURVIVED` in this
+project with funding included.
+
+BNB moved the other way against buy-and-hold, from −229 to −234, and the
+reason is in the data: shorts paid in 75% of BNB's settlements, so charging
+funding credited a long-only control there. The asset is the exception to the
+other three and worth remembering.
+
+The code that charges it was written and pushed before this result arrived,
+which is the only thing that makes re-running legitimate rather than a second
+attempt at a number that had already been seen.
+
+### What the first halves say
+
+BTC's first half is what a real edge looks like: +41.00 bps of gross profit
+per trade against 10.00 of cost, 288 trades, no shuffled ordering of its own
+decisions doing as well in two hundred attempts, and 12.3 points better than
+holding. BNB's is the same shape. On three of four assets the first half was
+profitable.
+
+**It is gone.** In the second half all four assets lost.
+
+### Two rule families, one pattern
+
+| | 2020–2023 | 2023–2026 |
+|---|-----------|-----------|
+| trend-following | mixed | mixed, negative overall |
+| funding-extreme | **3 of 4 positive** | **0 of 4 positive** |
+
+Two unrelated mechanisms — one reading price, one reading positioning —
+worked in the earlier period and stopped in the later one. That is the most
+informative result this project has produced, and it is not a result about
+either rule.
+
+### The explanation is not yet established, and there are two
+
+**Efficiency.** Crypto perpetuals in 2020–2022 were retail-dominated and
+heavily levered, funding extremes preceded liquidation cascades, and the
+pattern was exploitable. Institutional participation arbitraged it away. If
+this is right, simple rules of this kind are finished permanently.
+
+**Regime.** The second period was a sustained trend, and a contrarian rule
+loses in a trend regardless of how efficient the market is. If this is right,
+the rule returns when the regime does.
+
+Six years cannot separate these, because the split has one boundary and both
+stories predict the same thing on either side of it. Nine can: BTC, ETH and
+BNB list on Binance from 2017, which adds the 2018 bear market and the
+2019 recovery. A rule that worked in 2017–2020 *and* 2020–2023 and not after
+points at efficiency; one that worked only in 2020–2023 points at regime.
+
+`--periods N` splits the training period into any number of equal parts rather
+than two, because "did it work throughout" and "when did it stop" are
+different questions and two parts can only answer the first. Each part carries
+its warmup backwards into data already known, so no part decides on a candle
+belonging to the next.
+
+### Rules evaluated, cumulative
+
+`trend-following`, `trend-following-calm`, `trend-confirmed`,
+`trend-confirmed-3`, `mean-reversion`, `reversion-confirmed`,
+`funding-extreme`, `funding-with-trend` — on 1h/4h/1d, BTC/ETH/SOL/BNB,
+Hyperliquid 2y and Binance 6y, with and without funding charged. The 180-day
+holdout has never been evaluated.

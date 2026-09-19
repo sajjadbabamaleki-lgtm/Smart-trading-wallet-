@@ -97,6 +97,9 @@ RULES: Final[dict[str, Callable[[], Rule]]] = {
     "funding-with-trend": FundingWithTrend,
 }
 
+MINIMUM_PERIODS: Final = 2
+"""Fewer than two parts is not a split."""
+
 FUNDING_RULES: Final = frozenset({"funding-extreme", "funding-with-trend"})
 """Rules that are meaningless without a funding series.
 
@@ -126,24 +129,38 @@ def _split(
 Pairs = Sequence[tuple[FeatureSet, Candle]]
 
 
-def _halves(
-    candles: Sequence[Candle], *, config: FeatureConfig
-) -> list[tuple[str, tuple[Candle, ...]]]:
-    """Split a period in two, each half carrying its own warmup.
+ORDINALS: Final = ("FIRST", "SECOND", "THIRD", "FOURTH", "FIFTH", "SIXTH")
 
-    The second half starts `warmup` candles early so its features are complete
-    from its first decision, and those extra candles are read but never decided
-    on. Either half could instead be warmed from the data before it; this is
-    simpler to reason about, and no feature reaches forward under either.
+
+def _periods(
+    candles: Sequence[Candle], *, config: FeatureConfig, count: int
+) -> list[tuple[str, tuple[Candle, ...]]]:
+    """Split a period into equal parts, each carrying its own warmup.
+
+    Two parts answer "did the rule work throughout, or only in half of it".
+    More parts answer a different question, and it is the one two failed rule
+    families raised: *when* did it stop working. A rule that worked in the
+    first two thirds of nine years and not the last is describing a market that
+    changed; one that worked only in the middle third is describing a regime.
+    Two parts cannot tell those apart and three or four can.
+
+    Each part starts `warmup` candles early so its features are complete from
+    its first decision. Those extra candles are read and never decided on, so
+    no feature reaches forward — the part before a boundary cannot see past it.
     """
-    midpoint = len(candles) // 2
-    first = tuple(candles[:midpoint])
-    second = tuple(candles[max(0, midpoint - config.warmup) :])
+    if count < MINIMUM_PERIODS:
+        raise ValueError(f"a split needs at least {MINIMUM_PERIODS} parts")
+    span = len(candles) // count
     parts: list[tuple[str, tuple[Candle, ...]]] = []
-    if len(first) >= config.warmup + 2:
-        parts.append(("TRAINING, FIRST HALF", first))
-    if len(second) >= config.warmup + 2:
-        parts.append(("TRAINING, SECOND HALF", second))
+    for index in range(count):
+        start = index * span
+        end = len(candles) if index == count - 1 else (index + 1) * span
+        part = tuple(candles[max(0, start - config.warmup) : end])
+        if len(part) < config.warmup + 2:
+            continue
+        name = ORDINALS[index] if index < len(ORDINALS) else f"PART {index + 1}"
+        of = "HALF" if count == MINIMUM_PERIODS else f"OF {count}"
+        parts.append((f"TRAINING, {name} {of}", part))
     return parts
 
 
@@ -377,6 +394,13 @@ def main() -> int:
         help="evaluate the training period in two halves, to see whether the rule "
         "worked throughout it or only in part of it",
     )
+    parser.add_argument(
+        "--periods",
+        type=int,
+        default=0,
+        help="split the training period into this many equal parts instead of two; "
+        "three or more shows when a rule stopped working, which two cannot",
+    )
     args = parser.parse_args()
 
     configure_logging()
@@ -447,13 +471,13 @@ def main() -> int:
     )
     _evaluate(args.rule, train, setup=setup, label="TRAINING PERIOD")
 
-    if args.halves:
+    if args.halves or args.periods:
         # A rule that made all of its money in one half of the training period
         # and none in the other has not found a durable regularity; it found
         # one episode. This costs nothing — the training period is already
         # spent — and it is the cheapest way to fail a rule before the holdout
         # has to.
-        for label, part in _halves(train, config=config):
+        for label, part in _periods(train, config=config, count=args.periods or MINIMUM_PERIODS):
             _evaluate(args.rule, part, setup=setup, label=label)
 
     if not args.holdout:

@@ -22,6 +22,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Final
 
 EVALUATIONS = Path("docs/evidence/build-0.1/evaluations")
 
@@ -33,8 +34,12 @@ HEADER = re.compile(
     r"(?:, venue: (?P<venue>[^,\s]+))?.*$"
 )
 PERIOD = re.compile(
-    r"^(?P<label>TRAINING PERIOD|HOLDOUT PERIOD|TRAINING, FIRST HALF|"
-    r"TRAINING, SECOND HALF): "
+    # "TRAINING, THIRD OF 4" and the like, as well as the original halves. The
+    # ordinal is captured so a split into any number of parts is labelled
+    # rather than silently collapsing into TRAIN — which would put two periods
+    # under one name, the defect this parser already had once.
+    r"^(?P<label>TRAINING PERIOD|HOLDOUT PERIOD|"
+    r"TRAINING, (?P<ordinal>[A-Z]+|PART \d+) (?:HALF|OF \d+)): "
 )
 ROW = re.compile(
     r"^  (?P<name>\S+)\s+(?P<trades>\d+)\s+(?P<win>[\d.]+%|-)\s+"
@@ -181,15 +186,30 @@ def parse(text: str) -> list[Run]:
     return runs
 
 
+SHORT_ORDINALS: Final = {
+    "FIRST": "1st",
+    "SECOND": "2nd",
+    "THIRD": "3rd",
+    "FOURTH": "4th",
+    "FIFTH": "5th",
+    "SIXTH": "6th",
+}
+
+
 def _period_label(raw: str) -> str:
-    """Short labels, so a row fits a line and the periods cannot be confused."""
-    if raw.startswith("TRAINING, FIRST"):
-        return "1st"
-    if raw.startswith("TRAINING, SECOND"):
-        return "2nd"
+    """Short labels, so a row fits a line and the periods cannot be confused.
+
+    An unrecognised part number falls through to the raw ordinal rather than
+    to TRAIN. A label that quietly becomes TRAIN would put a sub-period's
+    numbers under the full period's name, which is how this parser previously
+    reported two periods as one.
+    """
     if raw.startswith("HOLDOUT"):
         return "HOLD"
-    return "TRAIN"
+    if not raw.startswith("TRAINING, "):
+        return "TRAIN"
+    ordinal = raw.removeprefix("TRAINING, ").split(" ", 1)[0]
+    return SHORT_ORDINALS.get(ordinal, ordinal.lower()[:4])
 
 
 def newest() -> Path:

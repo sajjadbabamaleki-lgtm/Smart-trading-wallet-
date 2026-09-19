@@ -17,6 +17,7 @@ import pytest
 from libs.domain.candles import Candle
 from libs.domain.funding import FundingHistory, FundingRate
 from services.research.costs import CostModel
+from services.strategy_engine import evaluate_candles_cli
 from services.strategy_engine.candle_backtest import (
     CandleBacktest,
     execution_pairs,
@@ -652,3 +653,45 @@ class _AlwaysShort:
 
     def decide(self, features: FeatureSet) -> Decision:  # noqa: ARG002 - by design
         return Decision.SHORT
+
+
+class TestPeriodSplit:
+    """Splitting the training period, which is how a rule gets failed cheaply."""
+
+    def test_two_parts_are_labelled_as_halves(self) -> None:
+        parts = evaluate_candles_cli._periods(rising(400), config=SMALL, count=2)
+        assert [label for label, _ in parts] == [
+            "TRAINING, FIRST HALF",
+            "TRAINING, SECOND HALF",
+        ]
+
+    def test_four_parts_are_labelled_by_ordinal(self) -> None:
+        parts = evaluate_candles_cli._periods(rising(800), config=SMALL, count=4)
+        assert [label for label, _ in parts] == [
+            "TRAINING, FIRST OF 4",
+            "TRAINING, SECOND OF 4",
+            "TRAINING, THIRD OF 4",
+            "TRAINING, FOURTH OF 4",
+        ]
+
+    def test_a_later_part_cannot_see_past_its_own_end(self) -> None:
+        """Each part carries a warmup backwards, never forwards.
+
+        The warmup extends a part's *start* into earlier data, which was
+        already known. If it extended the end instead, a part would decide on
+        candles belonging to the next one.
+        """
+        candles = rising(800)
+        parts = evaluate_candles_cli._periods(candles, config=SMALL, count=4)
+        boundaries = [len(candles) // 4 * index for index in range(1, 4)]
+        for (_, part), boundary in zip(parts, boundaries, strict=False):
+            assert part[-1].close_time <= candles[boundary - 1].close_time
+
+    def test_each_part_starts_early_enough_to_have_full_features(self) -> None:
+        parts = evaluate_candles_cli._periods(rising(800), config=SMALL, count=4)
+        for _, part in parts:
+            assert len(part) >= SMALL.warmup + 2
+
+    def test_one_part_is_not_a_split(self) -> None:
+        with pytest.raises(ValueError, match="at least 2 parts"):
+            evaluate_candles_cli._periods(rising(400), config=SMALL, count=1)

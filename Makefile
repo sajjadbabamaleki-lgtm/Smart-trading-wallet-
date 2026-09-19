@@ -106,6 +106,11 @@ record-install: ## Install and start the recorder as a service that outlives the
 explain-gaps: ## Print the raw timestamps behind the first few open gaps
 	$(UV) run python infrastructure/scripts/close_resolved_gaps.py --explain $(or $(N),3)
 
+strategy: ## Run the baseline strategies over recorded data (HOURS, HOLD, THRESHOLD)
+	$(UV) run python -m services.strategy_engine.evaluate_cli \
+		--hours $(or $(HOURS),24) --hold $(or $(HOLD),30) \
+		--threshold $(or $(THRESHOLD),0.30)
+
 close-gaps: ## Close silences the store shows ended (read-only; APPLY=1 to write)
 	$(UV) run python infrastructure/scripts/close_resolved_gaps.py --record-outages $(if $(APPLY),--apply,)
 

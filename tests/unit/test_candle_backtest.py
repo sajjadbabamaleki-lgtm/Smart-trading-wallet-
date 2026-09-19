@@ -23,6 +23,7 @@ from services.strategy_engine.candle_backtest import (
 from services.strategy_engine.decisions import (
     AlwaysFlat,
     BuyAndHold,
+    Confirmed,
     Decision,
     Shuffled,
     TrendFollowing,
@@ -301,3 +302,81 @@ def _reading(*, trend_bps: Decimal, slope: Decimal, distance: Decimal) -> Featur
 
 
 _FAKE = _reading(trend_bps=Decimal(0), slope=Decimal(0), distance=Decimal(0))
+
+
+class TestConfirmation:
+    """Acting only on a change of mind that held (the churn fix).
+
+    Written before the fix's effect on returns was looked at, so these test the
+    mechanism rather than the result. The hypothesis — fewer trades, similar
+    gross per trade — is checked on data, not here.
+    """
+
+    def test_a_one_candle_flip_is_ignored(self) -> None:
+        """The churn this exists to remove: a label crossing back and forth."""
+        rule = Confirmed(inner=_Flipper(), confirm=2)
+        decided = [rule.decide(_FAKE) for _ in range(10)]
+        assert set(decided) == {Decision.FLAT}
+
+    def test_a_change_that_holds_is_acted_on(self) -> None:
+        rule = Confirmed(inner=BuyAndHold(), confirm=2)
+        assert rule.decide(_FAKE) is Decision.FLAT
+        assert rule.decide(_FAKE) is Decision.LONG
+
+    def test_a_longer_confirmation_waits_longer(self) -> None:
+        rule = Confirmed(inner=BuyAndHold(), confirm=3)
+        assert [rule.decide(_FAKE) for _ in range(4)] == [
+            Decision.FLAT,
+            Decision.FLAT,
+            Decision.LONG,
+            Decision.LONG,
+        ]
+
+    def test_it_never_changes_what_the_inner_rule_thinks(self) -> None:
+        """Only when a decision is acted on, never which decision it is.
+
+        A wrapper that could invent a target the inner rule never wanted would
+        be a second rule wearing the first one's name.
+        """
+        inner = TrendFollowing()
+        rule = Confirmed(inner=inner, confirm=2)
+        readings = [
+            _reading(trend_bps=Decimal(100), slope=Decimal(5), distance=Decimal(20))
+            for _ in range(5)
+        ]
+        wrapped = {rule.decide(reading) for reading in readings}
+        assert wrapped <= {inner.decide(readings[0]), Decision.FLAT}
+
+    def test_confirmation_must_span_a_candle(self) -> None:
+        with pytest.raises(ValueError, match="at least one candle"):
+            Confirmed(inner=BuyAndHold(), confirm=0)
+
+    def test_it_cuts_the_trade_count_on_a_churning_series(self) -> None:
+        """The mechanism's whole purpose, measured on a backtest."""
+        candles = rising(60)
+        churn = _Flipper()
+        without = CandleBacktest(rule=churn, costs=NO_COST).run(candles, SMALL)
+        withc = CandleBacktest(rule=Confirmed(inner=_Flipper(), confirm=2), costs=NO_COST).run(
+            candles, SMALL
+        )
+        assert len(withc.trades) < len(without.trades)
+
+
+class TestPerTradeEconomics:
+    def test_gross_and_fee_per_trade_are_comparable(self) -> None:
+        """The two numbers that say whether a signal pays for its transaction."""
+        candles = rising(40)
+        costs = CostModel(taker_fee_bps=Decimal(5), half_spread_bps=Decimal(0))
+        result = CandleBacktest(rule=BuyAndHold(), costs=costs).run(candles, SMALL)
+        assert result.fee_bps_per_trade is not None
+        assert result.gross_bps_per_trade is not None
+        # Both fees are expressed against the *entry* notional. At 5 bps a
+        # side that is 10 bps when price is flat, and more on a rising series
+        # because the exit fee is charged on the larger exit notional.
+        assert result.fee_bps_per_trade > Decimal(10)
+        assert result.fee_bps_per_trade < Decimal(15)
+
+    def test_they_are_none_with_no_trades(self) -> None:
+        result = CandleBacktest(rule=AlwaysFlat()).run(rising(30), SMALL)
+        assert result.gross_bps_per_trade is None
+        assert result.fee_bps_per_trade is None

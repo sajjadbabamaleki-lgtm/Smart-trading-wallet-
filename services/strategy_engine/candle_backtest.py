@@ -179,6 +179,32 @@ class CandleBacktestResult:
         return worst
 
     @property
+    def gross_bps_per_trade(self) -> Decimal | None:
+        """Gross profit per trade, in basis points of the notional traded.
+
+        The number that says whether a signal is worth its transaction. Net
+        return mixes it with how often the rule trades, and the two have
+        different fixes: a weak signal needs a better rule, while a good signal
+        that trades too often needs to trade less. None with no trades.
+        """
+        if not self.trades:
+            return None
+        traded = sum((trade.notional for trade in self.trades), Decimal(0))
+        if traded <= 0:
+            return None
+        return self.gross_pnl / traded * BPS
+
+    @property
+    def fee_bps_per_trade(self) -> Decimal | None:
+        """What each trade cost, in the same units, so the two can be compared."""
+        if not self.trades:
+            return None
+        traded = sum((trade.notional for trade in self.trades), Decimal(0))
+        if traded <= 0:
+            return None
+        return self.fees / traded * BPS
+
+    @property
     def costs_exceeded_edge(self) -> bool | None:
         """The §25 finding: profitable before costs, unprofitable after."""
         if not self.trades:
@@ -201,6 +227,12 @@ class CandleBacktestResult:
             "exposure_pct": str(self.exposure_pct),
             "position_hours": str(self.position_hours),
             "costs_exceeded_edge": self.costs_exceeded_edge,
+            "gross_bps_per_trade": (
+                None if self.gross_bps_per_trade is None else str(self.gross_bps_per_trade)
+            ),
+            "fee_bps_per_trade": (
+                None if self.fee_bps_per_trade is None else str(self.fee_bps_per_trade)
+            ),
         }
 
 

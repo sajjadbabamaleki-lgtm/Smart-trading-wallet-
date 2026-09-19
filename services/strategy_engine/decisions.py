@@ -199,3 +199,68 @@ class Shuffled:
         chosen = self._order[self._index]
         self._index += 1
         return chosen
+
+
+DEFAULT_CONFIRMATION: Final = 2
+"""Candles a new target must persist for before it is acted on.
+
+Two, which is the smallest value that does anything at all. A larger number
+would be a parameter to search, and the point of this wrapper is a structural
+fix rather than a tuned one.
+"""
+
+
+@dataclass(slots=True)
+class Confirmed:
+    """Act on a change of mind only after it has held for a few candles.
+
+    **Why this exists, stated before its result was looked at.** The regime
+    labels in `features.py` are thresholds on continuous quantities, so near a
+    threshold they flip back and forth on movement that carries no information.
+    Each flip is a position change, each position change costs a round trip,
+    and the first evaluation on SOL 4h showed the consequence exactly: the
+    signal earned 9.3 bps of gross profit per trade against 9.98 bps of cost,
+    so 150 trades converted a real edge into a net loss of 0.1%.
+
+    The hypothesis this tests is falsifiable and the prediction is recorded
+    here: requiring confirmation should cut the trade count and the fee bill
+    while leaving gross profit *per trade* roughly unchanged, which would turn
+    the net positive. If gross per trade falls by as much as the count does,
+    the trades it removed were carrying information and this wrapper is wrong.
+
+    It is not a tuning knob dressed up as a fix. It changes *when* a decision
+    is acted on and never *what* the underlying rule thinks, so a rule whose
+    signal is real keeps it and a rule whose signal is noise loses nothing
+    worth keeping.
+    """
+
+    inner: Rule
+    confirm: int = DEFAULT_CONFIRMATION
+    name: str = ""
+    _held: Decision = Decision.FLAT
+    _pending: Decision | None = None
+    _count: int = 0
+
+    def __post_init__(self) -> None:
+        if self.confirm < 1:
+            raise ValueError("confirmation must span at least one candle")
+        self.name = f"{self.inner.name}-confirmed-{self.confirm}"
+
+    def decide(self, features: FeatureSet) -> Decision:
+        wanted = self.inner.decide(features)
+        if wanted is self._held:
+            # The underlying rule agrees with the position already held, so
+            # there is nothing to confirm and any half-built case is dropped.
+            self._pending = None
+            self._count = 0
+            return self._held
+        if wanted is self._pending:
+            self._count += 1
+        else:
+            self._pending = wanted
+            self._count = 1
+        if self._count >= self.confirm:
+            self._held = wanted
+            self._pending = None
+            self._count = 0
+        return self._held

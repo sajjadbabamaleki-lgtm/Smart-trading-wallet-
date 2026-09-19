@@ -26,7 +26,7 @@ first experimental pipeline does not.
 | Commercial data (Glassnode, CryptoQuant, Kaiko, Coin Metrics) | evaluated | deferred; no subscription required (§8) |
 | AI/ML | deferred within Build 0.1 | removed from the critical path entirely — forward validation may run on a simple baseline (§14, §34) |
 | Risk & Execution | M7–M8 | moved earlier; the capital-control boundary exists before AI (§17, §18) |
-| Research horizon / strategy | unspecified | one horizon, one strategy family, chosen from observed BTC cost and execution behaviour (§15, §16) |
+| Research horizon / strategy | unspecified | one horizon, one strategy family, chosen from observed BTC cost and execution behaviour (§15, §16) — the horizon itself was left open and is now fixed at hours-to-days by [ADR-011](../ADR/ADR-011-decision-horizon-hours-not-seconds.md) |
 
 Both revisions keep real capital **prohibited** and mainnet execution
 **hard-blocked**, and neither treats profitability as an acceptance criterion.
@@ -41,15 +41,25 @@ M0 Rev.2 Foundation → M1 Storage Foundation → M2 BTC Hyperliquid Live Record
 → ML research, only if justified → Limited Live, only after all gates pass
 ```
 
-Immediate engineering target: **M0 Rev.2 → M1 → M2** (§41).
-**M0 Rev.2 through M3 are implemented** — see the repository root for what they
-produced and `docs/ADR/` for the decisions recorded (ADR-001 to ADR-008). None
-of M1–M3 is yet *accepted*: nothing has been verified against a running stack or
-the live venue, and `docs/evidence/build-0.1/README.md` records exactly what is
-owed. Next is M4, the first formal BTC research dataset — which Rev.2 §23 gates
-on recorder integrity passing first. Rev.1 §76 remains the
-fuller milestone breakdown for the foundation work those milestones cover, and
-Rev.1 §§45–78 still hold for detail Rev.2 does not restate (execution state
+**M0 Rev.2 through M6 are implemented**, and M8's signing path has been proven
+against the live testnet. `docs/ADR/` records the decisions (ADR-001 to
+ADR-011) and `docs/evidence/build-0.1/acceptance-attempts.md` records what each
+milestone actually produced, including what it got wrong. M3's own acceptance
+run remains owed, and cannot be run while the recorder is live.
+
+M6 returned **`NO_EDGE_FOUND` at the sub-minute horizon**, for cost reasons no
+signal can overcome: the typical 30-second BTC move is 1.04 bps against 9.62
+bps of round-trip cost. That is a result under Rev.2 §§30–32, not a failed
+attempt — and it is a result about *that horizon*, not about the project.
+
+[ADR-011](../ADR/ADR-011-decision-horizon-hours-not-seconds.md) supplies the
+number Rev.2 §3 left open: decisions on closed candles of one hour or longer,
+positions held roughly one hour to one week. That moves the critical path onto
+Phase 3's historical data engine and Phase 5 §20's Feature Groups, and brings
+MEIE (ADR-010) back into scope, news being an explicit product requirement.
+
+Rev.1 §76 remains the fuller milestone breakdown for the foundation work those
+milestones cover, and Rev.1 §§45–78 still hold for detail Rev.2 does not restate (execution state
 machine, audit events, correlation IDs, replay clock, evidence pack, CI and
 branch protection, the Build 0.1 hard gate, and the Build 0.2–1.0 sequence).
 

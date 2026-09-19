@@ -20,6 +20,7 @@ advance.
 | [ADR-008](ADR-008-sql-migrations-without-a-framework.md) | SQL migrations without a framework | Accepted |
 | [ADR-009](ADR-009-market-data-separate-from-execution.md) | Market-data environment separate from execution environment | Accepted |
 | [ADR-010](ADR-010-market-event-intelligence-experimental.md) | Market event intelligence as an experimental feature family | Accepted |
+| [ADR-011](ADR-011-decision-horizon-hours-not-seconds.md) | The decision horizon is hours to days, not seconds | Accepted |
 
 ## Namespace resolution
 

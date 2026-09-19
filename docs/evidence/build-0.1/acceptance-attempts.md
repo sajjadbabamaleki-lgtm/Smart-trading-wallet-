@@ -562,3 +562,101 @@ adverse selection would erase the advantage entirely, which is not far away.
 
 Both are M6's to settle, against a specific strategy, in an execution-aware
 backtest.
+
+---
+
+## M6 — the first baseline strategy, and the horizon it closed, 2026-09-19
+
+Three strategies over the same 24 hours of recorded BTC, one control, one
+comparison, one candidate. Entry on book imbalance above 0.30; the candidate
+additionally required signed taker flow over a 10-second window to agree;
+30-second timer exit; 0.001 BTC per trade; fills at the touch after the
+measured 322 ms arrival delay.
+
+| | trades | won | gross | fees | net | mean per trade |
+|---|---|---|---|---|---|---|
+| control (always flat) | 0 | — | 0 | 0 | 0 | — |
+| imbalance only | 1,689 | 14 | −7.53 | 123.49 | −131.02 | **−9.549 bps** |
+| imbalance + flow | 991 | 12 | −1.742 | 72.45 | −74.20 | **−9.216 bps** |
+
+The control traded nothing, so the harness is not inventing fills.
+
+### What the numbers say
+
+Per trade, on a notional of about $76:
+
+```
+imbalance only:  gross -0.587 bps, fees +9.620, net -10.207
+imbalance + flow: gross -0.231 bps, fees +9.620, net  -9.851
+```
+
+**The loss is the fee, not the signal.** Gross is approximately flat in both.
+The flow filter earned its place — it halved the trade count and cut the gross
+loss per trade by about 60% — and it made no difference to the outcome, because
+the outcome was never about signal quality. Entry slippage was 0.053 and 0.139
+bps against a 9.62 bps fee: latency is confirmed irrelevant at this scale, which
+is the third independent measurement saying so.
+
+### Correction to the M5 horizon estimate above
+
+The M5 entry projected "≈ 60 s" for taker and "≈ 7 s" for maker by scaling the
+322 ms measurement forward by the square root of time. **That extrapolation is
+withdrawn.** It does not survive its own inputs:
+
+```
+sigma implied by the 322 ms median : 0.098 bps
+sigma implied by the 322 ms p90    : 0.711 bps
+                                     7.3x apart
+  scaled from the median: taker cost reached at 55.7 min, maker at 6.5 min
+  scaled from the p90   : taker cost reached at  1.1 min, maker at 0.1 min
+```
+
+Fifty times apart depending on which quantile is scaled. A distribution that
+disagrees with itself by that much is nowhere near Gaussian, and the
+square-root-of-time rule has nothing to stand on. The "≈ 7 s" figure was
+reported to the product owner as a conclusion and was wrong by about two orders
+of magnitude.
+
+### Measured instead: the horizon ladder
+
+`make ladder` measures each horizon independently, over 57,584 recorded quotes.
+Unsigned median mid movement, against 3.41 bps resting and 9.98 bps crossing:
+
+| horizon | count | p50 | p90 | p95 | p99 | clears |
+|---------|-------|-----|-----|-----|-----|--------|
+| 1 s | 46,447 | 0.00 | 0.98 | 1.48 | 3.30 | — |
+| 5 s | 46,444 | 0.12 | 1.84 | 2.72 | 4.97 | — |
+| 10 s | 46,440 | 0.31 | 2.61 | 3.69 | 6.27 | — |
+| 30 s | 46,423 | 1.04 | 4.53 | 6.04 | 9.92 | — |
+| 60 s | 46,408 | 1.85 | 6.41 | 8.27 | 13.48 | — |
+| 300 s | 46,255 | 4.63 | 14.23 | 18.26 | 25.77 | resting |
+| 900 s | 45,937 | 7.28 | 22.38 | 30.14 | 42.49 | resting |
+| 1800 s | 45,380 | 10.36 | 28.25 | 37.32 | 52.21 | both |
+| 3600 s | 44,515 | 13.82 | 37.15 | 47.31 | 70.80 | both |
+
+The move is unsigned, so each figure is a **ceiling**: what a strategy that
+called direction perfectly could have captured. At the 30-second hold the
+baseline used, that ceiling is 1.04 bps against 9.62 bps of cost — a factor of
+nine. No signal of any quality could have made that strategy profitable.
+
+Crossing needs about 30 minutes. Resting turns viable somewhere between 1 and 5
+minutes, and no rung was measured in between.
+
+### Status
+
+**M6 result: `NO_EDGE_FOUND` at the sub-minute horizon, for cost reasons that
+no signal can overcome.** Recorded as a result, per Rev.2 §§30–32, not as a
+failed attempt to be retried with a different threshold.
+
+The branch is closed rather than explored further. **ADR-011** records why: the
+horizon was never specified by any document — Rev.2 §3 says "one initial trading
+horizon" and leaves the number open — and seconds were inherited from the tick
+recorder rather than chosen. The product objective in Phase 1 §1 is a trader
+that reads a chart, reads the news, studies one to two years of behaviour, and
+decides long, short or nothing. At that horizon a round trip costs 0.1% against
+daily moves measured in percent, and cost stops being the binding constraint.
+
+What carries forward unchanged: the cost model, the calibration, the ladder, the
+backtest engine's point-in-time discipline, the control-strategy harness, and
+the finding that latency is irrelevant to this project. What changes is which
+data the strategy reads.

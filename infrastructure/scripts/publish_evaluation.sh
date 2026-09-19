@@ -20,7 +20,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 
 UV="${UV:-uv}"
 INTERVALS="${INTERVALS:-4h 1d}"
-ASSETS="${ASSETS:-BTC SOL}"
+ASSETS="${ASSETS:-BTC ETH SOL BNB}"
 RULES="${RULES:-trend-following trend-confirmed trend-confirmed-3 trend-following-calm}"
 SHUFFLES="${SHUFFLES:-20}"
 PUSH="${PUSH:-1}"

@@ -27,16 +27,20 @@ from typing import Final
 from libs.config import Settings, load_settings
 from libs.domain.candles import Candle, CandleRequest
 from libs.domain.funding import FundingError, FundingHistory, FundingRate
+from libs.information.fear_greed import SOURCE as SENTIMENT_SOURCE
+from libs.information.fear_greed import Reading, SentimentError, SentimentHistory
 from libs.observability import configure_logging
 from libs.storage import clickhouse as ch
 from libs.storage import postgres as pg
 from services.research.candle_store import read_candles
 from services.research.costs import CostModel
 from services.research.funding_store import read_funding
+from services.research.information_store import read_sentiment
 from services.strategy_engine.evaluate_candles_cli import (
     FUNDING_RULES,
     MEASURED_HALF_SPREAD_BPS,
     RULES,
+    SENTIMENT_RULES,
 )
 from services.strategy_engine.features import FeatureConfig, FeatureSet, compute
 from services.strategy_engine.paper import PaperBook, PaperContext, Tick
@@ -53,6 +57,20 @@ would let the engine decide on yesterday's chart and record it as today's.
 HISTORY_DAYS: Final = 120
 """How much history to load for the features. More than the warmup needs and
 far less than the store holds, because a tick should be quick."""
+
+
+def _sentiment_for(series: Series, *, rule: str) -> tuple[SentimentHistory | None, str | None]:
+    """The sentiment series for this tick, or why there is none to use."""
+    if series.sentiment:
+        try:
+            return SentimentHistory.build(list(series.sentiment)), None
+        except SentimentError as exc:
+            return None, f"the stored sentiment series cannot be used: {exc}"
+    if rule in SENTIMENT_RULES:
+        return None, (
+            f"{rule} needs the Fear & Greed index and none is stored. Run `make sentiment` first."
+        )
+    return None, None
 
 
 def _reasons(features: FeatureSet, *, candles: int) -> dict[str, object]:
@@ -74,6 +92,7 @@ def _reasons(features: FeatureSet, *, candles: int) -> dict[str, object]:
         "funding_rate_bps": (
             None if features.funding_rate_bps is None else str(features.funding_rate_bps)
         ),
+        "sentiment": None if features.sentiment is None else str(features.sentiment),
         "candles": candles,
     }
 
@@ -84,6 +103,7 @@ class Series:
 
     candles: tuple[Candle, ...]
     settlements: tuple[FundingRate, ...]
+    sentiment: tuple[Reading, ...]
 
 
 def _load(request: CandleRequest, *, venue: str, settings: Settings) -> Series:
@@ -96,6 +116,14 @@ def _load(request: CandleRequest, *, venue: str, settings: Settings) -> Series:
                     client,
                     venue=venue,
                     asset=request.asset,
+                    start=request.start,
+                    end=request.end,
+                )
+            ),
+            sentiment=tuple(
+                read_sentiment(
+                    client,
+                    source=SENTIMENT_SOURCE,
                     start=request.start,
                     end=request.end,
                 )
@@ -191,7 +219,12 @@ def main() -> int:
 
     candles = series.candles
     newest = candles[-1]
-    features = compute(candles, config, funding)
+    sentiment, sentiment_problem = _sentiment_for(series, rule=args.rule)
+    if sentiment_problem is not None:
+        print(sentiment_problem)
+        return 1
+
+    features = compute(candles, config, funding, sentiment)
     decision = RULES[args.rule]().decide(features)
 
     reasons = _reasons(features, candles=len(candles))

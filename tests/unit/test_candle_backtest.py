@@ -695,3 +695,28 @@ class TestPeriodSplit:
     def test_one_part_is_not_a_split(self) -> None:
         with pytest.raises(ValueError, match="at least 2 parts"):
             evaluate_candles_cli._periods(rising(400), config=SMALL, count=1)
+
+
+def _with_sentiment(
+    reading: Decimal | None, *, trend: TrendRegime = TrendRegime.RANGE
+) -> FeatureSet:
+    """A reading carrying only a sentiment value, for the sentiment rules."""
+    base = _with_funding(None, trend=trend)
+    return FeatureSet(
+        moment=base.moment,
+        close=base.close,
+        trend_bps=base.trend_bps,
+        trend_slope_bps=base.trend_slope_bps,
+        distance_from_trend_bps=base.distance_from_trend_bps,
+        momentum_bps=base.momentum_bps,
+        momentum_acceleration_bps=base.momentum_acceleration_bps,
+        atr_bps=base.atr_bps,
+        realized_volatility_bps=base.realized_volatility_bps,
+        volatility_ratio=base.volatility_ratio,
+        relative_volume=base.relative_volume,
+        swing_high_bps=base.swing_high_bps,
+        swing_low_bps=base.swing_low_bps,
+        trend_regime=base.trend_regime,
+        volatility_regime=base.volatility_regime,
+        sentiment=reading,
+    )

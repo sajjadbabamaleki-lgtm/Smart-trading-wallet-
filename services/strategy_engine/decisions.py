@@ -427,3 +427,71 @@ class FundingWithTrend:
         if wanted is Decision.SHORT and percentile <= self.deserted:
             return Decision.FLAT
         return wanted
+
+
+@dataclass(slots=True)
+class SentimentExtreme:
+    """Buy fear, sell greed.
+
+    The oldest contrarian rule there is, and the first one here whose input is
+    partly not a transformation of price. The Fear & Greed index is a composite
+    of volatility, momentum, volume, social posts, dominance and search
+    interest — so about half of it this project has already mined, and the
+    other half it has not.
+
+    The bands are the publisher's own, 25 and 75, not numbers fitted on this
+    data. That distinction is the difference between testing a hypothesis and
+    manufacturing one, and it is the discipline eight failed rules bought.
+
+    It refuses a missing series rather than treating it as neutral: None is
+    "we do not know what the market is feeling", and reading that as 50 would
+    make a broken feed indistinguishable from a calm market.
+
+    The null hypothesis is what it has been every time: this loses money net
+    of cost, and less than buy-and-hold earns. The funding rule had a better
+    mechanism than this one and its edge had decayed to nothing by 2026.
+    """
+
+    name: str = "sentiment-extreme"
+    fear: Decimal = Decimal(25)
+    greed: Decimal = Decimal(75)
+
+    def __post_init__(self) -> None:
+        if not Decimal(0) <= self.fear < self.greed <= Decimal(100):
+            raise ValueError("bands must satisfy 0 <= fear < greed <= 100")
+
+    def decide(self, features: FeatureSet) -> Decision:
+        reading = features.sentiment
+        if reading is None:
+            return Decision.FLAT
+        if reading <= self.fear:
+            return Decision.LONG
+        if reading >= self.greed:
+            return Decision.SHORT
+        return Decision.FLAT
+
+
+@dataclass(slots=True)
+class SentimentWithFunding:
+    """Act only where sentiment and positioning agree.
+
+    Two inputs that are not the same transformation of price, required to point
+    the same way. Crowded longs paying to stay long *and* a market feeling
+    greedy is a different claim from either alone, and if outside information
+    carries anything this is where it should show.
+
+    A conjunction trades far less than either rule, which cuts the fee bill and
+    also the sample — so a flattering result here needs more scepticism, not
+    less, and the shuffle control is what will say whether the timing mattered.
+    """
+
+    name: str = "sentiment-with-funding"
+    sentiment: SentimentExtreme = field(default_factory=SentimentExtreme)
+    funding: FundingExtreme = field(default_factory=FundingExtreme)
+
+    def decide(self, features: FeatureSet) -> Decision:
+        first = self.sentiment.decide(features)
+        second = self.funding.decide(features)
+        if first is second:
+            return first
+        return Decision.FLAT

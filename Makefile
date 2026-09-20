@@ -9,7 +9,7 @@ SUDO := $(shell [ "$$(id -u)" = 0 ] || echo sudo)
 .PHONY: help setup format lint typecheck test test-unit test-integration audit check \
         stack-up stack-down stack-logs stack-verify migrate accept console inspect \
         record-install record-status record-stop clean \
-        ladder history history-all history-long history-longest history-status history-table funding funding-all chart signal signal-all paper paper-report paper-tick paper-install paper-status paper-stop evaluate evaluate-all evaluate-report evaluate-push evaluate-summary
+        ladder history history-all history-long history-longest history-status history-table funding funding-all sentiment news information chart signal signal-all paper paper-report paper-tick paper-install paper-status paper-stop evaluate evaluate-all evaluate-report evaluate-push evaluate-summary
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -214,6 +214,15 @@ history-longest: ## Nine years of 4h history and funding, for BTC ETH BNB (SOL l
 		ASSETS="BTC ETH BNB" SOURCE=binance INTERVALS=4h DAYS=$(or $(DAYS),3300)
 	@$(MAKE) --no-print-directory funding-all \
 		ASSETS="BTC ETH BNB" DAYS=$(or $(DAYS),3300)
+
+sentiment: ## Download the Fear & Greed index: eight years, free, no key
+	$(UV) run python -m services.research.information_cli --what sentiment
+
+news: ## Collect current headlines from the outlets' RSS feeds
+	$(UV) run python -m services.research.information_cli --what headlines
+
+information: ## Both of the above, and what is stored
+	$(UV) run python -m services.research.information_cli
 
 funding: ## Download funding-rate history: positioning, not pattern (ASSET, DAYS)
 	$(UV) run python -m services.research.funding_cli \

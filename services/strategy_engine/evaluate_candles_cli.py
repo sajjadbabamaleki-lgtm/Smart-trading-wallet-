@@ -38,14 +38,17 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Final
 
-from libs.config import load_settings
+from libs.config import Settings, load_settings
 from libs.domain.candles import Candle, CandleRequest
 from libs.domain.funding import FundingError, FundingHistory
+from libs.information.fear_greed import SOURCE as SENTIMENT_SOURCE
+from libs.information.fear_greed import SentimentError, SentimentHistory
 from libs.observability import configure_logging
 from libs.storage import clickhouse as ch
 from services.research.candle_store import read_candles
 from services.research.costs import CostModel
 from services.research.funding_store import read_funding
+from services.research.information_store import read_sentiment
 from services.strategy_engine.candle_backtest import (
     CandleBacktest,
     CandleBacktestResult,
@@ -61,6 +64,8 @@ from services.strategy_engine.decisions import (
     LongWhenActive,
     MeanReversion,
     Rule,
+    SentimentExtreme,
+    SentimentWithFunding,
     Shuffled,
     TrendFollowing,
     TrendFollowingCalm,
@@ -95,19 +100,112 @@ RULES: Final[dict[str, Callable[[], Rule]]] = {
     "reversion-confirmed": _confirmed_reversion(2),
     "funding-extreme": FundingExtreme,
     "funding-with-trend": FundingWithTrend,
+    "sentiment-extreme": SentimentExtreme,
+    "sentiment-with-funding": SentimentWithFunding,
 }
 
 MINIMUM_PERIODS: Final = 2
 """Fewer than two parts is not a split."""
 
-FUNDING_RULES: Final = frozenset({"funding-extreme", "funding-with-trend"})
+FUNDING_RULES: Final = frozenset(
+    {"funding-extreme", "funding-with-trend", "sentiment-with-funding"}
+)
 """Rules that are meaningless without a funding series.
 
-Named so the runner can refuse rather than evaluate one against a feed that
-is not there. `FundingExtreme` returns FLAT on a missing percentile, which is
+Named so the runner can refuse rather than evaluate one against a feed that is
+not there. `FundingExtreme` returns FLAT on a missing percentile, which is
 correct behaviour and would otherwise read as a rule that simply never traded
 — a silent no-op reported as a result.
 """
+
+SENTIMENT_RULES: Final = frozenset({"sentiment-extreme", "sentiment-with-funding"})
+"""Rules that are meaningless without a sentiment series, for the same reason."""
+
+
+def _load_outside(
+    settings: Settings, *, request: CandleRequest, rule: str
+) -> tuple[tuple[FundingHistory | None, SentimentHistory | None], str | None]:
+    """The two inputs that are not the candle series, or why a run must stop.
+
+    Both are loaded for every rule rather than only the rules that read them,
+    and for different reasons. Funding is a cost every position pays — on BTC
+    and ETH the long side paid in about 85% of settlements, roughly 9% a year
+    to hold a long, so a run without it flatters any long-biased rule.
+    Sentiment costs nothing but is worth having in the record even where no
+    rule consults it.
+
+    A rule that *needs* a series it does not have is refused rather than
+    evaluated, because such a rule returns FLAT forever and a silent no-op
+    reported as a result is worse than an error.
+    """
+    funding, funding_problem = _load_funding(settings, request=request, rule=rule)
+    if funding_problem is not None:
+        return (None, None), funding_problem
+    sentiment, sentiment_problem = _load_sentiment(
+        settings, start=request.start, end=request.end, rule=rule
+    )
+    if sentiment_problem is not None:
+        return (None, None), sentiment_problem
+    if sentiment is not None:
+        print("sentiment: Fear & Greed loaded, lagged one day for availability")
+    return (funding, sentiment), None
+
+
+def _load_funding(
+    settings: Settings, *, request: CandleRequest, rule: str
+) -> tuple[FundingHistory | None, str | None]:
+    with ch.connect_from_settings(settings) as client:
+        settlements = read_funding(
+            client,
+            venue="binance",
+            asset=request.asset,
+            start=request.start,
+            end=request.end,
+        )
+    if settlements:
+        try:
+            history = FundingHistory.build(settlements)
+        except FundingError as exc:
+            return None, f"the stored funding series cannot be used: {exc}"
+        print(f"funding: {len(settlements):,} settlements, charged to every position")
+        return history, None
+    if rule in FUNDING_RULES:
+        return None, (
+            f"{rule} needs funding history and none is stored for "
+            f"{request.asset}. Run `make funding ASSET={request.asset}` first.\n"
+            f"Evaluating it without the feed would report a rule that never "
+            f"traded as a result."
+        )
+    print(
+        f"funding: none stored for {request.asset}, so none is charged. "
+        f"Run `make funding ASSET={request.asset}` to include it — it is "
+        f"roughly 9% a year against a long."
+    )
+    return None, None
+
+
+def _load_sentiment(
+    settings: Settings, *, start: datetime, end: datetime, rule: str
+) -> tuple[SentimentHistory | None, str | None]:
+    """The sentiment series for a run, or why there is none to use.
+
+    Loaded for every rule rather than only the sentiment ones, so a report can
+    show what the index was doing even where no rule read it — and refused
+    outright for a rule that needs it, since a sentiment rule with no series
+    returns FLAT forever and that is a silent no-op, not a result.
+    """
+    with ch.connect_from_settings(settings) as client:
+        readings = read_sentiment(client, source=SENTIMENT_SOURCE, start=start, end=end)
+    if readings:
+        try:
+            return SentimentHistory.build(list(readings)), None
+        except SentimentError as exc:
+            return None, f"the stored sentiment series cannot be used: {exc}"
+    if rule in SENTIMENT_RULES:
+        return None, (
+            f"{rule} needs the Fear & Greed index and none is stored. Run `make sentiment` first."
+        )
+    return None, None
 
 
 def _split(
@@ -295,6 +393,7 @@ class Setup:
     config: FeatureConfig
     shuffle_count: int
     funding: FundingHistory | None = None
+    sentiment: SentimentHistory | None = None
 
 
 def _evaluate(
@@ -307,7 +406,7 @@ def _evaluate(
     # Built once and shared by every rule below. Features are a property of
     # the candles and never of the rule, so computing them per rule did the
     # same work twenty-three times per evaluation.
-    pairs = list(execution_pairs(candles, setup.config, setup.funding))
+    pairs = list(execution_pairs(candles, setup.config, setup.funding, setup.sentiment))
     print()
     print(
         period_header(
@@ -417,42 +516,17 @@ def main() -> int:
         candles = read_candles(client, request, venue=args.venue)
 
     config = FeatureConfig()
-    # Loaded for every rule, because funding is a cost every position pays and
-    # not only an input two rules read. On BTC and ETH the long side paid in
-    # about 85% of settlements, roughly 9% a year to hold a long, so a run
-    # without it flatters any long-biased rule.
-    funding = None
-    with ch.connect_from_settings(settings) as client:
-        settlements = read_funding(
-            client,
-            venue="binance",
-            asset=request.asset,
-            start=request.start,
-            end=request.end,
-        )
-    if settlements:
-        try:
-            funding = FundingHistory.build(settlements)
-        except FundingError as exc:
-            print(f"the stored funding series cannot be used: {exc}")
-            return 1
-        print(f"funding: {len(settlements):,} settlements, charged to every position")
-    elif args.rule in FUNDING_RULES:
-        print(
-            f"{args.rule} needs funding history and none is stored for "
-            f"{request.asset}. Run `make funding ASSET={request.asset}` first.\n"
-            f"Evaluating it without the feed would report a rule that never "
-            f"traded as a result."
-        )
+    outside, problem = _load_outside(settings, request=request, rule=args.rule)
+    if problem is not None:
+        print(problem)
         return 1
-    else:
-        print(
-            f"funding: none stored for {request.asset}, so none is charged. "
-            f"Run `make funding ASSET={request.asset}` to include it — it is "
-            f"roughly 9% a year against a long."
-        )
 
-    setup = Setup(config=config, shuffle_count=args.shuffles, funding=funding)
+    setup = Setup(
+        config=config,
+        shuffle_count=args.shuffles,
+        funding=outside[0],
+        sentiment=outside[1],
+    )
     train, test = _split(candles, holdout_days=args.holdout_days)
     if len(train) < config.warmup + 2:
         print(

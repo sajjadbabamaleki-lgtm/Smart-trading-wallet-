@@ -50,6 +50,7 @@ from typing import Any
 
 from libs.domain.candles import Candle
 from libs.domain.funding import FundingHistory
+from libs.information.fear_greed import SentimentHistory
 from services.research.costs import BPS, CostModel
 from services.strategy_engine.decisions import Decision, Rule
 from services.strategy_engine.features import FeatureConfig, FeatureSet, feature_series
@@ -59,6 +60,7 @@ def execution_pairs(
     candles: Sequence[Candle],
     config: FeatureConfig | None = None,
     funding: FundingHistory | None = None,
+    sentiment: SentimentHistory | None = None,
 ) -> Iterator[tuple[FeatureSet, Candle]]:
     """Pair each chart reading with the candle a decision on it can fill in.
 
@@ -72,7 +74,7 @@ def execution_pairs(
     function that yields pairs can be tested while an inline loop cannot.
     """
     resolved = config or FeatureConfig()
-    readings = list(feature_series(candles, resolved, funding))
+    readings = list(feature_series(candles, resolved, funding, sentiment))
     first = resolved.warmup - 1
     for offset, reading in enumerate(readings):
         execution_index = first + offset + 1

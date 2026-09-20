@@ -29,6 +29,23 @@ REPORT="docs/evidence/build-0.1/paper/report.txt"
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 failures=0
 
+# Preflight, before anything that could be blamed on a venue. The loop died
+# for eleven hours because systemd ran it without /root/.local/bin on PATH:
+# every `uv run` failed identically, and the tick reported thirteen separate
+# failures — "history refresh failed for BTC", "tick did not record for ETH" —
+# each of which points at a download or a venue, and none of which points at
+# the missing binary that caused all of them.
+#
+# One check, one message with the actual cause, and an exit before the noise.
+# A tick that cannot run uv has not partially failed; it has not started.
+if ! command -v "$UV" >/dev/null 2>&1; then
+  echo "cannot run: '${UV}' is not on PATH"
+  echo "  PATH=${PATH}"
+  echo "  uv installs to ~/.local/bin; under systemd the unit must set"
+  echo "  Environment=PATH=... because systemd does not read a login shell."
+  exit 1
+fi
+
 echo "=== paper tick ${STAMP} — ${RULE} on ${INTERVAL} (${VENUE}) ==="
 
 # History first. Only the recent window: the archive is already stored, and a

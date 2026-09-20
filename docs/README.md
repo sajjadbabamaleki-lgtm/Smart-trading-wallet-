@@ -22,6 +22,10 @@ program **Implementation Program — Build 0.1**, which lives in
 | 9 | [Product Interface, Wallet Integration & Human Control Layer](phase-9-product-interface-wallet-integration-and-human-control-layer.md) | Approved as Product & Wallet Architecture | Three-layer account model, wallet adapter, authentication vs authorization, explanation panels, emergency controls |
 | 10 | [Security Architecture, Independent Audit & Production Launch Gate](phase-10-security-architecture-independent-audit-and-production-launch-gate.md) | Architecture Approved — Production Not Approved | Crown jewels, trust boundaries, credential isolation, supply chain, audit & penetration testing, launch gate |
 
+For the current state of the work — what runs, what has been measured, which
+rules failed and why, and what to do next — see [HANDOVER.md](HANDOVER.md).
+The working rules for contributing are in [CLAUDE.md](../CLAUDE.md).
+
 ## Cross-cutting invariants
 
 These constraints are stated across multiple phase documents and govern any

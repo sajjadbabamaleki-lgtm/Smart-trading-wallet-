@@ -43,6 +43,7 @@ from typing import Final
 
 from libs.domain.candles import Candle
 from libs.domain.funding import FundingHistory
+from libs.information.fear_greed import SentimentHistory
 
 BPS: Final = Decimal(10000)
 
@@ -185,6 +186,20 @@ class FeatureSet:
     are paying each other", the other means "they are paying nothing". A rule
     that treated the first as the second would read a missing feed as a calm
     market.
+    """
+
+    sentiment: Decimal | None = None
+    """The Fear & Greed index as it stood, 0 to 100, or None with no series.
+
+    None rather than 50, for the reason funding is None rather than neutral:
+    "we do not know what the market is feeling" and "the market is feeling
+    nothing in particular" are different claims, and a rule that confused them
+    would read a missing feed as a calm one.
+
+    Roughly half of this index is derived from price, so it is only half an
+    outside input. The half that is not - social posts and search interest -
+    is the part worth testing, and that is said here rather than in a footnote
+    because the alternative is to rediscover momentum and call it sentiment.
     """
 
     funding_percentile: Decimal | None = None
@@ -361,6 +376,7 @@ def compute(
     window: Sequence[Candle],
     config: FeatureConfig | None = None,
     funding: FundingHistory | None = None,
+    sentiment: SentimentHistory | None = None,
 ) -> FeatureSet:
     """Read the chart as of the last candle in `window`.
 
@@ -410,13 +426,29 @@ def compute(
         volatility_regime=volatility_regime,
         funding_rate_bps=None if funding_rate is None else funding_rate * BPS,
         funding_percentile=(funding.percentile_at(current.close_time) if funding else None),
+        sentiment=_sentiment_at(sentiment, current.close_time),
     )
+
+
+def _sentiment_at(history: SentimentHistory | None, moment: datetime) -> Decimal | None:
+    """The index as it was knowable at `moment`, or None with no series.
+
+    Knowable rather than published: `SentimentHistory` is indexed on our own
+    availability, which is a day after the source's timestamp and deliberately
+    conservative, so this cut cannot read an afternoon's sentiment at
+    breakfast.
+    """
+    if history is None:
+        return None
+    reading = history.at(moment)
+    return None if reading is None else reading.value
 
 
 def feature_series(
     candles: Sequence[Candle],
     config: FeatureConfig | None = None,
     funding: FundingHistory | None = None,
+    sentiment: SentimentHistory | None = None,
 ) -> Iterator[FeatureSet]:
     """Features for every candle that has enough history behind it.
 
@@ -427,4 +459,4 @@ def feature_series(
     """
     resolved = config or FeatureConfig()
     for index in range(resolved.warmup - 1, len(candles)):
-        yield compute(candles[: index + 1], resolved, funding)
+        yield compute(candles[: index + 1], resolved, funding, sentiment)

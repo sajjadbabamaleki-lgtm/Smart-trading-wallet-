@@ -1025,3 +1025,59 @@ funding history", which the settlement dates confirm.
 `funding-extreme`, `funding-with-trend` — on 1h/4h/1d, BTC/ETH/SOL/BNB,
 Hyperliquid 2y, Binance 6y and 9y, with and without funding charged, split in
 two and in four.
+
+---
+
+## Criterion for the sentiment rules, recorded before the run, 2026-09-20
+
+Written and committed before `sentiment-extreme` was evaluated even once, so
+that it cannot be adjusted afterwards. This is the seventh time the bar has
+been set this way and it has failed two rules that looked good.
+
+### What is being tested
+
+`sentiment-extreme` — long at Fear & Greed 25 or below, short at 75 or above,
+flat between. The bands are alternative.me's own published labels, not numbers
+fitted here.
+
+Six years, four assets, 4h candles, Binance history, funding charged, split
+into four periods, 200 shuffles. Six years rather than eight because SOL's
+Binance history begins 2020-09 and a uniform window across four assets is
+worth more than two extra years on three of them.
+
+### The bar
+
+**Pass** requires, on at least **three of four assets**:
+
+1. Gross profit per trade **positive** over the full period. Gross is before
+   fees, so a negative figure means the rule is wrong rather than expensive —
+   this is what failed trend-following on three assets of four.
+2. Positive return in at least **three of the four sub-periods**, and the
+   **most recent period must be one of them**. That clause is new and it comes
+   from the funding result: an edge that worked through 2021-2023 and decayed
+   to nothing by 2026 is not tradeable now, however real it was then.
+3. Fewer than **10 of 200** shuffled orderings matching over the full period.
+4. **`vs timing` positive** — the candidate must beat its own positions with
+   the direction calls removed, or its short calls carried nothing.
+
+Anything less is **fail**, the holdout stays unexamined, and the write-up says
+so plainly.
+
+### What is expected
+
+Failure. Two reasons, both stated now rather than after.
+
+About half of this index is volatility and market momentum by its publisher's
+own description, and this project has already mined that half — those are the
+transformations of price that failed eight times. The half that is not,
+social posts and search interest, is the part worth testing and it is diluted
+by the rest.
+
+And the mechanism is weaker than funding's. Funding is money committed:
+somebody is paying to hold a position. Sentiment is a survey of mood. If the
+stronger mechanism decayed to nothing by 2026, the weaker one starting from a
+diluted signal is unlikely to be alive.
+
+Running it anyway, because "unlikely" is not a measurement, and because the
+alternative — skipping a test whose result was predicted — is how a project
+starts believing its own predictions.

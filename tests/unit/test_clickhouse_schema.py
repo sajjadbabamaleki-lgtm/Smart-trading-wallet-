@@ -63,7 +63,13 @@ def test_sorting_key_columns_are_not_nullable(path: Path) -> None:
     sql = path.read_text()
     for table in CREATE_TABLE.finditer(sql):
         types = column_types(table.group("body"))
-        order_by = ORDER_BY.search(sql)
+        # Searched from the end of this table's body rather than from the
+        # start of the file. Every migration here defines one table, but the
+        # earlier version took the file's first ORDER BY for every CREATE
+        # TABLE in it -- which in a two-table file checked one table's
+        # columns against the other's sorting key, and would just as easily
+        # have missed a real violation in the second table.
+        order_by = ORDER_BY.search(sql, table.end())
         if order_by is None:
             continue
         for column in (part.strip() for part in order_by.group("columns").split(",")):

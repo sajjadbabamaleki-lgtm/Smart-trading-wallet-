@@ -47,6 +47,15 @@ for asset in $ASSETS; do
   fi
 done
 
+# Outside information, once per tick rather than once per asset: the sentiment
+# index is one series for the whole market and the feeds are not per-asset
+# either. A failure here does not stop the decisions — a rule that needs a
+# series it does not have refuses on its own, which is the behaviour wanted.
+if ! "$UV" run python -m services.research.information_cli >/dev/null 2>&1; then
+  echo "  information refresh failed (sentiment and headlines)"
+  failures=$((failures + 1))
+fi
+
 for asset in $ASSETS; do
   echo
   if ! "$UV" run python -m services.strategy_engine.paper_cli \

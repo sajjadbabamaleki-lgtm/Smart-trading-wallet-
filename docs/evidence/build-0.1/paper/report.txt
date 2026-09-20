@@ -1,1 +1,1 @@
-infrastructure/scripts/paper_tick.sh: line 63: uv: command not found
+infrastructure/scripts/paper_tick.sh: line 72: uv: command not found

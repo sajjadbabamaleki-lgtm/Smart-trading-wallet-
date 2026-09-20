@@ -9,6 +9,19 @@ Type=oneshot
 WorkingDirectory=/root/Smart-trading-wallet-
 ExecStart=/bin/bash infrastructure/scripts/paper_tick.sh
 
+# Without this the tick runs with systemd's default PATH, which does not
+# include /root/.local/bin, and every `uv run` in the script fails with
+# `uv: command not found`. That is exactly what happened: the loop died at
+# 2026-09-20 08:05 UTC and reported thirteen failures per tick, all of them
+# the same missing binary. git is in /usr/bin so the push step still worked,
+# which is why the unit looked alive while producing nothing.
+#
+# The recorder and the watchdog have carried this line since they were
+# written; this unit was added later and did not. It is the same PATH, on
+# purpose — three units that disagree about where uv lives is a fourth bug
+# waiting.
+Environment=PATH=/root/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
 # The same execution config the recorder pins, and for the same reason: this
 # unit reads one .env with the rest of the project, and a TESTNET environment
 # with a key present makes the market-data guard refuse to start. Nothing here

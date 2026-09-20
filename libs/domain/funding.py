@@ -127,9 +127,7 @@ class FundingHistory:
             return None
         return self.rates[index - 1]
 
-    def settlements_between(
-        self, start: datetime, end: datetime
-    ) -> tuple[Decimal, ...]:
+    def settlements_between(self, start: datetime, end: datetime) -> tuple[Decimal, ...]:
         """Payments that settled after `start` and at or before `end`.
 
         Half-open at the start so consecutive candles neither double-charge a

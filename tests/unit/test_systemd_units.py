@@ -12,7 +12,10 @@ nothing compared them. That comparison is what this file is.
 
 from __future__ import annotations
 
+import os
 import re
+import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -101,3 +104,87 @@ def test_paper_tick_refuses_before_it_blames_a_venue() -> None:
     tail = script[check : check + 600]
     assert "exit 1" in tail
     assert "failures=$((failures + 1))" not in tail
+
+
+def _timers() -> list[Path]:
+    found = sorted(UNITS.glob("*.timer"))
+    assert found, f"no timer files under {UNITS}"
+    return found
+
+
+@pytest.mark.parametrize("timer", _timers(), ids=lambda path: path.name)
+def test_calendar_schedule_is_pinned_to_utc(timer: Path) -> None:
+    """A schedule about a venue's clock must be written in the venue's clock.
+
+    systemd reads a bare OnCalendar in the machine's local timezone. The
+    recording host runs at UTC+2, so `00/4:05` — written to fire five minutes
+    after each 4h candle closes — fired at 22:05, 02:05, 06:05 UTC instead:
+    two hours late, every tick. It also moves when the host changes clock,
+    which happens twice a year without anyone touching this file.
+    """
+    for schedule in _directives(timer, "OnCalendar"):
+        # A weekday or monotonic-style schedule is about the host's own day
+        # and is allowed to follow it. Anything naming a clock time is about
+        # the venue.
+        assert schedule.endswith(" UTC"), (
+            f"{timer.name} has OnCalendar={schedule!r} with no timezone, so "
+            f"systemd reads it in the host's local time, not UTC."
+        )
+
+
+@pytest.mark.parametrize("timer", _timers(), ids=lambda path: path.name)
+def test_systemd_accepts_the_schedule(timer: Path) -> None:
+    """Parse it with systemd's own parser rather than trusting the syntax.
+
+    A rejected OnCalendar does not fail loudly — the timer is installed and
+    simply never fires, which is indistinguishable from the outage this file
+    exists because of.
+    """
+    analyze = shutil.which("systemd-analyze")
+    if analyze is None:
+        pytest.skip("systemd-analyze not installed")
+
+    for schedule in _directives(timer, "OnCalendar"):
+        result = subprocess.run(  # noqa: S603
+            [analyze, "calendar", schedule],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode == 0, f"{timer.name}: {schedule!r} — {result.stderr.strip()}"
+
+
+def test_the_schedule_means_the_same_thing_on_a_host_that_is_not_utc() -> None:
+    """The regression itself, reproduced.
+
+    Every other test here would have passed on the developer's UTC sandbox
+    while the server ran two hours late. This one sets the timezone the server
+    actually uses and checks the fire times land on the candle closes.
+    """
+    analyze = shutil.which("systemd-analyze")
+    if analyze is None:
+        pytest.skip("systemd-analyze not installed")
+
+    schedule = _directives(UNITS / "stw-paper.timer", "OnCalendar")[0]
+    result = subprocess.run(  # noqa: S603
+        [analyze, "calendar", "--iterations=6", schedule],
+        capture_output=True,
+        text=True,
+        check=True,
+        # The host's offset, and one that also changes clock in October, so a
+        # schedule that only works on a fixed offset fails here too.
+        env={**os.environ, "TZ": "Europe/Berlin"},
+    )
+    hours = {
+        int(match.group(1))
+        for match in re.finditer(r"\(in UTC\): \w+ [\d-]+ (\d\d):(\d\d)", result.stdout)
+    }
+    minutes = {
+        int(match.group(2))
+        for match in re.finditer(r"\(in UTC\): \w+ [\d-]+ (\d\d):(\d\d)", result.stdout)
+    }
+    assert hours, f"could not read fire times from:\n{result.stdout}"
+    # Binance 4h candles close at these hours UTC, and five minutes after is
+    # what the unit says it wants.
+    assert hours <= {0, 4, 8, 12, 16, 20}, f"fires at {sorted(hours)} UTC, not on candle closes"
+    assert minutes == {5}, f"fires at minute {sorted(minutes)}, not 5"

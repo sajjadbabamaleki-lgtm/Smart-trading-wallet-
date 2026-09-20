@@ -6,7 +6,23 @@ Description=Run the paper trading tick shortly after each 4h candle closes
 # Five minutes after, so the venue has published the closed candle before the
 # tick asks for it — the engine refuses stale data, and firing on the boundary
 # would make it refuse every time.
-OnCalendar=00/4:05
+#
+# The `UTC` suffix is the whole point of this line and was missing. systemd
+# reads a bare OnCalendar in the machine's local timezone; the recording host
+# runs at UTC+2, so `00/4:05` fired at 22:05, 02:05, 06:05 … UTC — every tick
+# decided two hours and five minutes after its candle closed rather than five
+# minutes. The loop's own git history shows it: reports stamped 20260919T2205Z
+# and 20260920T1005Z, which are 00:05 and 12:05 in the host's local time.
+#
+# Two hours late still decides on the correct closed candle, so nothing was
+# wrong in the record — but it throws away two hours of freshness for no
+# reason, and it does not survive the clock changing. At the end of October
+# this host goes to UTC+1 and every fire time silently moves an hour; with
+# Persistent=true and a four-hour cadence, a clock that jumps forward can skip
+# a tick and one that jumps back can run two.
+#
+# A venue that publishes in UTC should be read on a schedule written in UTC.
+OnCalendar=00/4:05 UTC
 Persistent=true
 # Spread the start slightly, so a restart does not fire every timer at once.
 RandomizedDelaySec=60

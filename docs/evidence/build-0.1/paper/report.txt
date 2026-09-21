@@ -1,10 +1,10 @@
-Paper trading, as of 2026-09-21 04:06 UTC
+Paper trading, as of 2026-09-21 04:17 UTC
 
   asset rule                 decisions  closed   win%   realised holding                last decision
-  BNB   funding-extreme              5       0      -       0.00 SHORT since 09-21 04:00 0.1h ago
-  BTC   funding-extreme              5       0      -       0.00 flat                   0.1h ago
-  ETH   funding-extreme              5       0      -       0.00 flat                   0.1h ago
-  SOL   funding-extreme              5       0      -       0.00 flat                   0.1h ago
+  BNB   funding-extreme              5       0      -       0.00 SHORT since 09-21 04:00 0.3h ago
+  BTC   funding-extreme              5       0      -       0.00 flat                   0.3h ago
+  ETH   funding-extreme              5       0      -       0.00 flat                   0.3h ago
+  SOL   funding-extreme              5       0      -       0.00 flat                   0.3h ago
 
   last decisions:
     2026-09-21 04:00  BNB   funding-extreme      SHORT @ 776.88000000

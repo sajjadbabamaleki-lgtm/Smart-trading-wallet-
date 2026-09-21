@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
 import pytest
@@ -178,3 +179,55 @@ def test_an_unreachable_remote_leaves_no_rebase_in_progress(
     assert not (server / ".git" / "rebase-apply").exists()
     # And the decision is still recorded locally, which the message must say.
     assert "committed locally" in result.stdout
+
+
+def test_git_can_never_wait_for_a_human() -> None:
+    """Under systemd there is nobody to answer a credential prompt.
+
+    A prompt there does not fail, it blocks: the unit hangs until
+    TimeoutStartSec kills it twenty minutes later, having written nothing and
+    said nothing. That is indistinguishable from a timer that never fired,
+    and distinguishing those two cost a morning.
+
+    Structural rather than behavioural, and deliberately so: reproducing a
+    real credential prompt needs a remote that demands auth, which the
+    sandbox's proxy intercepts before git ever asks. What can be checked is
+    that the guard is in place before the first command that could trigger
+    one — which is the part that was wrong, since the earlier version set it
+    on `git push` only and the fetch and rebase added later went uncovered.
+    """
+    # Compare line numbers of real code. The comments in this script quote
+    # the commands they explain, and a naive text search matches those first
+    # — which is how the previous version of this assertion failed.
+    lines = [line for line in TICK.read_text().splitlines() if not line.lstrip().startswith("#")]
+
+    def first_line_with(needle: str) -> int:
+        for number, line in enumerate(lines):
+            if needle in line:
+                return number
+        raise AssertionError(f"{needle!r} is not in paper_tick.sh at all")
+
+    guard = first_line_with("export GIT_TERMINAL_PROMPT=0")
+    for command in ("git fetch", "git push", "rebase -q"):
+        assert guard < first_line_with(command), (
+            f"{command!r} runs before GIT_TERMINAL_PROMPT is exported"
+        )
+
+
+def test_a_dead_remote_fails_fast_rather_than_hanging(
+    world: tuple[Path, Path, Path],
+) -> None:
+    """Whatever goes wrong with the network, the tick must end by itself.
+
+    The unit allows twenty minutes. Anything close to that is a hang, and a
+    hung oneshot reports nothing at all.
+    """
+    remote, server, _ = world
+    _git(server, "remote", "set-url", "origin", str(remote) + "-gone")
+
+    started = time.monotonic()
+    result = _run_push_stage(server, "report with no remote\n")
+    elapsed = time.monotonic() - started
+
+    assert result.returncode == 1
+    assert elapsed < 30, f"took {elapsed:.0f}s; the unit is killed at 1200s"

@@ -18,6 +18,18 @@ set -uo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 
+# Git must never wait for a human. Under systemd there is nobody to answer,
+# so a credential prompt does not fail — it hangs until TimeoutStartSec kills
+# the unit twenty minutes later, having written nothing and explained nothing.
+# A tick that dies silently is indistinguishable from a timer that never
+# fired, which is two hours of guessing every time it happens.
+#
+# Set once for the whole script rather than on the push alone: the fetch and
+# the rebase added later reach the network too, and the version of this that
+# only covered `git push` left exactly that gap.
+export GIT_TERMINAL_PROMPT=0
+export GIT_ASKPASS=/bin/true
+
 UV="${UV:-uv}"
 ASSETS="${ASSETS:-BTC ETH SOL BNB}"
 INTERVAL="${INTERVAL:-4h}"
@@ -157,7 +169,7 @@ sync_onto_remote() {
   fi
 }
 
-push_now() { GIT_TERMINAL_PROMPT=0 git push -q origin "$BRANCH" 2>/dev/null; }
+push_now() { git push -q origin "$BRANCH" 2>/dev/null; }
 
 if sync_onto_remote && push_now; then
   echo "pushed ${waiting} report(s) to origin/$BRANCH"

@@ -9,7 +9,7 @@ SUDO := $(shell [ "$$(id -u)" = 0 ] || echo sudo)
 .PHONY: help setup format lint typecheck test test-unit test-integration audit check \
         stack-up stack-down stack-logs stack-verify migrate accept console inspect \
         record-install record-status record-stop clean \
-        ladder history history-all history-long history-longest history-status history-table funding funding-all sentiment news information chart signal signal-all paper paper-report paper-tick paper-install paper-status paper-stop evaluate evaluate-all evaluate-report evaluate-push evaluate-summary
+        ladder history history-all history-long history-longest history-status history-table funding funding-all sentiment news information chart signal signal-all paper paper-report paper-tick paper-install paper-status paper-doctor paper-stop evaluate evaluate-all evaluate-report evaluate-push evaluate-summary
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -173,6 +173,9 @@ paper-status: ## When did the loop last run, and what did it say?
 	@$(SUDO) systemctl --no-pager list-timers stw-paper.timer
 	@echo
 	@$(SUDO) journalctl -u stw-paper -n 40 --no-pager
+
+paper-doctor: ## Why is the loop not reporting? Six lines, plain words
+	@$(SUDO) bash infrastructure/scripts/paper_doctor.sh
 
 paper-stop: ## Stop the loop and leave it stopped across reboots
 	$(SUDO) systemctl disable --now stw-paper.timer

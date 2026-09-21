@@ -104,18 +104,73 @@ fi
 # file's git history rather than a directory that grows a report per tick.
 git add "$REPORT"
 if git diff --cached --quiet; then
-  echo "report unchanged; nothing to push"
+  echo "report written unchanged"
 else
   git \
     -c user.name="${GIT_AUTHOR_NAME:-paper trader}" \
     -c user.email="${GIT_AUTHOR_EMAIL:-paper@localhost}" \
     commit -q -m "Paper trading report ${STAMP}" -- "$REPORT"
-  if GIT_TERMINAL_PROMPT=0 git push -q origin "$BRANCH"; then
-    echo "pushed to origin/$BRANCH"
-  else
-    echo "push failed; the report is committed locally at $REPORT"
-    failures=$((failures + 1))
+fi
+
+# Catching up on what earlier ticks could not send, not just this one. The
+# loop committed four reports it never pushed before anyone noticed, because
+# the old code only pushed when *this* tick changed the report — so once a
+# push started failing, every later tick with an unchanged report said
+# "nothing to push" and the backlog stayed invisible.
+waiting="$(git rev-list --count "origin/${BRANCH}..HEAD" 2>/dev/null || echo 0)"
+if [ "${waiting:-0}" -eq 0 ]; then
+  echo "nothing to push"
+  exit $(( failures > 0 ))
+fi
+
+# The branch is shared with whoever is working on the code, so the remote
+# moves under the loop. CLAUDE.md warns a person to "fetch and rebase" for
+# exactly this reason; nobody told the loop. A single push of my own was
+# enough to make every subsequent tick fail to report, permanently, until a
+# human ran git by hand — which is the worst shape a failure can have here,
+# because the report is the only thing that reaches the far end.
+#
+# Rebase rather than merge: the report is one file whose newest version
+# supersedes the last, so a linear history of it is the record, and merge
+# commits would bury it.
+sync_onto_remote() {
+  git fetch -q origin "$BRANCH" 2>/dev/null || return 1
+  git rev-parse --verify -q "origin/${BRANCH}" >/dev/null || return 1
+  # `-X theirs` during a rebase favours the commits being replayed — ours.
+  # That is the right resolution and its blast radius is one file: the tick
+  # only ever commits $REPORT, so a conflict can only be in $REPORT, and the
+  # newer report is always the one to keep.
+  # The same identity the commit above supplies inline, and for the same
+  # reason: a rebase writes commits too, and it refuses without a committer.
+  # Relying on the host's global git config would make the loop work on the
+  # machine it was written on and fail on the one it runs on.
+  if ! git \
+      -c core.editor=true \
+      -c user.name="${GIT_AUTHOR_NAME:-paper trader}" \
+      -c user.email="${GIT_AUTHOR_EMAIL:-paper@localhost}" \
+      rebase -q -X theirs "origin/${BRANCH}" >/dev/null 2>&1; then
+    # Never leave the repository mid-rebase. The next tick would fail on a
+    # state no one asked for, and the owner would be debugging git rather
+    # than reading a report.
+    git rebase --abort >/dev/null 2>&1 || true
+    return 1
   fi
+}
+
+push_now() { GIT_TERMINAL_PROMPT=0 git push -q origin "$BRANCH" 2>/dev/null; }
+
+if sync_onto_remote && push_now; then
+  echo "pushed ${waiting} report(s) to origin/$BRANCH"
+# One retry, for the race the first attempt cannot avoid: something pushed
+# between our fetch and our push. Retrying without re-syncing would fail the
+# same way, and retrying forever would hold the unit open against a venue
+# outage, so it is exactly one.
+elif sync_onto_remote && push_now; then
+  echo "pushed ${waiting} report(s) to origin/$BRANCH on the second attempt"
+else
+  echo "  push failed; ${waiting} report(s) committed locally, newest at $REPORT"
+  echo "  the decisions are recorded — only the reporting of them is stuck"
+  failures=$((failures + 1))
 fi
 
 exit $(( failures > 0 ))

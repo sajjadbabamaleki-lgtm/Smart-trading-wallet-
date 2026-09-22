@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import pytest
 
@@ -106,13 +107,11 @@ def test_portfolio_splits_capital_and_sums_results() -> None:
 def test_cli_carry_reports_both_rule_sets(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    from typing import Any  # noqa: PLC0415
-
     from services.analyst import cli  # noqa: PLC0415
 
     hours = 24 * 12
     candles = flat_candles(hours)
-    history = [
+    history: list[dict[str, Any]] = [
         {"time": int((START + HOUR * i).timestamp() * 1000), "fundingRate": "0.00002"}
         for i in range(hours)
     ]

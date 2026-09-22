@@ -10,7 +10,8 @@ an approximation and says so.
 from __future__ import annotations
 
 import csv
-from collections.abc import Iterable, Sequence
+import time
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from itertools import pairwise
@@ -126,11 +127,45 @@ def closed_only(candles: Sequence[Candle], interval: str, now: datetime) -> list
     return [c for c in candles if c.open_time + step <= now]
 
 
+RATE_LIMIT_RETRIES: Final = 6
+RATE_LIMIT_FIRST_WAIT_SECONDS: Final = 5.0
+PAGE_PAUSE_SECONDS: Final = 0.5
+"""Pause between funding-history pages. Hyperliquid weighs each request and
+refuses an IP that asks too fast; two years of hourly funding is dozens of
+pages per asset, so a portfolio of ten assets would otherwise be refused."""
+
+
+def _status_code(exc: BaseException) -> int | None:
+    code = getattr(exc, "status_code", None)
+    return code if isinstance(code, int) else None
+
+
+def with_rate_limit_retry[T](
+    call: Callable[[], T], *, sleep: Callable[[float], None] = time.sleep
+) -> T:
+    """Retry a request refused for rate (429) or a transient server error (5xx),
+    waiting 5, 10, 20… seconds. Any other failure is raised at once."""
+    wait = RATE_LIMIT_FIRST_WAIT_SECONDS
+    for attempt in range(RATE_LIMIT_RETRIES + 1):
+        try:
+            return call()
+        except Exception as exc:
+            code = _status_code(exc)
+            retryable = code == 429 or (code is not None and code >= 500)  # noqa: PLR2004
+            if not retryable or attempt == RATE_LIMIT_RETRIES:
+                raise
+        sleep(wait)
+        wait *= 2
+    raise AssertionError("unreachable")  # pragma: no cover
+
+
 def fetch_hyperliquid(info: Any, symbol: str, interval: str, *, now: datetime) -> list[Candle]:
     step = INTERVALS[interval]
     start = now - step * HYPERLIQUID_MAX_CANDLES
-    rows = info.candles_snapshot(
-        symbol, interval, int(start.timestamp() * 1000), int(now.timestamp() * 1000)
+    rows = with_rate_limit_retry(
+        lambda: info.candles_snapshot(
+            symbol, interval, int(start.timestamp() * 1000), int(now.timestamp() * 1000)
+        )
     )
     candles = closed_only(parse_hyperliquid(rows), interval, now)
     return validate_series(candles, interval)
@@ -148,7 +183,11 @@ def fetch_hyperliquid_funding(
     cursor = int(start.timestamp() * 1000)
     stop = int(end.timestamp() * 1000)
     while cursor < stop:
-        page = info.funding_history(symbol, cursor, stop)
+
+        def request(page_start: int = cursor) -> Any:
+            return info.funding_history(symbol, page_start, stop)
+
+        page = with_rate_limit_retry(request)
         if not page:
             break
         for row in page:
@@ -158,4 +197,5 @@ def fetch_hyperliquid_funding(
         if newest < cursor:
             break
         cursor = newest + 1
+        time.sleep(PAGE_PAUSE_SECONDS)
     return rates

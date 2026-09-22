@@ -645,5 +645,55 @@ class TestPortfolio:
         assert cli.main(["backtest", "--hyperliquid", "--symbols", "SOL,NOPE,BTC"]) == 0
         out = capsys.readouterr().out
         assert "NOPE: skipped" in out
+        assert "1 of 3 assets were skipped and are NOT in this result: NOPE" in out
         assert "Trades per week" in out
         assert "profitable on" in out
+
+
+class TestRateLimit:
+    class RefusedError(Exception):
+        def __init__(self, status_code: int) -> None:
+            super().__init__(f"HTTP {status_code}")
+            self.status_code = status_code
+
+    def test_rate_limited_requests_are_retried_with_growing_waits(self) -> None:
+        from services.analyst.candles import with_rate_limit_retry  # noqa: PLC0415
+
+        waits: list[float] = []
+        answers: list[Any] = [self.RefusedError(429), self.RefusedError(503), "ok"]
+
+        def call() -> str:
+            answer = answers.pop(0)
+            if isinstance(answer, Exception):
+                raise answer
+            return str(answer)
+
+        assert with_rate_limit_retry(call, sleep=waits.append) == "ok"
+        assert waits == [5.0, 10.0]
+
+    def test_other_errors_are_not_retried(self) -> None:
+        from services.analyst.candles import with_rate_limit_retry  # noqa: PLC0415
+
+        waits: list[float] = []
+
+        def call() -> str:
+            raise self.RefusedError(400)
+
+        with pytest.raises(self.RefusedError):
+            with_rate_limit_retry(call, sleep=waits.append)
+        assert waits == []
+
+    def test_retries_give_up_eventually(self) -> None:
+        from services.analyst.candles import (  # noqa: PLC0415
+            RATE_LIMIT_RETRIES,
+            with_rate_limit_retry,
+        )
+
+        waits: list[float] = []
+
+        def call() -> str:
+            raise self.RefusedError(429)
+
+        with pytest.raises(self.RefusedError):
+            with_rate_limit_retry(call, sleep=waits.append)
+        assert len(waits) == RATE_LIMIT_RETRIES

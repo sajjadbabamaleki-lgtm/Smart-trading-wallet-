@@ -297,6 +297,7 @@ def _backtest(args: argparse.Namespace) -> int:
             raise ValueError("several assets are backtested from Hyperliquid; add --hyperliquid")
         info = _info(mainnet=True)
         now = datetime.now(UTC)
+        skipped: list[str] = []
         candles_by_symbol: dict[str, Sequence[Candle]] = {}
         funding_by_symbol: dict[str, dict[datetime, float]] = {}
         for symbol in symbols:
@@ -307,13 +308,21 @@ def _backtest(args: argparse.Namespace) -> int:
                 )
             except Exception as exc:  # noqa: BLE001 — one missing asset must not stop the rest
                 print(f"{symbol}: skipped ({type(exc).__name__}: {exc})")
+                skipped.append(symbol)
                 continue
             candles_by_symbol[symbol] = candles
             funding_by_symbol[symbol] = funding
             print(f"{symbol}: {len(candles)} candles, {len(funding)} funding rates")
+        if not candles_by_symbol:
+            raise ValueError("no asset could be loaded")
         _print_portfolio(
             run_portfolio(candles_by_symbol, config, funding_by_symbol=funding_by_symbol)
         )
+        if skipped:
+            print(
+                f"\nWARNING: {len(skipped)} of {len(symbols)} assets were skipped and are NOT "
+                f"in this result: {', '.join(skipped)}. See the reasons at the top."
+            )
         return 0
 
     history: dict[datetime, float] | None = None

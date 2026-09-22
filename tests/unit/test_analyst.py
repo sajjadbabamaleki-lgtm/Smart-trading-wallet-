@@ -546,3 +546,26 @@ class TestCli:
         assert "PROPOSAL  LONG" in captured.out
         assert "news was not checked" in captured.out
         assert "every check must run" in captured.err
+
+
+def test_simulator_state_survives_a_save_and_reload() -> None:
+    """The paper account saves the simulator between candles; nothing may be lost."""
+    import json as json_module  # noqa: PLC0415
+
+    from services.analyst.simulator import BacktestConfig as Config  # noqa: PLC0415
+    from services.analyst.simulator import Simulator  # noqa: PLC0415
+
+    candles = make_candles(trend(40, 100, 0.002))
+    sim = Simulator(Config())
+    sim.schedule_entry(Direction.LONG, 90.0, 120.0)
+    sim.open_candle(candles[1])
+    sim.accrue_funding(0.0001, candles[1].close)
+    assert sim.position is not None
+    sim.close_at(candles[2].open_time, candles[2].close, "test")
+    sim.schedule_entry(Direction.SHORT, 200.0, None)
+
+    restored = Simulator.from_dict(Config(), json_module.loads(json_module.dumps(sim.to_dict())))
+    assert restored.to_dict() == sim.to_dict()
+    assert restored.cash == sim.cash
+    assert restored.trades == sim.trades
+    assert restored.pending_entry == (Direction.SHORT, 200.0, None)

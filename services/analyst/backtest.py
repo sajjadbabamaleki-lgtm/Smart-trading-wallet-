@@ -24,65 +24,19 @@ from __future__ import annotations
 import math
 import statistics
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta
-from decimal import Decimal
 from itertools import pairwise
 from typing import Final
 
 from services.analyst.candles import INTERVALS, Candle
-from services.analyst.strategy import StrategyParams, TrendIndicators
-from services.trader.planner import PlanRejectedError, RiskLimits, plan_trade
-from services.trader.venue import Direction, MarketRules
+from services.analyst.simulator import BacktestConfig, Simulator, Trade
+from services.analyst.strategy import TrendIndicators
+from services.trader.venue import Direction
 
-DEFAULT_TAKER_FEE: Final = 0.00045
-"""Hyperliquid's base-tier taker fee per side."""
-DEFAULT_SLIPPAGE: Final = 0.0005
-"""0.05% per market fill, on top of the fee."""
-DEFAULT_FUNDING_HOURLY: Final = 0.0000125
-"""Hyperliquid's baseline hourly funding (about 11% a year, longs paying
-shorts) — used only when no funding history is supplied."""
+__all__ = ["BacktestConfig", "BacktestResult", "Metrics", "Trade", "run_backtest"]
+
 MIN_TRADES_FOR_CONFIDENCE: Final = 30
-
-BACKTEST_MARKET: Final = MarketRules(
-    symbol="BACKTEST",
-    lot_size=Decimal("0.000001"),
-    max_leverage=20,
-    min_order_usd=Decimal(10),
-    significant_figures=5,
-    max_price_decimals=6,
-)
-
-
-@dataclass(frozen=True)
-class BacktestConfig:
-    interval: str = "4h"
-    initial_equity: float = 10_000.0
-    risk_percent: float = 1.0
-    max_leverage: int = 3
-    taker_fee: float = DEFAULT_TAKER_FEE
-    slippage: float = DEFAULT_SLIPPAGE
-    funding_hourly: float = DEFAULT_FUNDING_HOURLY
-    params: StrategyParams = field(default_factory=StrategyParams)
-
-
-@dataclass(frozen=True)
-class Trade:
-    direction: Direction
-    entry_time: datetime
-    exit_time: datetime
-    entry_price: float
-    exit_price: float
-    amount: float
-    risk_usd: float
-    pnl: float
-    fees: float
-    funding: float
-    exit_reason: str
-
-    @property
-    def r_multiple(self) -> float:
-        return self.pnl / self.risk_usd if self.risk_usd else 0.0
 
 
 @dataclass(frozen=True)
@@ -128,36 +82,16 @@ class BacktestResult:
     warnings: list[str]
 
 
-@dataclass
-class _Position:
-    direction: Direction
-    entry_time: datetime
-    entry_price: float
-    amount: float
-    stop: float
-    target: float | None
-    risk_usd: float
-    fees: float
-    funding: float = 0.0
-
-
-def _fill(price: float, *, buy: bool, slippage: float) -> float:
-    return price * (1 + slippage) if buy else price * (1 - slippage)
-
-
 def _funding_for_bar(
     start: datetime, step: timedelta, rates: dict[datetime, float] | None, default: float
 ) -> float:
     hours = int(step.total_seconds() // 3600)
     if rates is None:
         return default * hours
-    total = 0.0
-    for h in range(hours):
-        total += rates.get(start + timedelta(hours=h), 0.0)
-    return total
+    return sum(rates.get(start + timedelta(hours=h), 0.0) for h in range(hours))
 
 
-def run_backtest(  # noqa: PLR0912, PLR0915 — one bar loop; its steps read in order
+def run_backtest(
     candles: Sequence[Candle],
     config: BacktestConfig,
     *,
@@ -172,137 +106,31 @@ def run_backtest(  # noqa: PLR0912, PLR0915 — one bar loop; its steps read in 
             f"not enough candles: {len(candles)} given, the strategy needs "
             f"{indicators.warmup} for warm-up plus a test period"
         )
-    limits = RiskLimits(
-        risk_percent=Decimal(str(config.risk_percent)),
-        max_leverage=config.max_leverage,
-        taker_fee_rate=Decimal(str(config.taker_fee)),
-        slippage_percent=Decimal(str(config.slippage * 100)),
-    )
-
-    cash = config.initial_equity
-    position: _Position | None = None
-    pending_entry: tuple[Direction, float, float | None] | None = None
-    pending_exit = False
-    trades: list[Trade] = []
+    sim = Simulator(config)
     equity_curve: list[tuple[datetime, float, bool]] = []
-    skipped = 0
-
-    def close(pos: _Position, time: datetime, raw_price: float, reason: str) -> float:
-        buy = pos.direction is Direction.SHORT
-        price = _fill(raw_price, buy=buy, slippage=config.slippage)
-        fee = price * pos.amount * config.taker_fee
-        sign = 1 if pos.direction is Direction.LONG else -1
-        gross = (price - pos.entry_price) * pos.amount * sign
-        pnl = gross - pos.fees - fee - pos.funding
-        trades.append(
-            Trade(
-                direction=pos.direction,
-                entry_time=pos.entry_time,
-                exit_time=time,
-                entry_price=pos.entry_price,
-                exit_price=price,
-                amount=pos.amount,
-                risk_usd=pos.risk_usd,
-                pnl=pnl,
-                fees=pos.fees + fee,
-                funding=pos.funding,
-                exit_reason=reason,
-            )
-        )
-        # Entry fee and funding were never taken from cash, only accrued on the
-        # position, so the realised amount is the trade's full net P&L.
-        return pnl
 
     for i in range(start, len(candles)):
         bar = candles[i]
-
-        # 1. Orders decided at the previous close fill at this open.
-        if pending_exit and position is not None:
-            cash += close(position, bar.open_time, bar.open, "trend faded")
-            position = None
-        pending_exit = False
-        if pending_entry is not None and position is None:
-            direction, stop, target = pending_entry
-            buy = direction is Direction.LONG
-            entry = _fill(bar.open, buy=buy, slippage=config.slippage)
-            stop_valid = stop < entry if buy else stop > entry
-            if stop_valid:
-                try:
-                    plan = plan_trade(
-                        market=BACKTEST_MARKET,
-                        direction=direction,
-                        entry_price=Decimal(str(entry)),
-                        stop_loss=Decimal(str(stop)),
-                        take_profit=None,
-                        equity=Decimal(str(cash)),
-                        available=Decimal(str(cash)),
-                        limits=limits,
-                    )
-                except PlanRejectedError:
-                    skipped += 1
-                else:
-                    amount = float(plan.amount)
-                    fee = entry * amount * config.taker_fee
-                    position = _Position(
-                        direction=direction,
-                        entry_time=bar.open_time,
-                        entry_price=entry,
-                        amount=amount,
-                        stop=stop,
-                        target=target,
-                        risk_usd=float(plan.risk_usd),
-                        fees=fee,
-                    )
-            else:
-                skipped += 1  # the market opened beyond the stop
-        pending_entry = None
-
-        # 2. Stops and targets during this candle; stop first when both touch.
-        if position is not None:
-            long = position.direction is Direction.LONG
-            stop_hit = bar.low <= position.stop if long else bar.high >= position.stop
-            target_hit = position.target is not None and (
-                bar.high >= position.target if long else bar.low <= position.target
-            )
-            if stop_hit:
-                gapped = bar.open <= position.stop if long else bar.open >= position.stop
-                cash += close(
-                    position, bar.open_time, bar.open if gapped else position.stop, "stop"
-                )
-                position = None
-            elif target_hit and position.target is not None:
-                gapped = bar.open >= position.target if long else bar.open <= position.target
-                exit_price = bar.open if gapped else position.target
-                cash += close(position, bar.open_time, exit_price, "target")
-                position = None
-
-        # 3. Funding for the hours held in this candle.
-        exposed = position is not None
-        if position is not None:
-            rate = _funding_for_bar(bar.open_time, step, funding_rates, config.funding_hourly)
-            sign = 1 if position.direction is Direction.LONG else -1
-            position.funding += rate * sign * bar.close * position.amount
-
-        # 4. Decide at this close what happens at the next open.
+        sim.open_candle(bar)
+        exposed = sim.position is not None
+        sim.accrue_funding(
+            _funding_for_bar(bar.open_time, step, funding_rates, config.funding_hourly), bar.close
+        )
         if i < len(candles) - 1:
-            if position is not None:
-                pending_exit = indicators.should_exit(i, position.direction)
+            if sim.position is not None:
+                if indicators.should_exit(i, sim.position.direction):
+                    sim.schedule_exit()
             else:
                 signal = indicators.signal(i)
                 if signal.direction is not None and signal.stop_loss is not None:
-                    pending_entry = (signal.direction, signal.stop_loss, signal.take_profit)
+                    sim.schedule_entry(signal.direction, signal.stop_loss, signal.take_profit)
+        equity_curve.append((bar.open_time, sim.equity(bar.close), exposed))
 
-        mark = cash
-        if position is not None:
-            sign = 1 if position.direction is Direction.LONG else -1
-            mark += (bar.close - position.entry_price) * position.amount * sign
-            mark -= position.fees + position.funding
-        equity_curve.append((bar.open_time, mark, exposed))
-
-    if position is not None:
-        last = candles[-1]
-        cash += close(position, last.open_time, last.close, "end of data")
-        equity_curve[-1] = (last.open_time, cash, True)
+    last = candles[-1]
+    if sim.close_at(last.open_time, last.close, "end of data") is not None:
+        equity_curve[-1] = (last.open_time, sim.cash, True)
+    trades = sim.trades
+    skipped = sim.skipped
 
     closes = [(c.open_time, c.close) for c in candles[start:]]
     midpoint = equity_curve[len(equity_curve) // 2][0]

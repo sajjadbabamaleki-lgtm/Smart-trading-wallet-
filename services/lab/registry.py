@@ -32,10 +32,11 @@ from services.lab.engine import LabResult
 
 TRIALS_PATH: Final = CACHE_DIR / "trials.jsonl"
 EULER_GAMMA: Final = 0.5772156649015329
-PRIOR_TRIALS: Final = 6
-"""Tests run on this data before the lab existed: the trend strategy on SOL,
-BTC, ETH and the ten-asset portfolio, and funding carry in two forms. They
-count toward N even though their Sharpe ratios are not in the log."""
+PRIOR_TRIALS: Final = 7
+"""Tests outside this log: the trend strategy on SOL, BTC, ETH and the
+ten-asset portfolio, and funding carry in two forms, all before the lab
+existed; and the copy-trading persistence study. They count toward N even
+though their Sharpe ratios are not in the log."""
 
 
 def record(result: LabResult, window: str, path: Path = TRIALS_PATH) -> None:

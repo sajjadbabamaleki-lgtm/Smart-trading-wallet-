@@ -50,6 +50,7 @@ def run(
     share = replace(config, initial_equity=config.initial_equity / len(symbols))
     sims = {s: Simulator(share) for s in symbols}
     index = {s: {c.open_time: i for i, c in enumerate(dataset.candles[s])} for s in symbols}
+    strategy.funding = dataset.funding
     strategy.prepare(dataset.candles)
 
     times = sorted({t for s in symbols for t in index[s] if start <= t < end})

@@ -15,6 +15,7 @@ from services.lab import data, registry
 from services.lab.engine import run
 from services.lab.strategies import (
     CATALOGUE,
+    CrossSectionalFunding,
     CrossSectionalMomentum,
     DonchianEnsemble,
     Enter,
@@ -174,6 +175,29 @@ def test_cross_sectional_momentum_trades_only_on_monday_and_ranks_the_ends() -> 
     assert len(longs) == len(shorts) == 3
     assert "A3" in longs and "A4" in shorts
     assert strategy.decide(ds.candles["A0"][monday_close + 1].open_time, index, held) == []
+
+
+def test_cross_sectional_funding_shorts_the_highest_funding_and_ignores_the_future() -> None:
+    ds = dataset()
+    strategy = CrossSectionalFunding()
+    monday_close = next(
+        i
+        for i, c in enumerate(ds.candles["A0"])
+        if i > 500 and (c.open_time + STEP).weekday() == 0 and (c.open_time + STEP).hour == 0
+    )
+    closes_at = ds.candles["A0"][monday_close].open_time + STEP
+    # A0 has the highest past funding, A5 the lowest; after the close the order flips.
+    strategy.funding = {
+        s: {t: (k if t < closes_at else -k) / 100_000 for t in ds.funding[s]}
+        for k, s in zip(range(6, 0, -1), sorted(ds.candles), strict=True)
+    }
+    strategy.prepare(ds.candles)
+    index = dict.fromkeys(ds.candles, monday_close)
+    actions = strategy.decide(closes_at - STEP, index, dict.fromkeys(ds.candles))
+    shorts = {s for s, a in actions if isinstance(a, Enter) and a.direction is Direction.SHORT}
+    longs = {s for s, a in actions if isinstance(a, Enter) and a.direction is Direction.LONG}
+    assert shorts == {"A0", "A1", "A2"} and longs == {"A3", "A4", "A5"}
+    assert strategy.decide(closes_at, index, dict.fromkeys(ds.candles)) == []
 
 
 # ---------------------------------------------------------------------------

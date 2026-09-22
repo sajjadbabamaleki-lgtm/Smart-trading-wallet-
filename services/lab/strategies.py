@@ -64,6 +64,9 @@ class Strategy(ABC):
     name: ClassVar[str]
     summary: ClassVar[str]
     source: ClassVar[str]
+    funding: dict[str, dict[datetime, float]]
+    """Hourly funding rates per asset, set by the engine. A strategy must read
+    only rates stamped before the candle close it decides at."""
 
     def prepare(self, candles: dict[str, list[Candle]]) -> None:
         self.candles = candles
@@ -334,7 +337,69 @@ class CrossSectionalMomentum(Strategy):
         return actions
 
 
+# ---------------------------------------------------------------------------
+# 5. Cross-sectional funding
+# ---------------------------------------------------------------------------
+
+
+class CrossSectionalFunding(Strategy):
+    name = "xsec-funding"
+    summary = (
+        "every Monday 00:00 UTC: short the 3 perps with the highest average funding over the "
+        "past 7 days, long the 3 lowest; hold a week; 3 ATR protective stop"
+    )
+    source = (
+        "Schmeling, Schrimpf & Todorov (2023, BIS Working Paper 1087, 'Crypto carry'): "
+        "carry is large and time-varying, and high carry signals crowded leveraged longs "
+        "and predicts sell-offs. The short side also receives the funding."
+    )
+    lookback_hours: ClassVar = 7 * 24
+    bucket: ClassVar = 3
+
+    def average_funding(self, symbol: str, closes_at: datetime) -> float | None:
+        rates = self.funding.get(symbol, {})
+        known = [
+            rate
+            for h in range(1, self.lookback_hours + 1)
+            if (rate := rates.get(closes_at - timedelta(hours=h))) is not None
+        ]
+        return sum(known) / len(known) if len(known) >= self.lookback_hours // 2 else None
+
+    def decide(
+        self, time: datetime, index: dict[str, int], held: dict[str, Held | None]
+    ) -> list[tuple[str, Action]]:
+        closes_at = time + timedelta(hours=4)
+        if closes_at.weekday() != 0 or closes_at.hour != 0:
+            return []
+        averages = {
+            s: rate for s in index if (rate := self.average_funding(s, closes_at)) is not None
+        }
+        if len(averages) < 2 * self.bucket:
+            return []
+        ranked = sorted(averages, key=averages.__getitem__)
+        wanted = dict.fromkeys(ranked[: self.bucket], Direction.LONG)
+        wanted |= dict.fromkeys(ranked[-self.bucket :], Direction.SHORT)
+
+        actions: list[tuple[str, Action]] = []
+        for symbol, i in index.items():
+            position = held[symbol]
+            target = wanted.get(symbol)
+            if position is not None and position.direction is not target:
+                actions.append((symbol, Exit()))
+            if target is not None and (position is None or position.direction is not target):
+                stop = self._protective_stop(symbol, i, target)
+                if stop is not None:
+                    actions.append((symbol, Enter(target, stop)))
+        return actions
+
+
 CATALOGUE: Final[dict[str, type[Strategy]]] = {
     cls.name: cls
-    for cls in (TrendFixedTarget, TrendTrailing, DonchianEnsemble, CrossSectionalMomentum)
+    for cls in (
+        TrendFixedTarget,
+        TrendTrailing,
+        DonchianEnsemble,
+        CrossSectionalMomentum,
+        CrossSectionalFunding,
+    )
 }

@@ -641,7 +641,7 @@ class TestPortfolio:
 
         now = candles[-1].open_time + STEP * 2
         monkeypatch.setattr(cli, "_info", lambda *_, **__: PortfolioInfo(candles))
-        monkeypatch.setattr(cli, "datetime", SimpleNamespace(now=lambda tz=None: now))
+        monkeypatch.setattr(cli, "datetime", SimpleNamespace(now=lambda *_: now))
         assert cli.main(["backtest", "--hyperliquid", "--symbols", "SOL,NOPE,BTC"]) == 0
         out = capsys.readouterr().out
         assert "NOPE: skipped" in out

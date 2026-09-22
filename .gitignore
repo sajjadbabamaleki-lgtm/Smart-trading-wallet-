@@ -8,6 +8,7 @@
 .env
 .env.*
 !.env.example
+!.env.trader.example
 *.pem
 *.key
 *.p12

@@ -13,6 +13,10 @@ dependencies = [
     "boto3>=1.35,<2",
     # M2 recorder. The venue WebSocket client.
     "websockets>=13,<16",
+    # Pacifica (Solana perps). Ed25519 signing with Solana keypairs, and the
+    # REST client.
+    "solders>=0.21,<1",
+    "httpx>=0.27,<1",
 ]
 
 # Production dependencies stay deliberately small (Build 0.1 Rev.1 §7).

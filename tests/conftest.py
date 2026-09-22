@@ -24,7 +24,7 @@ FIXED_TIME = datetime(2026, 9, 14, 12, 0, 0, tzinfo=UTC)
 @pytest.fixture(autouse=True)
 def _isolate_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[None]:
     for key in list(os.environ):
-        if key.startswith("STW_"):
+        if key.startswith(("STW_", "PACIFICA_")):
             monkeypatch.delenv(key, raising=False)
     # Point the env_file at an empty directory so a developer's real .env is
     # never read during a test run.

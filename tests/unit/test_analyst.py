@@ -569,3 +569,81 @@ def test_simulator_state_survives_a_save_and_reload() -> None:
     assert restored.cash == sim.cash
     assert restored.trades == sim.trades
     assert restored.pending_entry == (Direction.SHORT, 200.0, None)
+
+
+# ---------------------------------------------------------------------------
+# Portfolio
+# ---------------------------------------------------------------------------
+
+
+class TestPortfolio:
+    up_down = (
+        trend(WARMUP + 200, 100, 0.002)
+        + trend(300, 100 * 1.002 ** (WARMUP + 199), -0.002)
+        + trend(300, 60, 0.002)
+    )
+
+    def test_a_portfolio_of_one_is_the_single_asset_backtest(self) -> None:
+        from services.analyst.backtest import run_portfolio  # noqa: PLC0415
+
+        candles = make_candles(self.up_down)
+        single = run_backtest(candles, BacktestConfig())
+        portfolio = run_portfolio({"SOL": candles}, BacktestConfig())
+        assert portfolio.full.total_return == pytest.approx(single.full.total_return)
+        assert portfolio.full.trades == single.full.trades
+        assert portfolio.full.max_drawdown == pytest.approx(single.full.max_drawdown)
+
+    def test_capital_is_split_and_every_trade_is_counted(self) -> None:
+        from services.analyst.backtest import run_portfolio  # noqa: PLC0415
+
+        a = make_candles(self.up_down)
+        b = make_candles([p * 3 for p in reversed(self.up_down)])
+        result = run_portfolio({"A": a, "B": b}, BacktestConfig(initial_equity=10_000))
+        final = 10_000 * (1 + result.full.total_return)
+        per_asset = sum(5_000 * (1 + r.full.total_return) for r in result.per_asset.values())
+        assert final == pytest.approx(per_asset)
+        assert result.full.trades == sum(r.full.trades for r in result.per_asset.values())
+        assert result.trades_per_week > 0
+
+    def test_an_asset_that_starts_later_sits_in_cash_until_then(self) -> None:
+        from services.analyst.backtest import run_portfolio  # noqa: PLC0415
+
+        early = make_candles(self.up_down)
+        late = make_candles(self.up_down)[300:]
+        late = [Candle(c.open_time, c.open, c.high, c.low, c.close, c.volume) for c in late]
+        result = run_portfolio({"EARLY": early, "LATE": late}, BacktestConfig())
+        first_value = result.full.start
+        assert first_value == result.per_asset["EARLY"].equity_curve[0][0]
+        # Before LATE starts, its half is untouched cash: the portfolio starts at 10,000.
+        assert result.per_asset["LATE"].equity_curve[0][0] > first_value
+
+    def test_cli_portfolio_needs_hyperliquid_data(self, capsys: pytest.CaptureFixture[str]) -> None:
+        from services.analyst.cli import main  # noqa: PLC0415
+
+        assert main(["backtest", "--top10", "--csv", "x.csv"]) == 1
+        assert "--hyperliquid" in capsys.readouterr().err
+
+    def test_cli_portfolio_skips_unlisted_assets(
+        self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        from services.analyst import cli  # noqa: PLC0415
+
+        candles = make_candles(self.up_down)
+
+        class PortfolioInfo(FakeInfo):
+            def candles_snapshot(self, name: str, *_request: Any) -> Any:
+                if name == "NOPE":
+                    raise ValueError("not listed")
+                return super().candles_snapshot()
+
+            def funding_history(self, *_request: Any) -> Any:
+                return []
+
+        now = candles[-1].open_time + STEP * 2
+        monkeypatch.setattr(cli, "_info", lambda *_, **__: PortfolioInfo(candles))
+        monkeypatch.setattr(cli, "datetime", SimpleNamespace(now=lambda tz=None: now))
+        assert cli.main(["backtest", "--hyperliquid", "--symbols", "SOL,NOPE,BTC"]) == 0
+        out = capsys.readouterr().out
+        assert "NOPE: skipped" in out
+        assert "Trades per week" in out
+        assert "profitable on" in out

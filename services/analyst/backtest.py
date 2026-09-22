@@ -24,7 +24,7 @@ from __future__ import annotations
 import math
 import statistics
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 from itertools import pairwise
 from typing import Final
@@ -34,7 +34,15 @@ from services.analyst.simulator import BacktestConfig, Simulator, Trade
 from services.analyst.strategy import TrendIndicators
 from services.trader.venue import Direction
 
-__all__ = ["BacktestConfig", "BacktestResult", "Metrics", "Trade", "run_backtest"]
+__all__ = [
+    "BacktestConfig",
+    "BacktestResult",
+    "Metrics",
+    "PortfolioResult",
+    "Trade",
+    "run_backtest",
+    "run_portfolio",
+]
 
 MIN_TRADES_FOR_CONFIDENCE: Final = 30
 
@@ -80,6 +88,8 @@ class BacktestResult:
     trades: list[Trade]
     skipped_signals: int
     warnings: list[str]
+    equity_curve: list[tuple[datetime, float, bool]]
+    closes: list[tuple[datetime, float]]
 
 
 def _funding_for_bar(
@@ -155,6 +165,90 @@ def run_backtest(
         shorts=_trade_stats([t for t in trades if t.direction is Direction.SHORT]),
         trades=trades,
         skipped_signals=skipped,
+        warnings=warnings,
+        equity_curve=equity_curve,
+        closes=closes,
+    )
+
+
+@dataclass(frozen=True)
+class PortfolioResult:
+    per_asset: dict[str, BacktestResult]
+    full: Metrics
+    first_half: Metrics
+    second_half: Metrics
+    longs: TradeStats
+    shorts: TradeStats
+    trades_per_week: float
+    warnings: list[str]
+
+
+def run_portfolio(
+    candles_by_symbol: dict[str, Sequence[Candle]],
+    config: BacktestConfig,
+    *,
+    funding_by_symbol: dict[str, dict[datetime, float]] | None = None,
+) -> PortfolioResult:
+    """The same rules on several assets, with capital split equally between them.
+
+    Each asset gets `initial_equity / n` and trades it independently, exactly
+    as `run_backtest` would — 1% risk of its own share, so the total at risk
+    never exceeds a single-asset account's. A share whose asset has not started
+    trading yet sits in cash. Nothing about the rules changes with the number
+    of assets; only the number of opportunities does.
+    """
+    if not candles_by_symbol:
+        raise ValueError("no assets given")
+    step = INTERVALS[config.interval]
+    sleeve = replace(config, initial_equity=config.initial_equity / len(candles_by_symbol))
+    funding = funding_by_symbol or {}
+    results = {
+        symbol: run_backtest(candles, sleeve, funding_rates=funding.get(symbol))
+        for symbol, candles in candles_by_symbol.items()
+    }
+
+    times = sorted({t for r in results.values() for t, _, _ in r.equity_curve})
+    equity_at = {s: {t: (v, e) for t, v, e in r.equity_curve} for s, r in results.items()}
+    price_at = {s: dict(r.closes) for s, r in results.items()}
+    first_price = {s: price_at[s][r.equity_curve[0][0]] for s, r in results.items()}
+    last_equity = dict.fromkeys(results, sleeve.initial_equity)
+    last_price = dict(first_price)
+    curve: list[tuple[datetime, float, bool]] = []
+    index: list[tuple[datetime, float]] = []
+    for t in times:
+        exposed = False
+        for s in results:
+            if t in equity_at[s]:
+                last_equity[s], held = equity_at[s][t]
+                exposed = exposed or held
+            if t in price_at[s]:
+                last_price[s] = price_at[s][t]
+        curve.append((t, sum(last_equity.values()), exposed))
+        # Equal-weight buy and hold of the same assets, for comparison.
+        index.append((t, sum(last_price[s] / first_price[s] for s in results)))
+
+    trades = sorted((t for r in results.values() for t in r.trades), key=lambda t: t.entry_time)
+    midpoint = curve[len(curve) // 2][0]
+    weeks = (curve[-1][0] - curve[0][0]) / timedelta(weeks=1)
+    warnings = [f"{s}: {w}" for s, r in results.items() for w in r.warnings if "funding" in w]
+    return PortfolioResult(
+        per_asset=results,
+        full=_metrics(curve, trades, index, step),
+        first_half=_metrics(
+            [p for p in curve if p[0] < midpoint],
+            [t for t in trades if t.entry_time < midpoint],
+            index,
+            step,
+        ),
+        second_half=_metrics(
+            [p for p in curve if p[0] >= midpoint],
+            [t for t in trades if t.entry_time >= midpoint],
+            index,
+            step,
+        ),
+        longs=_trade_stats([t for t in trades if t.direction is Direction.LONG]),
+        shorts=_trade_stats([t for t in trades if t.direction is Direction.SHORT]),
+        trades_per_week=len(trades) / weeks if weeks > 0 else 0.0,
         warnings=warnings,
     )
 

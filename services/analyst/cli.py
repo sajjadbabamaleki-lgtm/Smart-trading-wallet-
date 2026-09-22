@@ -18,9 +18,11 @@ import argparse
 import asyncio
 import math
 import sys
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
+from typing import Final
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
@@ -32,10 +34,13 @@ from services.analyst.backtest import (  # noqa: E402
     BacktestConfig,
     BacktestResult,
     Metrics,
+    PortfolioResult,
     run_backtest,
+    run_portfolio,
 )
 from services.analyst.candles import (  # noqa: E402
     INTERVALS,
+    Candle,
     CandleError,
     fetch_hyperliquid,
     fetch_hyperliquid_funding,
@@ -49,6 +54,10 @@ from services.trader.planner import PlanRejectedError, RiskLimits  # noqa: E402
 from services.trader.trader import TradeRefusedError, open_position  # noqa: E402
 from services.trader.venues.factory import build_venue  # noqa: E402
 from services.trader.venues.hyperliquid import EMPTY_SPOT_META, base_url  # noqa: E402
+
+TOP_10: Final = ("BTC", "ETH", "SOL", "BNB", "XRP", "DOGE", "ADA", "AVAX", "LINK", "DOT")
+"""Fixed before any portfolio result was seen, so the list cannot be picked to
+flatter one: ten long-established, liquid assets."""
 
 
 def _info(mainnet: bool) -> object:
@@ -72,7 +81,18 @@ def build_parser() -> argparse.ArgumentParser:
     analyze.add_argument("--yes", action="store_true", help="skip the mainnet confirmation")
 
     backtest = commands.add_parser("backtest", help="test the strategy on history")
-    backtest.add_argument("--symbol", default="SOL", type=str.upper)
+    assets = backtest.add_mutually_exclusive_group()
+    assets.add_argument("--symbol", default="SOL", type=str.upper)
+    assets.add_argument(
+        "--symbols",
+        type=lambda text: [s.strip().upper() for s in text.split(",") if s.strip()],
+        help="several assets, comma-separated: the same rules on each, capital split equally",
+    )
+    assets.add_argument(
+        "--top10",
+        action="store_true",
+        help="the fixed list of ten liquid assets: " + ", ".join(TOP_10),
+    )
     backtest.add_argument("--interval", default="4h", choices=sorted(INTERVALS))
     source = backtest.add_mutually_exclusive_group(required=True)
     source.add_argument(
@@ -238,24 +258,75 @@ def _print_backtest(result: BacktestResult) -> None:
     )
 
 
+def _print_portfolio(result: PortfolioResult) -> None:
+    print("\nPer asset (same rules, equal share of capital):")
+    print(f"  {'asset':<6} {'trades':>6} {'win':>5} {'avg R':>7} {'return':>8} {'P(SR>0)':>8}")
+    for symbol, r in result.per_asset.items():
+        m = r.full
+        print(
+            f"  {symbol:<6} {m.trades:>6} {m.win_rate:>5.0%} {m.average_r:>+7.2f} "
+            f"{m.total_return:>+8.1%} {m.probabilistic_sharpe:>8.0%}"
+        )
+    profitable = sum(1 for r in result.per_asset.values() if r.full.total_return > 0)
+    print(f"  profitable on {profitable} of {len(result.per_asset)} assets")
+    print(f"\nTrades per week: {result.trades_per_week:.1f}")
+    _print_metrics("Portfolio, full period", result.full)
+    _print_metrics("Portfolio, first half", result.first_half)
+    _print_metrics("Portfolio, second half", result.second_half)
+    for name, stats in (("Longs", result.longs), ("Shorts", result.shorts)):
+        print(
+            f"\n{name}: {stats.trades} trades, win rate {stats.win_rate:.0%}, "
+            f"average {stats.average_r:+.2f}R, profit factor {_fmt_pf(stats.profit_factor)}, "
+            f"net ${stats.net_pnl:,.2f}"
+        )
+    print("\n(buy & hold here is an equal-weight basket of the same assets)")
+    for warning in result.warnings:
+        print(f"WARNING: {warning}")
+
+
 def _backtest(args: argparse.Namespace) -> int:
-    funding = None
-    if args.hyperliquid:
-        info = _info(mainnet=True)
-        now = datetime.now(UTC)
-        candles = fetch_hyperliquid(info, args.symbol, args.interval, now=now)
-        funding = fetch_hyperliquid_funding(info, args.symbol, start=candles[0].open_time, end=now)
-        print(f"{len(candles)} Hyperliquid candles, {len(funding)} hourly funding rates")
-    else:
-        candles = validate_series(load_binance_csv(args.csv), args.interval)
-        print(f"{len(candles)} candles from {len(args.csv)} file(s) — Binance spot, not the perp")
     config = BacktestConfig(
         interval=args.interval,
         risk_percent=args.risk,
         max_leverage=args.leverage,
         params=StrategyParams(allow_short=not args.long_only),
     )
-    _print_backtest(run_backtest(candles, config, funding_rates=funding))
+    symbols = list(TOP_10) if args.top10 else args.symbols
+    if symbols:
+        if not args.hyperliquid:
+            raise ValueError("several assets are backtested from Hyperliquid; add --hyperliquid")
+        info = _info(mainnet=True)
+        now = datetime.now(UTC)
+        candles_by_symbol: dict[str, Sequence[Candle]] = {}
+        funding_by_symbol: dict[str, dict[datetime, float]] = {}
+        for symbol in symbols:
+            try:
+                candles = fetch_hyperliquid(info, symbol, args.interval, now=now)
+                funding = fetch_hyperliquid_funding(
+                    info, symbol, start=candles[0].open_time, end=now
+                )
+            except Exception as exc:  # noqa: BLE001 — one missing asset must not stop the rest
+                print(f"{symbol}: skipped ({type(exc).__name__}: {exc})")
+                continue
+            candles_by_symbol[symbol] = candles
+            funding_by_symbol[symbol] = funding
+            print(f"{symbol}: {len(candles)} candles, {len(funding)} funding rates")
+        _print_portfolio(
+            run_portfolio(candles_by_symbol, config, funding_by_symbol=funding_by_symbol)
+        )
+        return 0
+
+    history: dict[datetime, float] | None = None
+    if args.hyperliquid:
+        info = _info(mainnet=True)
+        now = datetime.now(UTC)
+        candles = fetch_hyperliquid(info, args.symbol, args.interval, now=now)
+        history = fetch_hyperliquid_funding(info, args.symbol, start=candles[0].open_time, end=now)
+        print(f"{len(candles)} Hyperliquid candles, {len(history)} hourly funding rates")
+    else:
+        candles = validate_series(load_binance_csv(args.csv), args.interval)
+        print(f"{len(candles)} candles from {len(args.csv)} file(s) — Binance spot, not the perp")
+    _print_backtest(run_backtest(candles, config, funding_rates=history))
     return 0
 
 

@@ -6,10 +6,10 @@ like the Hyperliquid layer, they have not yet been verified against a live
 connection from this repository.
 """
 
+from libs.exchange.errors import OrderOutcomeUnknownError
 from libs.exchange.pacifica.client import (
     AccountSnapshot,
     MarketSpec,
-    OrderOutcomeUnknownError,
     OrderSnapshot,
     PacificaClient,
     PacificaError,

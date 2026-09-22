@@ -1,4 +1,4 @@
-"""Open, protect, adjust and close — against an in-memory Pacifica venue."""
+"""Open, protect, adjust and close — through the Pacifica adapter, against an in-memory venue."""
 
 from __future__ import annotations
 
@@ -10,21 +10,24 @@ import httpx
 import pytest
 from solders.keypair import Keypair
 
+from libs.exchange.errors import OrderOutcomeUnknownError
 from libs.exchange.pacifica.client import (
-    OrderOutcomeUnknownError,
     PacificaClient,
     PacificaError,
     PacificaNetwork,
 )
 from libs.exchange.pacifica.signing import Signer
-from services.trader.planner import Direction, RiskLimits
+from services.trader.planner import RiskLimits
 from services.trader.trader import (
     TradeRefusedError,
     close_position,
     has_stop_loss,
     open_position,
+    position_for,
     update_tpsl,
 )
+from services.trader.venue import Direction
+from services.trader.venues.pacifica import PacificaVenue
 
 MAIN = Keypair.from_seed(bytes(range(32)))
 AGENT = Keypair.from_seed(bytes(range(32, 64)))
@@ -160,10 +163,10 @@ async def client(venue: FakeVenue) -> Any:
         signer=signer,
         transport=httpx.MockTransport(venue.handler),
     ) as client:
-        yield client
+        yield PacificaVenue(client)
 
 
-async def _open(client: PacificaClient, *, execute: bool = True, **overrides: Any) -> Any:
+async def _open(client: PacificaVenue, *, execute: bool = True, **overrides: Any) -> Any:
     arguments: dict[str, Any] = {
         "symbol": "SOL",
         "direction": Direction.LONG,
@@ -177,7 +180,7 @@ async def _open(client: PacificaClient, *, execute: bool = True, **overrides: An
     return await open_position(client, **arguments)
 
 
-async def test_dry_run_sends_nothing(client: PacificaClient, venue: FakeVenue) -> None:
+async def test_dry_run_sends_nothing(client: PacificaVenue, venue: FakeVenue) -> None:
     result = await _open(client, execute=False)
     assert not result.executed
     assert venue.posts == []
@@ -185,7 +188,7 @@ async def test_dry_run_sends_nothing(client: PacificaClient, venue: FakeVenue) -
 
 
 async def test_long_opens_with_sl_and_tp_in_the_same_request(
-    client: PacificaClient, venue: FakeVenue
+    client: PacificaVenue, venue: FakeVenue
 ) -> None:
     result = await _open(client)
 
@@ -201,7 +204,7 @@ async def test_long_opens_with_sl_and_tp_in_the_same_request(
     assert Decimal(order["amount"]) == result.plan.amount
 
 
-async def test_short_uses_the_ask_side(client: PacificaClient, venue: FakeVenue) -> None:
+async def test_short_uses_the_ask_side(client: PacificaVenue, venue: FakeVenue) -> None:
     await _open(
         client,
         direction=Direction.SHORT,
@@ -210,13 +213,13 @@ async def test_short_uses_the_ask_side(client: PacificaClient, venue: FakeVenue)
     )
     order = venue.posts[1][1]
     assert order["side"] == "ask"
-    position = await client.position("SOL")
+    position = await position_for(client, "SOL")
     assert position is not None
     assert not position.is_long
     assert await has_stop_loss(client, position)
 
 
-async def test_missing_stop_is_reattached(client: PacificaClient, venue: FakeVenue) -> None:
+async def test_missing_stop_is_reattached(client: PacificaVenue, venue: FakeVenue) -> None:
     venue.attach_stops = False
     result = await _open(client)
     assert result.stop_confirmed
@@ -225,20 +228,20 @@ async def test_missing_stop_is_reattached(client: PacificaClient, venue: FakeVen
 
 
 async def test_position_is_flattened_when_the_stop_cannot_be_attached(
-    client: PacificaClient, venue: FakeVenue
+    client: PacificaVenue, venue: FakeVenue
 ) -> None:
     venue.attach_stops = False
     venue.fail_tpsl = True
     with pytest.raises(TradeRefusedError, match="closed at market"):
         await _open(client)
     assert venue.positions == []
-    close = venue.posts[-1][1]
-    assert close["reduce_only"] is True
+    close = next(body for _, body in venue.posts if body.get("reduce_only") is True)
     assert close["side"] == "ask"
+    assert venue.paths()[-1] == "/orders/cancel_all"
 
 
 async def test_unprotected_position_that_cannot_be_closed_is_reported_loudly(
-    client: PacificaClient, venue: FakeVenue
+    client: PacificaVenue, venue: FakeVenue
 ) -> None:
     venue.attach_stops = False
     venue.fail_tpsl = True
@@ -248,7 +251,7 @@ async def test_unprotected_position_that_cannot_be_closed_is_reported_loudly(
 
 
 async def test_second_position_on_the_same_market_is_refused(
-    client: PacificaClient, venue: FakeVenue
+    client: PacificaVenue, venue: FakeVenue
 ) -> None:
     await _open(client)
     sent = len(venue.posts)
@@ -258,7 +261,7 @@ async def test_second_position_on_the_same_market_is_refused(
 
 
 async def test_timeout_on_an_order_is_reported_as_unknown(
-    client: PacificaClient, venue: FakeVenue
+    client: PacificaVenue, venue: FakeVenue
 ) -> None:
     venue.timeout_orders = True
     with pytest.raises(OrderOutcomeUnknownError, match="Check open positions"):
@@ -266,7 +269,7 @@ async def test_timeout_on_an_order_is_reported_as_unknown(
 
 
 async def test_close_is_reduce_only_on_the_opposite_side(
-    client: PacificaClient, venue: FakeVenue
+    client: PacificaVenue, venue: FakeVenue
 ) -> None:
     await _open(client)
     await close_position(client, symbol="SOL", slippage_percent=Decimal("0.5"), execute=True)
@@ -274,15 +277,15 @@ async def test_close_is_reduce_only_on_the_opposite_side(
     close = next(body for path, body in venue.posts if body.get("reduce_only") is True)
     assert close["side"] == "ask"
     assert venue.paths()[-1] == "/orders/cancel_all"
-    assert await client.position("SOL") is None
+    assert await position_for(client, "SOL") is None
 
 
-async def test_close_without_a_position_is_refused(client: PacificaClient) -> None:
+async def test_close_without_a_position_is_refused(client: PacificaVenue) -> None:
     with pytest.raises(TradeRefusedError, match="no open SOL position"):
         await close_position(client, symbol="SOL", slippage_percent=Decimal(1), execute=True)
 
 
-async def test_moving_the_stop_keeps_the_target(client: PacificaClient, venue: FakeVenue) -> None:
+async def test_moving_the_stop_keeps_the_target(client: PacificaVenue, venue: FakeVenue) -> None:
     await _open(client)
     await update_tpsl(client, symbol="SOL", stop_loss=Decimal(148), take_profit=None, execute=True)
     assert venue.posts[-1][1]["stop_loss"] == {"stop_price": "148"}
@@ -290,7 +293,7 @@ async def test_moving_the_stop_keeps_the_target(client: PacificaClient, venue: F
 
 
 async def test_moving_only_the_target_resends_the_existing_stop(
-    client: PacificaClient, venue: FakeVenue
+    client: PacificaVenue, venue: FakeVenue
 ) -> None:
     await _open(client)
     await update_tpsl(client, symbol="SOL", stop_loss=None, take_profit=Decimal(165), execute=True)
@@ -304,7 +307,7 @@ async def test_moving_only_the_target_resends_the_existing_stop(
     [("151", None, "trigger immediately"), (None, "149", "wrong side")],
 )
 async def test_stop_or_target_on_the_wrong_side_is_refused(
-    client: PacificaClient, venue: FakeVenue, stop: str | None, target: str | None, fragment: str
+    client: PacificaVenue, venue: FakeVenue, stop: str | None, target: str | None, fragment: str
 ) -> None:
     await _open(client)
     sent = len(venue.posts)

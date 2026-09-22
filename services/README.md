@@ -16,4 +16,4 @@ wait."
 | `risk_engine` | Pre-trade checks, sizing, intents, kill switch | M7 |
 | `execution_engine` | Order state machine, reconciliation, protective orders | M8 |
 | `portfolio_engine` | Portfolio exposure, correlation, attribution | Build 0.4 |
-| `trader` | Manual long/short on Pacifica (Solana) with mandatory stop loss and risk-based sizing — a user-operated tool outside the Build 0.1 research pipeline; see its README | — |
+| `trader` | Manual long/short on Hyperliquid (or Pacifica) with mandatory exchange-side stop loss and risk-based sizing — a user-operated tool outside the Build 0.1 research pipeline; see its README | — |

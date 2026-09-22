@@ -13,30 +13,16 @@ so every rule below is covered by a unit test.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import ROUND_CEILING, ROUND_DOWN, ROUND_HALF_UP, Decimal
-from enum import StrEnum
+from decimal import ROUND_CEILING, Decimal
 from typing import Final
 
-from libs.exchange.pacifica.client import MarketSpec
+from services.trader.venue import Direction, MarketRules
 
 HARD_MAX_RISK_PERCENT: Final = Decimal(5)
 """No configuration may risk more than this per trade. Five losses in a row —
 common for any strategy — would already cost about 23% of the account."""
 
 HUNDRED: Final = Decimal(100)
-
-
-class Direction(StrEnum):
-    LONG = "long"
-    SHORT = "short"
-
-    @property
-    def entry_side(self) -> str:
-        return "bid" if self is Direction.LONG else "ask"
-
-    @property
-    def exit_side(self) -> str:
-        return "ask" if self is Direction.LONG else "bid"
 
 
 class PlanRejectedError(ValueError):
@@ -76,13 +62,9 @@ class TradePlan:
         return self.profit_at_target / self.loss_at_stop
 
 
-def round_to_step(value: Decimal, step: Decimal, rounding: str = ROUND_HALF_UP) -> Decimal:
-    return (value / step).quantize(Decimal(1), rounding=rounding) * step
-
-
 def plan_trade(  # noqa: PLR0912, PLR0913 — flat rule checks; each argument is one input
     *,
-    market: MarketSpec,
+    market: MarketRules,
     direction: Direction,
     entry_price: Decimal,
     stop_loss: Decimal,
@@ -101,9 +83,9 @@ def plan_trade(  # noqa: PLR0912, PLR0913 — flat rule checks; each argument is
     if equity <= 0 or available <= 0:
         raise PlanRejectedError("the account has no available margin; deposit funds first")
 
-    stop_loss = round_to_step(stop_loss, market.tick_size)
+    stop_loss = market.round_price(stop_loss)
     if take_profit is not None:
-        take_profit = round_to_step(take_profit, market.tick_size)
+        take_profit = market.round_price(take_profit)
 
     if direction is Direction.LONG:
         if stop_loss >= entry_price:
@@ -126,13 +108,13 @@ def plan_trade(  # noqa: PLR0912, PLR0913 — flat rule checks; each argument is
     loss_per_unit = stop_distance + fee_per_unit + slippage_per_unit
 
     risk_usd = equity * limits.risk_percent / HUNDRED
-    amount = round_to_step(risk_usd / loss_per_unit, market.lot_size, ROUND_DOWN)
+    amount = market.round_size(risk_usd / loss_per_unit)
 
-    leverage_cap = min(limits.max_leverage, int(market.max_leverage))
+    leverage_cap = min(limits.max_leverage, market.max_leverage)
     max_notional = available * leverage_cap
     capped = False
     if amount * entry_price > max_notional:
-        amount = round_to_step(max_notional / entry_price, market.lot_size, ROUND_DOWN)
+        amount = market.round_size(max_notional / entry_price)
         capped = True
 
     notional = amount * entry_price
@@ -145,7 +127,7 @@ def plan_trade(  # noqa: PLR0912, PLR0913 — flat rule checks; each argument is
             "move the stop closer, or add funds."
         )
         raise PlanRejectedError(
-            f"position would be ${notional:.2f}, below Pacifica's ${market.min_order_usd} "
+            f"position would be ${notional:.2f}, below the venue's ${market.min_order_usd} "
             f"minimum for {market.symbol}; {reason}"
         )
     if market.max_order_usd is not None and notional > market.max_order_usd:

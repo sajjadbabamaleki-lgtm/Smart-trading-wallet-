@@ -13,10 +13,11 @@ dependencies = [
     "boto3>=1.35,<2",
     # M2 recorder. The venue WebSocket client.
     "websockets>=13,<16",
-    # Pacifica (Solana perps). Ed25519 signing with Solana keypairs, and the
-    # REST client.
+    # Trader venues. Pacifica: Ed25519 signing with Solana keypairs, and the
+    # REST client. Hyperliquid: the official SDK, which does its own signing.
     "solders>=0.21,<1",
     "httpx>=0.27,<1",
+    "hyperliquid-python-sdk>=0.20,<1",
 ]
 
 # Production dependencies stay deliberately small (Build 0.1 Rev.1 §7).
@@ -106,9 +107,9 @@ plugins = ["pydantic.mypy"]
 module = "tests.*"
 disallow_untyped_defs = false
 
-# clickhouse-connect ships no py.typed marker.
+# clickhouse-connect and the Hyperliquid SDK ship no py.typed marker.
 [[tool.mypy.overrides]]
-module = ["clickhouse_connect.*"]
+module = ["clickhouse_connect.*", "hyperliquid.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

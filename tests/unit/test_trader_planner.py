@@ -6,20 +6,19 @@ from decimal import Decimal
 
 import pytest
 
-from libs.exchange.pacifica.client import MarketSpec
 from services.trader.planner import (
-    Direction,
     PlanRejectedError,
     RiskLimits,
     TradePlan,
     plan_trade,
 )
+from services.trader.venue import Direction, MarketRules
 
-SOL = MarketSpec(
+SOL = MarketRules(
     symbol="SOL",
     tick_size=Decimal("0.01"),
     lot_size=Decimal("0.01"),
-    max_leverage=Decimal(20),
+    max_leverage=20,
     min_order_usd=Decimal(10),
     max_order_usd=Decimal(1_000_000),
 )
@@ -159,11 +158,11 @@ def test_empty_account_is_refused() -> None:
 
 
 def test_market_leverage_limit_wins_over_a_higher_setting() -> None:
-    low_leverage_market = MarketSpec(
+    low_leverage_market = MarketRules(
         symbol="SOL",
         tick_size=Decimal("0.01"),
         lot_size=Decimal("0.01"),
-        max_leverage=Decimal(2),
+        max_leverage=2,
         min_order_usd=Decimal(10),
         max_order_usd=None,
     )

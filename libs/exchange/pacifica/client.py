@@ -22,6 +22,7 @@ from typing import Any, Final
 
 import httpx
 
+from libs.exchange.errors import OrderOutcomeUnknownError, VenueError
 from libs.exchange.pacifica.signing import Signer
 
 REQUEST_TIMEOUT_SECONDS: Final = 10.0
@@ -42,12 +43,8 @@ _REST_URLS: Final = {
 }
 
 
-class PacificaError(RuntimeError):
-    """The venue rejected a request, or answered with something unparseable."""
-
-
-class OrderOutcomeUnknownError(PacificaError):
-    """An order request may or may not have reached the venue."""
+class PacificaError(VenueError):
+    """Pacifica rejected a request, or answered with something unparseable."""
 
 
 def _decimal(record: dict[str, Any], key: str) -> Decimal:

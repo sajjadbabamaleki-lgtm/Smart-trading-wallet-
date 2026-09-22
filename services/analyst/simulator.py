@@ -164,8 +164,24 @@ class Simulator:
         self.position.funding += rate * sign * price * self.position.amount
 
     def schedule_entry(self, direction: Direction, stop: float, target: float | None) -> None:
-        if self.position is None:
+        """Enter at the next open. Allowed while an exit is pending, so a
+        position can be reversed at one candle: the exit fills first."""
+        if self.position is None or self.pending_exit:
             self.pending_entry = (direction, stop, target)
+
+    def move_stop(self, stop: float) -> bool:
+        """Trail the stop. It only ever tightens — toward the price, never away
+        — so a trailing rule can lock in profit but never add risk. Returns
+        whether it moved."""
+        position = self.position
+        if position is None:
+            return False
+        tighter = (
+            stop > position.stop if position.direction is Direction.LONG else stop < position.stop
+        )
+        if tighter:
+            position.stop = stop
+        return tighter
 
     def schedule_exit(self) -> None:
         if self.position is not None:

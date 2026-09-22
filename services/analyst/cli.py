@@ -19,6 +19,7 @@ import asyncio
 import math
 import sys
 from collections.abc import Sequence
+from dataclasses import replace
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -47,6 +48,7 @@ from services.analyst.candles import (  # noqa: E402
     load_binance_csv,
     validate_series,
 )
+from services.analyst.carry import CarryConfig, CarryPortfolio, run_carry_portfolio  # noqa: E402
 from services.analyst.news import check_news  # noqa: E402
 from services.analyst.strategy import InsufficientHistoryError, StrategyParams  # noqa: E402
 from services.trader.config import TraderConfigError, load_trader_settings  # noqa: E402
@@ -104,6 +106,15 @@ def build_parser() -> argparse.ArgumentParser:
     backtest.add_argument("--risk", type=float, default=1.0, help="percent of equity per trade")
     backtest.add_argument("--leverage", type=int, default=3, help="maximum leverage")
     backtest.add_argument("--long-only", action="store_true", help="never take shorts")
+    carry = commands.add_parser("carry", help="funding carry: long spot, short perp")
+    carry_assets = carry.add_mutually_exclusive_group()
+    carry_assets.add_argument("--symbol", default="SOL", type=str.upper)
+    carry_assets.add_argument(
+        "--symbols",
+        type=lambda text: [s.strip().upper() for s in text.split(",") if s.strip()],
+    )
+    carry_assets.add_argument("--top10", action="store_true")
+    carry.add_argument("--leverage", type=float, default=2.0, help="leverage on the short leg")
     return parser
 
 
@@ -284,6 +295,85 @@ def _print_portfolio(result: PortfolioResult) -> None:
         print(f"WARNING: {warning}")
 
 
+def _load_assets(
+    symbols: list[str], interval: str
+) -> tuple[dict[str, Sequence[Candle]], dict[str, dict[datetime, float]], list[str]]:
+    """Candles and funding history for each asset; one that fails is skipped, not fatal."""
+    info = _info(mainnet=True)
+    now = datetime.now(UTC)
+    skipped: list[str] = []
+    candles_by_symbol: dict[str, Sequence[Candle]] = {}
+    funding_by_symbol: dict[str, dict[datetime, float]] = {}
+    for symbol in symbols:
+        try:
+            candles = fetch_hyperliquid(info, symbol, interval, now=now)
+            funding = fetch_hyperliquid_funding(info, symbol, start=candles[0].open_time, end=now)
+        except Exception as exc:  # noqa: BLE001 — one missing asset must not stop the rest
+            print(f"{symbol}: skipped ({type(exc).__name__}: {exc})")
+            skipped.append(symbol)
+            continue
+        candles_by_symbol[symbol] = candles
+        funding_by_symbol[symbol] = funding
+        print(f"{symbol}: {len(candles)} candles, {len(funding)} funding rates")
+    if not candles_by_symbol:
+        raise ValueError("no asset could be loaded")
+    return candles_by_symbol, funding_by_symbol, skipped
+
+
+def _warn_skipped(skipped: list[str], symbols: list[str]) -> None:
+    if skipped:
+        print(
+            f"\nWARNING: {len(skipped)} of {len(symbols)} assets were skipped and are NOT "
+            f"in this result: {', '.join(skipped)}. See the reasons at the top."
+        )
+
+
+def _print_carry(title: str, result: CarryPortfolio) -> None:
+    print(f"\n{title}")
+    print(f"  {'asset':<6} {'APR':>7} {'return':>8} {'invested':>9} {'max DD':>7} {'P(SR>0)':>8}")
+    for symbol, r in result.per_asset.items():
+        print(
+            f"  {symbol:<6} {r.apr:>+7.1%} {r.total_return:>+8.1%} {r.time_invested:>9.0%} "
+            f"{r.max_drawdown:>7.1%} {r.probabilistic_sharpe:>8.0%}"
+        )
+    t = result.total
+    print(f"  portfolio {t.start:%Y-%m-%d} → {t.end:%Y-%m-%d}")
+    print(f"    APR               {t.apr:+.1%}   (total {t.total_return:+.1%})")
+    print(f"    halves            {t.first_half_return:+.1%} then {t.second_half_return:+.1%}")
+    print(f"    max drawdown      {t.max_drawdown:.1%}   worst 30 days {t.worst_30_days:+.1%}")
+    print(f"    Sharpe            {t.sharpe:.2f}   P(true Sharpe > 0) {t.probabilistic_sharpe:.0%}")
+    print(
+        f"    funding earned    ${t.funding_earned:,.2f}   costs ${t.costs:,.2f}   "
+        f"entries {t.entries}   rebalances {t.rebalances}"
+    )
+
+
+def _carry(args: argparse.Namespace) -> int:
+    symbols = list(TOP_10) if args.top10 else (args.symbols or [args.symbol])
+    candles_by_symbol, funding_by_symbol, skipped = _load_assets(symbols, "4h")
+    data = {s: (candles_by_symbol[s], funding_by_symbol[s]) for s in candles_by_symbol}
+    base = CarryConfig(perp_leverage=args.leverage)
+    print(
+        f"\nLong spot + short perp, {base.perp_leverage:g}x on the short: "
+        f"{base.working_fraction:.0%} of capital earns funding; "
+        f"{base.round_trip_cost:.2%} cost per entry or exit"
+    )
+    _print_carry(
+        "CONDITIONAL — in when the past 7 days of funding exceed 10% a year, out at 0%",
+        run_carry_portfolio(data, base),
+    )
+    _print_carry(
+        "ALWAYS ON — held throughout, negative funding included",
+        run_carry_portfolio(data, replace(base, always_on=True)),
+    )
+    _warn_skipped(skipped, symbols)
+    print(
+        "\nThe spot leg must be bought somewhere. Hyperliquid spot lists only some of these"
+        "\nassets; the rest would need another venue, with its own fees and access."
+    )
+    return 0
+
+
 def _backtest(args: argparse.Namespace) -> int:
     config = BacktestConfig(
         interval=args.interval,
@@ -295,34 +385,11 @@ def _backtest(args: argparse.Namespace) -> int:
     if symbols:
         if not args.hyperliquid:
             raise ValueError("several assets are backtested from Hyperliquid; add --hyperliquid")
-        info = _info(mainnet=True)
-        now = datetime.now(UTC)
-        skipped: list[str] = []
-        candles_by_symbol: dict[str, Sequence[Candle]] = {}
-        funding_by_symbol: dict[str, dict[datetime, float]] = {}
-        for symbol in symbols:
-            try:
-                candles = fetch_hyperliquid(info, symbol, args.interval, now=now)
-                funding = fetch_hyperliquid_funding(
-                    info, symbol, start=candles[0].open_time, end=now
-                )
-            except Exception as exc:  # noqa: BLE001 — one missing asset must not stop the rest
-                print(f"{symbol}: skipped ({type(exc).__name__}: {exc})")
-                skipped.append(symbol)
-                continue
-            candles_by_symbol[symbol] = candles
-            funding_by_symbol[symbol] = funding
-            print(f"{symbol}: {len(candles)} candles, {len(funding)} funding rates")
-        if not candles_by_symbol:
-            raise ValueError("no asset could be loaded")
+        candles_by_symbol, funding_by_symbol, skipped = _load_assets(symbols, args.interval)
         _print_portfolio(
             run_portfolio(candles_by_symbol, config, funding_by_symbol=funding_by_symbol)
         )
-        if skipped:
-            print(
-                f"\nWARNING: {len(skipped)} of {len(symbols)} assets were skipped and are NOT "
-                f"in this result: {', '.join(skipped)}. See the reasons at the top."
-            )
+        _warn_skipped(skipped, symbols)
         return 0
 
     history: dict[datetime, float] | None = None
@@ -342,7 +409,8 @@ def _backtest(args: argparse.Namespace) -> int:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
-        return _analyze(args) if args.command == "analyze" else _backtest(args)
+        commands = {"analyze": _analyze, "backtest": _backtest, "carry": _carry}
+        return commands[args.command](args)
     except OrderOutcomeUnknownError as exc:
         print(f"UNKNOWN: {exc}", file=sys.stderr)
         return 3

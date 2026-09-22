@@ -6,6 +6,8 @@
     python -m services.lab.cli run trend-trailing
     python -m services.lab.cli trials           # every trial, with its Deflated Sharpe
     python -m services.lab.cli holdout NAME     # once per strategy, on the locked months
+    python -m services.lab.cli copy-fetch       # leaderboard accounts' PnL history
+    python -m services.lab.cli copy-study       # do winning traders keep winning?
 
 The pass criteria below are fixed in code, before any result.
 """
@@ -23,7 +25,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from services.analyst.backtest import Metrics  # noqa: E402
-from services.lab import data, registry  # noqa: E402
+from services.lab import copytrade, data, registry  # noqa: E402
 from services.lab.engine import LabResult, annualised, run  # noqa: E402
 from services.lab.strategies import CATALOGUE  # noqa: E402
 
@@ -184,6 +186,41 @@ def cmd_holdout(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_copy_fetch(_: argparse.Namespace) -> int:
+    print(f"Downloading the leaderboard and {copytrade.POOL_SIZE} accounts' history (minutes).")
+    pool, failed = copytrade.fetch(_info())
+    print(f"{pool - len(failed)} of {pool} accounts cached.")
+    if failed:
+        print(f"WARNING: {len(failed)} failed; run copy-fetch again to retry.")
+    return 0
+
+
+def cmd_copy_study(_: argparse.Namespace) -> int:
+    study = copytrade.run_study(copytrade.load(), now=datetime.now(UTC))
+    s = study.selection_date
+    print(
+        f"Selection date {s:%Y-%m-%d}: period A {s - copytrade.PERIOD:%Y-%m-%d} → {s:%Y-%m-%d}, "
+        f"period B {s:%Y-%m-%d} → {s + copytrade.PERIOD:%Y-%m-%d}"
+    )
+    print(f"  {len(study.outcomes)} of {study.pool} accounts have history covering both periods")
+    print(f"  rank correlation A→B {study.spearman:+.2f} (p = {study.p_value:.3f})")
+    print(
+        f"  period B median return: top decile of A {study.top_median_b:+.1%} "
+        f"({study.top_profitable_b:.0%} profitable), all {study.pool_median_b:+.1%}, "
+        f"bottom decile {study.bottom_median_b:+.1%}"
+    )
+    print("\nVerdict:")
+    for label, ok in study.checks.items():
+        print(f"  {_check(ok)} {label}")
+    passed = all(study.checks.values())
+    print(
+        "\nPASSED — next: simulate copying their fills with delay and costs."
+        if passed
+        else "\nNOT PASSED — past winners here do not keep winning; copying them has no edge."
+    )
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="lab", description=__doc__.split("\n")[0])
     commands = parser.add_subparsers(dest="command", required=True)
@@ -196,6 +233,12 @@ def build_parser() -> argparse.ArgumentParser:
     holdout = commands.add_parser("holdout", help="the one evaluation on the locked months")
     holdout.add_argument("strategy")
     holdout.set_defaults(fn=cmd_holdout)
+    commands.add_parser("copy-fetch", help="cache leaderboard accounts").set_defaults(
+        fn=cmd_copy_fetch
+    )
+    commands.add_parser("copy-study", help="persistence of trader returns").set_defaults(
+        fn=cmd_copy_study
+    )
     return parser
 
 

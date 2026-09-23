@@ -39,3 +39,12 @@ def test_a_trade_stops_at_ten_percent() -> None:
     pnl, cost, _, closed = reversal._step(trade, bar, 0.0)
     assert closed and trade.mark == 90.0
     assert pnl == -10.0 - cost
+
+
+def test_momentum_takes_the_other_side_of_the_same_events() -> None:
+    data = {s: hours(300, crash_at=250) for s in reversal.SYMBOLS}
+    fade = reversal.run_reversal(hourly=data)
+    follow = reversal.run_momentum(hourly=data)
+    assert fade.strategy != follow.strategy
+    assert fade.costs == follow.costs  # identical trades, opposite direction
+    assert sum(fade.returns) != sum(follow.returns)

@@ -49,18 +49,21 @@ XRUNNERS: Final[dict[str, Callable[[binance.Market], xsection.XResult]]] = {
     listings.NAME: listings.run_short_listings,
     intraday.NAME: intraday.run_btc_noise,
     reversal.NAME: reversal.run_reversal,
+    reversal.MOMENTUM_NAME: reversal.run_momentum,
 }
 XSOURCES: Final = {
     **xsection.XSOURCES,
     listings.NAME: listings.SOURCE,
     intraday.NAME: intraday.SOURCE,
     reversal.NAME: reversal.SOURCE,
+    reversal.MOMENTUM_NAME: reversal.MOMENTUM_SOURCE,
 }
 XSUMMARIES: Final = {
     **dict.fromkeys(xsection.XCATALOGUE, "weekly long/short on the 50 most traded Binance perps"),
     listings.NAME: "short every new Binance perp from its 7th day for 60 days; 5% each, stop at 2x",
     intraday.NAME: "BTC 30m breakout of the intraday noise area; VWAP trailing stop; flat daily",
     reversal.NAME: "fade 4-sigma hours on 3x volume in the ten coins; out after 24h or at 10%",
+    reversal.MOMENTUM_NAME: "follow 4-sigma hours on 3x volume in the ten coins; 24h or 10% stop",
 }
 XDRAWDOWN_LIMITS: Final = {listings.NAME: listings.MAX_DRAWDOWN}
 """Strategies with no long-only basket to compare with get a fixed drawdown bar."""

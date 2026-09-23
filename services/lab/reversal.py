@@ -146,10 +146,31 @@ def _step(trade: _Trade, bar: Day, rate: float) -> tuple[float, float, float, bo
 def run_reversal(
     _: binance.Market | None = None, hourly: dict[str, list[Day]] | None = None
 ) -> XResult:
+    return _run(NAME, 1, hourly)
+
+
+MOMENTUM_NAME: Final = "cascade-momentum"
+MOMENTUM_SOURCE: Final = (
+    "The mirror of liquidation-reversal, registered AFTER that strategy lost: every rule is "
+    "the same, but the trade goes with the move. Because the idea came from the development "
+    "data, only its holdout counts as evidence."
+)
+
+
+def run_momentum(
+    _: binance.Market | None = None, hourly: dict[str, list[Day]] | None = None
+) -> XResult:
+    """Same events, stop, hold, sizing and costs as run_reversal; opposite side."""
+    return _run(MOMENTUM_NAME, -1, hourly)
+
+
+def _run(name: str, side: int, hourly: dict[str, list[Day]] | None) -> XResult:
     data = hourly or load()
     funding = {s: binance.funding_by_hour(s) for s in data}
     by_time = {s: {b.time: b for b in bars} for s, bars in data.items()}
-    signals = {s: {bars[i].time: d for i, d in events(bars).items()} for s, bars in data.items()}
+    signals = {
+        s: {bars[i].time: side * d for i, d in events(bars).items()} for s, bars in data.items()
+    }
     hours = sorted({b.time for bars in data.values() for b in bars})
 
     equity = 1.0
@@ -199,4 +220,4 @@ def run_reversal(
             if s in basket_close[a]
         ]
         basket.append(statistics.fmean(moves) if moves else 0.0)
-    return XResult(NAME, days, [daily[d] for d in days], basket, turnover, costs, paid)
+    return XResult(name, days, [daily[d] for d in days], basket, turnover, costs, paid)

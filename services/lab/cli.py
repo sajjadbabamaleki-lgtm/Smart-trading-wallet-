@@ -8,6 +8,7 @@
     python -m services.lab.cli holdout NAME     # once per strategy, on the locked months
     python -m services.lab.cli binance-fetch    # every Binance perpetual, daily, for ctrend-lite
     python -m services.lab.cli run ctrend-lite  # cross-sectional, on the Binance data
+    python -m services.lab.cli btc-fetch        # BTC 30m candles, for btc-noise-breakout
     python -m services.lab.cli copy-fetch       # leaderboard accounts' PnL history
     python -m services.lab.cli copy-study       # do winning traders keep winning?
     python -m services.lab.cli copy-top         # copy the top five, month by month
@@ -19,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Final
@@ -28,15 +30,32 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from services.analyst.backtest import Metrics  # noqa: E402
-from services.lab import binance, copytrade, data, listings, registry, xsection  # noqa: E402
+from services.lab import (  # noqa: E402
+    binance,
+    copytrade,
+    data,
+    intraday,
+    listings,
+    registry,
+    xsection,
+)
 from services.lab.engine import LabResult, annualised, run  # noqa: E402
 from services.lab.strategies import CATALOGUE  # noqa: E402
 
-XRUNNERS: Final = {**xsection.XCATALOGUE, listings.NAME: listings.run_short_listings}
-XSOURCES: Final = {**xsection.XSOURCES, listings.NAME: listings.SOURCE}
+XRUNNERS: Final[dict[str, Callable[[binance.Market], xsection.XResult]]] = {
+    **xsection.XCATALOGUE,
+    listings.NAME: listings.run_short_listings,
+    intraday.NAME: intraday.run_btc_noise,
+}
+XSOURCES: Final = {
+    **xsection.XSOURCES,
+    listings.NAME: listings.SOURCE,
+    intraday.NAME: intraday.SOURCE,
+}
 XSUMMARIES: Final = {
     **dict.fromkeys(xsection.XCATALOGUE, "weekly long/short on the 50 most traded Binance perps"),
     listings.NAME: "short every new Binance perp from its 7th day for 60 days; 5% each, stop at 2x",
+    intraday.NAME: "BTC 30m breakout of the intraday noise area; VWAP trailing stop; flat daily",
 }
 XDRAWDOWN_LIMITS: Final = {listings.NAME: listings.MAX_DRAWDOWN}
 """Strategies with no long-only basket to compare with get a fixed drawdown bar."""
@@ -317,6 +336,12 @@ def _holdout_x(name: str) -> int:
     return 0
 
 
+def cmd_btc_fetch(_: argparse.Namespace) -> int:
+    print("Downloading BTCUSDT 30-minute candles since 2020.")
+    print(f"{intraday.fetch()} candles cached.")
+    return 0
+
+
 def cmd_copy_fetch(_: argparse.Namespace) -> int:
     print(f"Downloading the leaderboard and {copytrade.POOL_SIZE} accounts' history (minutes).")
     pool, failed = copytrade.fetch(_info())
@@ -394,6 +419,7 @@ def build_parser() -> argparse.ArgumentParser:
     commands.add_parser("binance-fetch", help="cache Binance perpetuals").set_defaults(
         fn=cmd_binance_fetch
     )
+    commands.add_parser("btc-fetch", help="cache BTC 30m candles").set_defaults(fn=cmd_btc_fetch)
     commands.add_parser("copy-fetch", help="cache leaderboard accounts").set_defaults(
         fn=cmd_copy_fetch
     )

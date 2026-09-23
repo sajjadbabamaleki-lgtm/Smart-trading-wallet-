@@ -78,11 +78,7 @@ def load_bars() -> list[Day]:
 
 
 def load_funding() -> dict[datetime, float]:
-    path = binance.BINANCE_DIR / f"{SYMBOL}.json"
-    if not path.exists():
-        return {}
-    rates = json.loads(path.read_text())["funding"]
-    return {datetime.fromisoformat(t): r for t, r in rates.items()}
+    return binance.funding_by_hour(SYMBOL)
 
 
 @dataclass(frozen=True)

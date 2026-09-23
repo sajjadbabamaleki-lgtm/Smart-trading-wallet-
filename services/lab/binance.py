@@ -198,6 +198,19 @@ def fetch(
     return [s for s in symbols if s not in failed], failed
 
 
+def funding_by_hour(symbol: str) -> dict[datetime, float]:
+    """A symbol's funding events keyed to the hour. Binance stamps them a few
+    milliseconds after the hour, so an exact-time lookup would miss them."""
+    path = _path(symbol)
+    if not path.exists():
+        return {}
+    out: dict[datetime, float] = {}
+    for stamp, rate in json.loads(path.read_text())["funding"].items():
+        hour = datetime.fromisoformat(stamp).replace(minute=0, second=0, microsecond=0)
+        out[hour] = out.get(hour, 0.0) + rate
+    return out
+
+
 def load() -> Market:
     if not BINANCE_DIR.exists():
         raise FileNotFoundError("no Binance data; run `python -m services.lab.cli binance-fetch`")

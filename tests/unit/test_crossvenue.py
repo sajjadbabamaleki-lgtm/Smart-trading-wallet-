@@ -65,3 +65,13 @@ def test_dydx_history_is_walked_back_page_by_page() -> None:
     )
     assert len(got) == 200 and len(prices) == 200
     assert "effectiveBeforeOrAt=2024-01-05T03:59:59.000Z" in calls[1]
+
+
+def test_structural_earns_the_standing_gap_from_the_first_hour() -> None:
+    result = crossvenue.run_structural({"BTC": rates(24 * 30, 0.0000125, 0.0)})
+    total = 1.0
+    for r in result.returns:
+        total *= 1 + r
+    notional = crossvenue.LEVERAGE / 2
+    expected = notional * 0.0000125 * (24 * 30 - 1) - notional * crossvenue.ROUND_TRIP / 2
+    assert total - 1 == pytest.approx(expected, rel=0.02)

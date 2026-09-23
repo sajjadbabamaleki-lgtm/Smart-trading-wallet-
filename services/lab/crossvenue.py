@@ -231,3 +231,52 @@ def run_arb(data: dict[str, Rates] | None = None) -> XResult:
     days = sorted(daily)
     zeros = [0.0] * len(days)
     return XResult(NAME, days, [daily[d] for d in days], zeros, turnover, costs, -earned)
+
+
+STRUCTURAL_NAME: Final = "hl-dydx-structural"
+STRUCTURAL_SOURCE: Final = (
+    "Hyperliquid's funding formula adds a fixed interest component (0.01% per 8 hours, about "
+    "11% a year) that dYdX v4's does not, so Hyperliquid's funding sits structurally above "
+    "dYdX's. Registered after the fetch showed Hyperliquid's median at +10.9% and dYdX's near 0 "
+    "on every coin, so only the holdout counts."
+)
+
+
+def run_structural(data: dict[str, Rates] | None = None) -> XResult:
+    """Always short Hyperliquid and long dYdX on every coin, equal weights,
+    3x per leg; the same costs and rebalancing as run_arb, and no signal."""
+    rates = data or load()
+    common = {c: sorted(set(r.hyperliquid) & set(r.dydx) & set(r.price)) for c, r in rates.items()}
+    hours = sorted({h for hs in common.values() for h in hs})
+    equity = 1.0
+    open_: dict[str, _Pair] = {}
+    daily: dict[datetime, float] = {}
+    costs = earned = turnover = 0.0
+    for hour in hours:
+        start = equity
+        for coin, r in rates.items():
+            if hour not in r.hyperliquid or hour not in r.dydx or hour not in r.price:
+                continue
+            pair = open_.get(coin)
+            if pair is None:
+                notional = equity / len(rates) * LEVERAGE / 2
+                cost = notional * ROUND_TRIP / 2
+                equity -= cost
+                costs += cost
+                turnover += notional
+                open_[coin] = _Pair(coin, 1, notional, r.price[hour])
+                continue
+            payment = pair.notional * (r.hyperliquid[hour] - r.dydx[hour])
+            equity += payment
+            earned += payment
+            move = abs(r.price[hour] / pair.anchor - 1)
+            if move >= REBALANCE_MOVE:
+                cost = pair.notional * move * ROUND_TRIP
+                equity -= cost
+                costs += cost
+                pair.anchor = r.price[hour]
+        day = hour.replace(hour=0)
+        daily[day] = (1 + daily.get(day, 0.0)) * (equity / start) - 1 if start > 0 else 0.0
+    days = sorted(daily)
+    zeros = [0.0] * len(days)
+    return XResult(STRUCTURAL_NAME, days, [daily[d] for d in days], zeros, turnover, costs, -earned)

@@ -63,6 +63,7 @@ XRUNNERS: Final[dict[str, Callable[[], xsection.XResult]]] = {
     reversal.NAME: reversal.run_reversal,
     reversal.MOMENTUM_NAME: reversal.run_momentum,
     crossvenue.NAME: crossvenue.run_arb,
+    crossvenue.STRUCTURAL_NAME: crossvenue.run_structural,
 }
 """Each runner loads only the data it needs, so a strategy can run on a
 machine that has fetched just its own dataset."""
@@ -75,6 +76,7 @@ XSOURCES: Final = {
     reversal.NAME: reversal.SOURCE,
     reversal.MOMENTUM_NAME: reversal.MOMENTUM_SOURCE,
     crossvenue.NAME: crossvenue.SOURCE,
+    crossvenue.STRUCTURAL_NAME: crossvenue.STRUCTURAL_SOURCE,
 }
 XSUMMARIES: Final = {
     **dict.fromkeys(xsection.XCATALOGUE, "weekly long/short on the 50 most traded Binance perps"),
@@ -85,10 +87,12 @@ XSUMMARIES: Final = {
     reversal.NAME: "fade 4-sigma hours on 3x volume in the ten coins; out after 24h or at 10%",
     reversal.MOMENTUM_NAME: "follow 4-sigma hours on 3x volume in the ten coins; 24h or 10% stop",
     crossvenue.NAME: "short the venue paying more funding, long the other; HL vs dYdX, 3x",
+    crossvenue.STRUCTURAL_NAME: "always short Hyperliquid, long dYdX, every coin, 3x",
 }
 XDRAWDOWN_LIMITS: Final = {
     listings.NAME: listings.MAX_DRAWDOWN,
     crossvenue.NAME: crossvenue.MAX_DRAWDOWN,
+    crossvenue.STRUCTURAL_NAME: crossvenue.MAX_DRAWDOWN,
 }
 """Strategies with no long-only basket to compare with get a fixed drawdown bar."""
 

@@ -10,6 +10,7 @@
     python -m services.lab.cli run ctrend-lite  # cross-sectional, on the Binance data
     python -m services.lab.cli copy-fetch       # leaderboard accounts' PnL history
     python -m services.lab.cli copy-study       # do winning traders keep winning?
+    python -m services.lab.cli copy-top         # copy the top five, month by month
 
 The pass criteria below are fixed in code, before any result.
 """
@@ -337,6 +338,33 @@ def cmd_copy_study(_: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_copy_top(_: argparse.Namespace) -> int:
+    histories = copytrade.load()
+    now = datetime.now(UTC)
+    for ranked_by, label in (("pnl", "dollar PnL (leaderboard)"), ("return", "return %")):
+        result = copytrade.copy_top(histories, now=now, ranked_by=ranked_by)
+        print(f"\n=== Copy the top {copytrade.TOP}, ranked by {label} over the past 90 days")
+        print("  month starting   copy    everyone  (traders)")
+        for p in result.periods:
+            print(
+                f"  {p.start:%Y-%m-%d}   {p.copy_return:+7.1%}  {p.pool_return:+7.1%}"
+                f"   ({p.pool_size})"
+            )
+        print(
+            f"  total: copy {result.copy_total:+.1%}, everyone {result.pool_total:+.1%}, "
+            f"P(true Sharpe > 0) {result.psr:.0%}"
+        )
+        if ranked_by == "pnl":
+            print("  Verdict (fixed in advance, on the leaderboard ranking):")
+            for check, ok in result.checks.items():
+                print(f"    {_check(ok)} {check}")
+    print(
+        "\nBias: the pool is today's largest accounts, so traders who blew up are missing — "
+        "this flatters copying. Copy delay and slippage are not charged."
+    )
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="lab", description=__doc__.split("\n")[0])
     commands = parser.add_subparsers(dest="command", required=True)
@@ -357,6 +385,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     commands.add_parser("copy-study", help="persistence of trader returns").set_defaults(
         fn=cmd_copy_study
+    )
+    commands.add_parser("copy-top", help="copy the top five, month by month").set_defaults(
+        fn=cmd_copy_top
     )
     return parser
 

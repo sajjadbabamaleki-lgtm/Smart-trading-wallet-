@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -117,3 +118,40 @@ def test_copy_study_refuses_without_data(capsys: pytest.CaptureFixture[str]) -> 
 
     assert main(["copy-study"]) == 1
     assert "copy-fetch" in capsys.readouterr().err
+
+
+def alternating(days: int = 400, flip_every: int = 30) -> dict[str, copytrade.History]:
+    """Daily PnL rate per trader that flips sign every `flip_every` days
+    (aligned to NOW), or never, when `flip_every` is 0."""
+    out = {}
+    for k in range(40):
+        skill, equity, pnl, points = (k - 20) / 10_000, 50_000.0, 0.0, []
+        for d in range(days, -1, -1):
+            t = NOW - DAY * d
+            points.append((t, pnl))
+            sign = -1 if flip_every and (d // flip_every) % 2 else 1
+            pnl += equity * (skill * sign + 0.001 * math.sin(d * 1.7 + k))
+        out[f"0x{k:02x}"] = copytrade.History([(t, equity) for t, _ in points], points)
+    return out
+
+
+def test_copying_the_top_five_uses_only_the_past_and_compounds() -> None:
+    hist = alternating(flip_every=0)  # skill persists: yesterday's best stay best
+    result = copytrade.copy_top(hist, now=NOW, ranked_by="return")
+    assert result.periods and all(p.pool_size == 40 for p in result.periods)
+    best = {f"0x{k:02x}" for k in range(35, 40)}
+    assert all(set(p.picks) == best for p in result.periods)
+    assert result.copy_total > result.pool_total
+    assert all(result.checks.values())
+
+
+def test_copying_fails_when_winners_reverse() -> None:
+    result = copytrade.copy_top(alternating(flip_every=30), now=NOW, ranked_by="pnl")
+    assert result.copy_total < result.pool_total
+    assert not result.checks["it beats copying everyone equally"]
+
+
+def test_losses_are_capped_at_the_stake() -> None:
+    history = copytrade.parse_portfolio(portfolio(10_000, -0.05, -0.05))
+    r = copytrade.period_result(history, NOW - timedelta(days=60), NOW - timedelta(days=30))
+    assert r is not None and r[1] == -1.0

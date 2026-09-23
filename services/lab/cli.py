@@ -49,6 +49,7 @@ XRUNNERS: Final[dict[str, Callable[[binance.Market], xsection.XResult]]] = {
     listings.NAME: listings.run_short_listings,
     intraday.NAME: intraday.run_btc_noise,
     intraday.SOL_NAME: intraday.run_sol_noise,
+    intraday.MONDAY_NAME: intraday.run_btc_monday,
     reversal.NAME: reversal.run_reversal,
     reversal.MOMENTUM_NAME: reversal.run_momentum,
 }
@@ -57,6 +58,7 @@ XSOURCES: Final = {
     listings.NAME: listings.SOURCE,
     intraday.NAME: intraday.SOURCE,
     intraday.SOL_NAME: intraday.SOL_SOURCE,
+    intraday.MONDAY_NAME: intraday.MONDAY_SOURCE,
     reversal.NAME: reversal.SOURCE,
     reversal.MOMENTUM_NAME: reversal.MOMENTUM_SOURCE,
 }
@@ -65,6 +67,7 @@ XSUMMARIES: Final = {
     listings.NAME: "short every new Binance perp from its 7th day for 60 days; 5% each, stop at 2x",
     intraday.NAME: "BTC 30m breakout of the intraday noise area; VWAP trailing stop; flat daily",
     intraday.SOL_NAME: "SOL 30m breakout of the intraday noise area; VWAP trail; flat daily",
+    intraday.MONDAY_NAME: "the BTC noise-area breakout on Mondays (UTC) only",
     reversal.NAME: "fade 4-sigma hours on 3x volume in the ten coins; out after 24h or at 10%",
     reversal.MOMENTUM_NAME: "follow 4-sigma hours on 3x volume in the ten coins; 24h or 10% stop",
 }

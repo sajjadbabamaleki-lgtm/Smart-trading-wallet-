@@ -152,7 +152,25 @@ def run_sol_noise(_: binance.Market | None = None) -> XResult:
     return run_noise(SOL_NAME, "SOLUSDT", SOL_COST_PER_SIDE)
 
 
-def run_noise(name: str, symbol: str, cost_per_side: float) -> XResult:
+MONDAY_NAME: Final = "btc-monday-breakout"
+MONDAY_SOURCE: Final = (
+    "btc-noise-breakout traded on Mondays (00:00-24:00 UTC) only. Concretum reports the "
+    "Bitcoin intraday trend is strongest from the Sunday-evening New York / Monday Asian open "
+    "for about 24 hours. Registered after the daily version failed on costs: one day a week "
+    "cuts costs by about seven. The idea used our development result, so only the holdout counts."
+)
+
+
+def run_btc_monday(_: binance.Market | None = None) -> XResult:
+    return run_noise(MONDAY_NAME, SYMBOL, COST_PER_SIDE, weekdays=frozenset({0}))
+
+
+def run_noise(
+    name: str,
+    symbol: str,
+    cost_per_side: float,
+    weekdays: frozenset[int] = frozenset(range(7)),
+) -> XResult:
     days = sessions(load_bars(symbol))
     funding = binance.funding_by_hour(symbol)
     moves = [[abs(bar.close / s.bars[0].open - 1) for bar in s.bars] for s in days]
@@ -166,7 +184,10 @@ def run_noise(name: str, symbol: str, cost_per_side: float) -> XResult:
         sigma = [statistics.fmean(m[i] for m in past) for i in range(BARS_PER_DAY)]
         vol = statistics.pstdev(daily[k - NOISE_DAYS : k])
         leverage = min(MAX_LEVERAGE, TARGET_DAILY_VOL / vol) if vol else 0.0
-        r, c = _trade_day(days[k], sigma, leverage, funding, cost_per_side)
+        if days[k].day.weekday() in weekdays:
+            r, c = _trade_day(days[k], sigma, leverage, funding, cost_per_side)
+        else:
+            r, c = 0.0, 0.0  # flat: the noise estimate still uses every day
         out_days.append(days[k].day)
         returns.append(r)
         basket.append(daily[k])

@@ -39,20 +39,32 @@ existed; and the copy-trading persistence study. They count toward N even
 though their Sharpe ratios are not in the log."""
 
 
+BARS_PER_YEAR_4H: Final = 6 * 365
+
+
 def record(result: LabResult, window: str, path: Path = TRIALS_PATH) -> None:
+    record_entry(
+        {
+            "strategy": result.strategy,
+            "window": window,
+            "sharpe_per_bar": result.sharpe_per_bar,
+            "bars_per_year": BARS_PER_YEAR_4H,
+            "observations": result.observations,
+            "skew": result.skew,
+            "kurtosis": result.kurtosis,
+            "total_return": result.full.total_return,
+            "trades": result.full.trades,
+            "max_drawdown": result.full.max_drawdown,
+        },
+        path,
+    )
+
+
+def record_entry(fields: dict[str, Any], path: Path = TRIALS_PATH) -> None:
+    """Append one trial. Sharpe ratios are per bar; `bars_per_year` says which
+    bar, so trials measured at different frequencies can be compared."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    entry = {
-        "time": datetime.now(UTC).isoformat(),
-        "strategy": result.strategy,
-        "window": window,
-        "sharpe_per_bar": result.sharpe_per_bar,
-        "observations": result.observations,
-        "skew": result.skew,
-        "kurtosis": result.kurtosis,
-        "total_return": result.full.total_return,
-        "trades": result.full.trades,
-        "max_drawdown": result.full.max_drawdown,
-    }
+    entry = {"time": datetime.now(UTC).isoformat(), **fields}
     with path.open("a") as log:
         log.write(json.dumps(entry) + "\n")
 
@@ -101,9 +113,16 @@ def deflated_sharpe(
     return statistics.NormalDist().cdf(z)
 
 
+def annual_sharpe(entry: dict[str, Any]) -> float:
+    return float(entry["sharpe_per_bar"]) * math.sqrt(entry.get("bars_per_year", BARS_PER_YEAR_4H))
+
+
 def deflated_for(entry: dict[str, Any], trials: dict[str, dict[str, Any]]) -> float:
-    sharpes = [t["sharpe_per_bar"] for t in trials.values()]
-    benchmark = expected_max_sharpe(sharpes, len(trials) + PRIOR_TRIALS)
+    """SR* is computed on annualised Sharpe ratios, so trials at different bar
+    frequencies share one yardstick, then brought back to the entry's bar."""
+    sharpes = [annual_sharpe(t) for t in trials.values()]
+    per_year = entry.get("bars_per_year", BARS_PER_YEAR_4H)
+    benchmark = expected_max_sharpe(sharpes, len(trials) + PRIOR_TRIALS) / math.sqrt(per_year)
     return deflated_sharpe(
         entry["sharpe_per_bar"],
         entry["observations"],

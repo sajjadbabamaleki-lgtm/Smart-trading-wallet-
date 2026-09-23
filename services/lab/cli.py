@@ -6,6 +6,8 @@
     python -m services.lab.cli run trend-trailing
     python -m services.lab.cli trials           # every trial, with its Deflated Sharpe
     python -m services.lab.cli holdout NAME     # once per strategy, on the locked months
+    python -m services.lab.cli binance-fetch    # every Binance perpetual, daily, for ctrend-lite
+    python -m services.lab.cli run ctrend-lite  # cross-sectional, on the Binance data
     python -m services.lab.cli copy-fetch       # leaderboard accounts' PnL history
     python -m services.lab.cli copy-study       # do winning traders keep winning?
 
@@ -25,13 +27,16 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from services.analyst.backtest import Metrics  # noqa: E402
-from services.lab import copytrade, data, registry  # noqa: E402
+from services.lab import binance, copytrade, data, registry, xsection  # noqa: E402
 from services.lab.engine import LabResult, annualised, run  # noqa: E402
 from services.lab.strategies import CATALOGUE  # noqa: E402
 
 DEV_MIN_DEFLATED_SHARPE: Final = 0.95
 HOLDOUT_MIN_PROFIT_FACTOR: Final = 1.1
 HOLDOUT_MIN_PSR: Final = 0.90
+HOLDOUT_MIN_X_PROFIT_FACTOR: Final = 1.05
+"""Daily returns of a diversified long/short book have a lower profit factor
+than trades do (each day nets winners and losers), so the bar is lower."""
 
 
 def _info() -> object:
@@ -97,15 +102,22 @@ def cmd_fetch(_: argparse.Namespace) -> int:
 def cmd_list(_: argparse.Namespace) -> int:
     entries = registry.load()
     trials = registry.development_trials(entries)
-    for name, cls in CATALOGUE.items():
+    described = [(n, c.summary, c.source) for n, c in CATALOGUE.items()]
+    described += [
+        (n, "weekly long/short on the 50 most traded Binance perps", xsection.XSOURCES[n])
+        for n in xsection.XCATALOGUE
+    ]
+    for name, summary, source in described:
         status = "tested" if name in trials else "not yet run"
         if registry.holdout_used(name, entries):
             status += ", holdout USED"
-        print(f"\n{name}  [{status}]\n  {cls.summary}\n  source: {cls.source}")
+        print(f"\n{name}  [{status}]\n  {summary}\n  source: {source}")
     return 0
 
 
 def cmd_run(args: argparse.Namespace) -> int:
+    if args.strategy in xsection.XCATALOGUE:
+        return _run_x(args.strategy)
     dataset = data.load()
     start, end = _dev_window(dataset)
     names = list(CATALOGUE) if args.strategy == "all" else [args.strategy]
@@ -139,11 +151,11 @@ def cmd_trials(_: argparse.Namespace) -> int:
         return 0
     print(f"{len(trials)} strategies tried in the lab, + {registry.PRIOR_TRIALS} before it\n")
     print(f"  {'strategy':<20} {'return':>8} {'trades':>7} {'Sharpe':>7} {'deflated':>9}")
-    for name, entry in sorted(trials.items(), key=lambda kv: -kv[1]["sharpe_per_bar"]):
+    for name, entry in sorted(trials.items(), key=lambda kv: -registry.annual_sharpe(kv[1])):
         deflated = registry.deflated_for(entry, trials)
         print(
             f"  {name:<20} {entry['total_return']:>+8.1%} {entry['trades']:>7} "
-            f"{annualised(entry['sharpe_per_bar']):>7.2f} {deflated:>9.0%}"
+            f"{registry.annual_sharpe(entry):>7.2f} {deflated:>9.0%}"
         )
     for entry in entries:
         if entry["window"] == "holdout":
@@ -153,7 +165,7 @@ def cmd_trials(_: argparse.Namespace) -> int:
 
 def cmd_holdout(args: argparse.Namespace) -> int:
     entries = registry.load()
-    if args.strategy not in CATALOGUE:
+    if args.strategy not in CATALOGUE and args.strategy not in xsection.XCATALOGUE:
         raise ValueError(f"unknown strategy {args.strategy!r}")
     if registry.holdout_used(args.strategy, entries):
         raise ValueError(
@@ -162,6 +174,8 @@ def cmd_holdout(args: argparse.Namespace) -> int:
         )
     if args.strategy not in registry.development_trials(entries):
         raise ValueError("run it on the development window first")
+    if args.strategy in xsection.XCATALOGUE:
+        return _holdout_x(args.strategy)
     dataset = data.load()
     result = run(
         CATALOGUE[args.strategy](),
@@ -177,6 +191,108 @@ def cmd_holdout(args: argparse.Namespace) -> int:
         f"profit factor ≥ {HOLDOUT_MIN_PROFIT_FACTOR}": m.profit_factor
         >= HOLDOUT_MIN_PROFIT_FACTOR,
         "drawdown below buy & hold": m.max_drawdown > m.buy_and_hold_max_drawdown,
+        f"P(true Sharpe > 0) ≥ {HOLDOUT_MIN_PSR:.0%}": m.probabilistic_sharpe >= HOLDOUT_MIN_PSR,
+    }
+    print("\nHoldout verdict:")
+    for label, ok in checks.items():
+        print(f"  {_check(ok)} {label}")
+    print("\nPASSED — next is paper trading." if all(checks.values()) else "\nNOT PASSED.")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Cross-sectional strategies on the Binance universe
+# ---------------------------------------------------------------------------
+
+
+def cmd_binance_fetch(_: argparse.Namespace) -> int:
+    print("Downloading every Binance USD-M perpetual since 2020, delisted included (minutes).")
+    ok, failed = binance.fetch()
+    print(f"{len(ok)} symbols cached.")
+    if failed:
+        print(f"WARNING: {len(failed)} failed ({', '.join(failed[:10])}…); run again to retry.")
+    return 0
+
+
+def _print_x(title: str, m: xsection.XMetrics) -> None:
+    pf = "∞" if m.profit_factor == float("inf") else f"{m.profit_factor:.2f}"
+    print(f"  {title}: {m.start:%Y-%m-%d} → {m.end:%Y-%m-%d}")
+    print(
+        f"    return {m.total_return:+.1%} ({m.annual_return:+.1%}/yr), vol "
+        f"{m.annual_volatility:.0%}/yr, Sharpe {m.sharpe:.2f}, max DD {m.max_drawdown:.1%}, "
+        f"daily PF {pf}"
+    )
+    print(
+        f"    universe basket (long only) {m.basket_return:+.1%} "
+        f"(max DD {m.basket_max_drawdown:.1%})"
+    )
+
+
+def _x_record(result: xsection.XResult, window: str) -> dict[str, float]:
+    sharpe, n, skew, kurt = xsection.moments(result.returns)
+    m = xsection.metrics(result)
+    entry = {
+        "strategy": result.strategy,
+        "window": window,
+        "sharpe_per_bar": sharpe,
+        "bars_per_year": xsection.DAYS_PER_YEAR,
+        "observations": n,
+        "skew": skew,
+        "kurtosis": kurt,
+        "total_return": m.total_return,
+        "trades": 0,
+        "max_drawdown": m.max_drawdown,
+    }
+    registry.record_entry(entry)
+    return entry  # type: ignore[return-value]
+
+
+def _run_x(name: str) -> int:
+    full = xsection.XCATALOGUE[name](binance.load())
+    dev = full.window(full.days[0], data.HOLDOUT_START)
+    days = len(dev.days)
+    half = dev.days[days // 2]
+    print(
+        f"Development window {dev.days[0]:%Y-%m-%d} → {dev.days[-1]:%Y-%m-%d}. "
+        f"The months after {data.HOLDOUT_START:%Y-%m-%d} stay locked."
+    )
+    print(f"\n=== {name}\n  {xsection.XSOURCES[name]}")
+    whole = xsection.metrics(dev)
+    first = xsection.metrics(dev.window(dev.days[0], half))
+    second = xsection.metrics(dev.window(half, dev.days[-1] + xsection.DAY))
+    _print_x("whole window", whole)
+    _print_x("first half", first)
+    _print_x("second half", second)
+    print(
+        f"  P(true Sharpe > 0) {whole.probabilistic_sharpe:.0%}, turnover "
+        f"{xsection.annual_turnover(full):.0f}x capital per year, whole-history costs "
+        f"{full.costs:.1%} and funding {full.funding:+.1%} of capital"
+    )
+    _x_record(dev, "development")
+    trials = registry.development_trials(registry.load())
+    deflated = registry.deflated_for(trials[name], trials)
+    halves = first.total_return > 0 and second.total_return > 0
+    drawdown = whole.max_drawdown > whole.basket_max_drawdown
+    print(
+        f"  Deflated Sharpe {deflated:.0%} {_check(deflated >= DEV_MIN_DEFLATED_SHARPE)}  "
+        f"both halves up {_check(halves)}  drawdown below the basket's {_check(drawdown)}"
+    )
+    print(f"\nTrials counted so far: {len(trials)} in the lab + {registry.PRIOR_TRIALS} before it.")
+    return 0
+
+
+def _holdout_x(name: str) -> int:
+    full = xsection.XCATALOGUE[name](binance.load())
+    held = full.window(data.HOLDOUT_START, full.days[-1] + xsection.DAY)
+    _x_record(held, "holdout")
+    m = xsection.metrics(held)
+    print(f"=== {name} on the locked months")
+    _print_x("holdout", m)
+    checks = {
+        "profitable": m.total_return > 0,
+        f"daily profit factor ≥ {HOLDOUT_MIN_X_PROFIT_FACTOR}": m.profit_factor
+        >= HOLDOUT_MIN_X_PROFIT_FACTOR,
+        "drawdown below the basket's": m.max_drawdown > m.basket_max_drawdown,
         f"P(true Sharpe > 0) ≥ {HOLDOUT_MIN_PSR:.0%}": m.probabilistic_sharpe >= HOLDOUT_MIN_PSR,
     }
     print("\nHoldout verdict:")
@@ -233,6 +349,9 @@ def build_parser() -> argparse.ArgumentParser:
     holdout = commands.add_parser("holdout", help="the one evaluation on the locked months")
     holdout.add_argument("strategy")
     holdout.set_defaults(fn=cmd_holdout)
+    commands.add_parser("binance-fetch", help="cache Binance perpetuals").set_defaults(
+        fn=cmd_binance_fetch
+    )
     commands.add_parser("copy-fetch", help="cache leaderboard accounts").set_defaults(
         fn=cmd_copy_fetch
     )

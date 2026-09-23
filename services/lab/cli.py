@@ -10,6 +10,7 @@
     python -m services.lab.cli run ctrend-lite  # cross-sectional, on the Binance data
     python -m services.lab.cli btc-fetch        # BTC 30m candles, for btc-noise-breakout
     python -m services.lab.cli hourly-fetch     # hourly candles, for liquidation-reversal
+    python -m services.lab.cli xvenue-fetch     # Hyperliquid + dYdX funding (hl-dydx-funding-arb)
     python -m services.lab.cli copy-fetch       # leaderboard accounts' PnL history
     python -m services.lab.cli copy-study       # do winning traders keep winning?
     python -m services.lab.cli copy-top         # copy the top five, month by month
@@ -20,6 +21,7 @@ The pass criteria below are fixed in code, before any result.
 from __future__ import annotations
 
 import argparse
+import statistics
 import sys
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
@@ -34,6 +36,7 @@ from services.analyst.backtest import Metrics  # noqa: E402
 from services.lab import (  # noqa: E402
     binance,
     copytrade,
+    crossvenue,
     data,
     intraday,
     listings,
@@ -44,15 +47,25 @@ from services.lab import (  # noqa: E402
 from services.lab.engine import LabResult, annualised, run  # noqa: E402
 from services.lab.strategies import CATALOGUE  # noqa: E402
 
-XRUNNERS: Final[dict[str, Callable[[binance.Market], xsection.XResult]]] = {
-    **xsection.XCATALOGUE,
-    listings.NAME: listings.run_short_listings,
+
+def _on_binance(
+    run: Callable[[binance.Market], xsection.XResult],
+) -> Callable[[], xsection.XResult]:
+    return lambda: run(binance.load())
+
+
+XRUNNERS: Final[dict[str, Callable[[], xsection.XResult]]] = {
+    **{name: _on_binance(f) for name, f in xsection.XCATALOGUE.items()},
+    listings.NAME: _on_binance(listings.run_short_listings),
     intraday.NAME: intraday.run_btc_noise,
     intraday.SOL_NAME: intraday.run_sol_noise,
     intraday.MONDAY_NAME: intraday.run_btc_monday,
     reversal.NAME: reversal.run_reversal,
     reversal.MOMENTUM_NAME: reversal.run_momentum,
+    crossvenue.NAME: crossvenue.run_arb,
 }
+"""Each runner loads only the data it needs, so a strategy can run on a
+machine that has fetched just its own dataset."""
 XSOURCES: Final = {
     **xsection.XSOURCES,
     listings.NAME: listings.SOURCE,
@@ -61,6 +74,7 @@ XSOURCES: Final = {
     intraday.MONDAY_NAME: intraday.MONDAY_SOURCE,
     reversal.NAME: reversal.SOURCE,
     reversal.MOMENTUM_NAME: reversal.MOMENTUM_SOURCE,
+    crossvenue.NAME: crossvenue.SOURCE,
 }
 XSUMMARIES: Final = {
     **dict.fromkeys(xsection.XCATALOGUE, "weekly long/short on the 50 most traded Binance perps"),
@@ -70,8 +84,12 @@ XSUMMARIES: Final = {
     intraday.MONDAY_NAME: "the BTC noise-area breakout on Mondays (UTC) only",
     reversal.NAME: "fade 4-sigma hours on 3x volume in the ten coins; out after 24h or at 10%",
     reversal.MOMENTUM_NAME: "follow 4-sigma hours on 3x volume in the ten coins; 24h or 10% stop",
+    crossvenue.NAME: "short the venue paying more funding, long the other; HL vs dYdX, 3x",
 }
-XDRAWDOWN_LIMITS: Final = {listings.NAME: listings.MAX_DRAWDOWN}
+XDRAWDOWN_LIMITS: Final = {
+    listings.NAME: listings.MAX_DRAWDOWN,
+    crossvenue.NAME: crossvenue.MAX_DRAWDOWN,
+}
 """Strategies with no long-only basket to compare with get a fixed drawdown bar."""
 
 DEV_MIN_DEFLATED_SHARPE: Final = 0.95
@@ -296,7 +314,7 @@ def _x_record(result: xsection.XResult, window: str) -> dict[str, float]:
 
 
 def _run_x(name: str) -> int:
-    full = XRUNNERS[name](binance.load())
+    full = XRUNNERS[name]()
     dev = full.window(full.days[0], data.HOLDOUT_START)
     days = len(dev.days)
     half = dev.days[days // 2]
@@ -330,7 +348,7 @@ def _run_x(name: str) -> int:
 
 
 def _holdout_x(name: str) -> int:
-    full = XRUNNERS[name](binance.load())
+    full = XRUNNERS[name]()
     held = full.window(data.HOLDOUT_START, full.days[-1] + xsection.DAY)
     _x_record(held, "holdout")
     m = xsection.metrics(held)
@@ -360,6 +378,20 @@ def cmd_btc_fetch(_: argparse.Namespace) -> int:
 def cmd_hourly_fetch(_: argparse.Namespace) -> int:
     print("Downloading hourly candles for the ten coins since 2020.")
     print(f"{reversal.fetch()} candles cached.")
+    return 0
+
+
+def cmd_xvenue_fetch(_: argparse.Namespace) -> int:
+    print("Downloading Hyperliquid and dYdX funding for the ten coins since Nov 2023 (minutes).")
+    failed = crossvenue.fetch(_info(), now=datetime.now(UTC))
+    data = crossvenue.load()
+    print("\nMedian funding, annualised — both columns should be the same order of magnitude:")
+    for coin, r in data.items():
+        hl = statistics.median(r.hyperliquid.values()) * crossvenue.HOURS_PER_YEAR
+        dx = statistics.median(r.dydx.values()) * crossvenue.HOURS_PER_YEAR
+        print(f"  {coin:<5} Hyperliquid {hl:+7.1%}  dYdX {dx:+7.1%}  ({len(r.dydx)} dYdX hours)")
+    if failed:
+        print(f"WARNING: {', '.join(failed)} failed; run xvenue-fetch again to retry.")
     return 0
 
 
@@ -445,6 +477,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     commands.add_parser("hourly-fetch", help="cache hourly candles").set_defaults(
         fn=cmd_hourly_fetch
+    )
+    commands.add_parser("xvenue-fetch", help="cache Hyperliquid and dYdX funding").set_defaults(
+        fn=cmd_xvenue_fetch
     )
     commands.add_parser("copy-fetch", help="cache leaderboard accounts").set_defaults(
         fn=cmd_copy_fetch

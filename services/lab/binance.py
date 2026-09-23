@@ -164,29 +164,6 @@ def _download_funding(symbol: str, get: Callable[[str], bytes]) -> None:
     _path(symbol).write_text(json.dumps(payload))
 
 
-def ever_most_traded(days: dict[str, list[Day]], size: int, window: int = 30) -> set[str]:
-    """Symbols that rank in the top `size` by 30-day traded value on any
-    Sunday: the only ones a weekly strategy on the top 50 can ever hold."""
-    by_day: dict[datetime, list[tuple[float, str]]] = {}
-    for symbol, rows in days.items():
-        total = 0.0
-        for i, row in enumerate(rows):
-            total += row.quote_volume
-            if i >= window:
-                total -= rows[i - window].quote_volume
-            if i + 1 >= window and row.time.weekday() == 6:  # noqa: PLR2004 — Sunday
-                by_day.setdefault(row.time, []).append((total, symbol))
-    chosen: set[str] = set()
-    for ranked in by_day.values():
-        chosen.update(s for _, s in sorted(ranked, reverse=True)[:size])
-    return chosen
-
-
-FUNDING_UNIVERSE: Final = 60
-"""Funding is downloaded only for symbols ever among the 60 most traded: a
-margin over the strategy's 50, and a fraction of the 850-odd perpetuals."""
-
-
 def _parallel(work: Callable[[str], None], symbols: list[str], workers: int) -> list[str]:
     def one(symbol: str) -> str | None:
         try:
@@ -202,9 +179,9 @@ def _parallel(work: Callable[[str], None], symbols: list[str], workers: int) -> 
 def fetch(
     *, get: Callable[[str], bytes] = _get, workers: int = WORKERS
 ) -> tuple[list[str], list[str]]:
-    """Cache every eligible perpetual's daily klines, then funding for those
-    that can ever be traded. Resumes: symbols already cached are skipped.
-    Returns the symbols cached and those that failed."""
+    """Cache every eligible perpetual's daily klines and funding. Resumes:
+    symbols already cached are skipped. Returns the symbols cached and those
+    that failed."""
     BINANCE_DIR.mkdir(parents=True, exist_ok=True)
     folders = list_keys(KLINES_PREFIX, delimiter=True, get=get)
     symbols = sorted(
@@ -212,12 +189,10 @@ def fetch(
     )
     missing = [s for s in symbols if not _path(s).exists()]
     failed = _parallel(lambda s: _download_klines(s, get), missing, workers)
-    market = load()
-    tradable = ever_most_traded(market.days, FUNDING_UNIVERSE)
     pending = [
         s
-        for s in sorted(tradable)
-        if not json.loads(_path(s).read_text()).get("funding_done", True)
+        for s in symbols
+        if _path(s).exists() and not json.loads(_path(s).read_text()).get("funding_done", True)
     ]
     failed += _parallel(lambda s: _download_funding(s, get), pending, workers)
     return [s for s in symbols if s not in failed], failed

@@ -110,14 +110,6 @@ def test_registry_compares_trials_at_different_frequencies() -> None:
     assert registry.annual_sharpe(legacy) == pytest.approx(registry.annual_sharpe(four_hourly))
 
 
-def test_funding_is_fetched_only_for_coins_that_can_be_traded() -> None:
-    def rows(volume: float) -> list[Day]:
-        return [Day(START + timedelta(days=d), 1, 1, 1, 1, volume) for d in range(60)]
-
-    days = {"BIGUSDT": rows(1e9), "MIDUSDT": rows(1e6), "TINYUSDT": rows(1.0)}
-    assert binance.ever_most_traded(days, 2) == {"BIGUSDT", "MIDUSDT"}
-
-
 def test_fetch_downloads_klines_then_funding_and_resumes() -> None:
     klines = "".join(
         f"{1704067200000 + d * 86_400_000},1,2,0.5,1.5,10,0,15.5,3,1,1,0\n" for d in range(40)

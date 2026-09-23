@@ -28,9 +28,18 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from services.analyst.backtest import Metrics  # noqa: E402
-from services.lab import binance, copytrade, data, registry, xsection  # noqa: E402
+from services.lab import binance, copytrade, data, listings, registry, xsection  # noqa: E402
 from services.lab.engine import LabResult, annualised, run  # noqa: E402
 from services.lab.strategies import CATALOGUE  # noqa: E402
+
+XRUNNERS: Final = {**xsection.XCATALOGUE, listings.NAME: listings.run_short_listings}
+XSOURCES: Final = {**xsection.XSOURCES, listings.NAME: listings.SOURCE}
+XSUMMARIES: Final = {
+    **dict.fromkeys(xsection.XCATALOGUE, "weekly long/short on the 50 most traded Binance perps"),
+    listings.NAME: "short every new Binance perp from its 7th day for 60 days; 5% each, stop at 2x",
+}
+XDRAWDOWN_LIMITS: Final = {listings.NAME: listings.MAX_DRAWDOWN}
+"""Strategies with no long-only basket to compare with get a fixed drawdown bar."""
 
 DEV_MIN_DEFLATED_SHARPE: Final = 0.95
 HOLDOUT_MIN_PROFIT_FACTOR: Final = 1.1
@@ -104,10 +113,7 @@ def cmd_list(_: argparse.Namespace) -> int:
     entries = registry.load()
     trials = registry.development_trials(entries)
     described = [(n, c.summary, c.source) for n, c in CATALOGUE.items()]
-    described += [
-        (n, "weekly long/short on the 50 most traded Binance perps", xsection.XSOURCES[n])
-        for n in xsection.XCATALOGUE
-    ]
+    described += [(n, XSUMMARIES[n], XSOURCES[n]) for n in XRUNNERS]
     for name, summary, source in described:
         status = "tested" if name in trials else "not yet run"
         if registry.holdout_used(name, entries):
@@ -117,7 +123,7 @@ def cmd_list(_: argparse.Namespace) -> int:
 
 
 def cmd_run(args: argparse.Namespace) -> int:
-    if args.strategy in xsection.XCATALOGUE:
+    if args.strategy in XRUNNERS:
         return _run_x(args.strategy)
     dataset = data.load()
     start, end = _dev_window(dataset)
@@ -166,7 +172,7 @@ def cmd_trials(_: argparse.Namespace) -> int:
 
 def cmd_holdout(args: argparse.Namespace) -> int:
     entries = registry.load()
-    if args.strategy not in CATALOGUE and args.strategy not in xsection.XCATALOGUE:
+    if args.strategy not in CATALOGUE and args.strategy not in XRUNNERS:
         raise ValueError(f"unknown strategy {args.strategy!r}")
     if registry.holdout_used(args.strategy, entries):
         raise ValueError(
@@ -175,7 +181,7 @@ def cmd_holdout(args: argparse.Namespace) -> int:
         )
     if args.strategy not in registry.development_trials(entries):
         raise ValueError("run it on the development window first")
-    if args.strategy in xsection.XCATALOGUE:
+    if args.strategy in XRUNNERS:
         return _holdout_x(args.strategy)
     dataset = data.load()
     result = run(
@@ -223,10 +229,18 @@ def _print_x(title: str, m: xsection.XMetrics) -> None:
         f"{m.annual_volatility:.0%}/yr, Sharpe {m.sharpe:.2f}, max DD {m.max_drawdown:.1%}, "
         f"daily PF {pf}"
     )
-    print(
-        f"    universe basket (long only) {m.basket_return:+.1%} "
-        f"(max DD {m.basket_max_drawdown:.1%})"
-    )
+    if m.basket_max_drawdown < 0:  # strategies with a long-only basket to compare
+        print(
+            f"    universe basket (long only) {m.basket_return:+.1%} "
+            f"(max DD {m.basket_max_drawdown:.1%})"
+        )
+
+
+def _drawdown_check(name: str, m: xsection.XMetrics) -> tuple[bool, str]:
+    limit = XDRAWDOWN_LIMITS.get(name)
+    if limit is None:
+        return m.max_drawdown > m.basket_max_drawdown, "drawdown below the basket's"
+    return m.max_drawdown > limit, f"max drawdown above {limit:.0%}"
 
 
 def _x_record(result: xsection.XResult, window: str) -> dict[str, float]:
@@ -249,7 +263,7 @@ def _x_record(result: xsection.XResult, window: str) -> dict[str, float]:
 
 
 def _run_x(name: str) -> int:
-    full = xsection.XCATALOGUE[name](binance.load())
+    full = XRUNNERS[name](binance.load())
     dev = full.window(full.days[0], data.HOLDOUT_START)
     days = len(dev.days)
     half = dev.days[days // 2]
@@ -257,7 +271,7 @@ def _run_x(name: str) -> int:
         f"Development window {dev.days[0]:%Y-%m-%d} → {dev.days[-1]:%Y-%m-%d}. "
         f"The months after {data.HOLDOUT_START:%Y-%m-%d} stay locked."
     )
-    print(f"\n=== {name}\n  {xsection.XSOURCES[name]}")
+    print(f"\n=== {name}  ({XSUMMARIES[name]})\n  {XSOURCES[name]}")
     whole = xsection.metrics(dev)
     first = xsection.metrics(dev.window(dev.days[0], half))
     second = xsection.metrics(dev.window(half, dev.days[-1] + xsection.DAY))
@@ -273,17 +287,17 @@ def _run_x(name: str) -> int:
     trials = registry.development_trials(registry.load())
     deflated = registry.deflated_for(trials[name], trials)
     halves = first.total_return > 0 and second.total_return > 0
-    drawdown = whole.max_drawdown > whole.basket_max_drawdown
+    drawdown, drawdown_label = _drawdown_check(name, whole)
     print(
         f"  Deflated Sharpe {deflated:.0%} {_check(deflated >= DEV_MIN_DEFLATED_SHARPE)}  "
-        f"both halves up {_check(halves)}  drawdown below the basket's {_check(drawdown)}"
+        f"both halves up {_check(halves)}  {drawdown_label} {_check(drawdown)}"
     )
     print(f"\nTrials counted so far: {len(trials)} in the lab + {registry.PRIOR_TRIALS} before it.")
     return 0
 
 
 def _holdout_x(name: str) -> int:
-    full = xsection.XCATALOGUE[name](binance.load())
+    full = XRUNNERS[name](binance.load())
     held = full.window(data.HOLDOUT_START, full.days[-1] + xsection.DAY)
     _x_record(held, "holdout")
     m = xsection.metrics(held)
@@ -293,7 +307,7 @@ def _holdout_x(name: str) -> int:
         "profitable": m.total_return > 0,
         f"daily profit factor ≥ {HOLDOUT_MIN_X_PROFIT_FACTOR}": m.profit_factor
         >= HOLDOUT_MIN_X_PROFIT_FACTOR,
-        "drawdown below the basket's": m.max_drawdown > m.basket_max_drawdown,
+        _drawdown_check(name, m)[1]: _drawdown_check(name, m)[0],
         f"P(true Sharpe > 0) ≥ {HOLDOUT_MIN_PSR:.0%}": m.probabilistic_sharpe >= HOLDOUT_MIN_PSR,
     }
     print("\nHoldout verdict:")

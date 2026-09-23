@@ -48,6 +48,7 @@ XRUNNERS: Final[dict[str, Callable[[binance.Market], xsection.XResult]]] = {
     **xsection.XCATALOGUE,
     listings.NAME: listings.run_short_listings,
     intraday.NAME: intraday.run_btc_noise,
+    intraday.SOL_NAME: intraday.run_sol_noise,
     reversal.NAME: reversal.run_reversal,
     reversal.MOMENTUM_NAME: reversal.run_momentum,
 }
@@ -55,6 +56,7 @@ XSOURCES: Final = {
     **xsection.XSOURCES,
     listings.NAME: listings.SOURCE,
     intraday.NAME: intraday.SOURCE,
+    intraday.SOL_NAME: intraday.SOL_SOURCE,
     reversal.NAME: reversal.SOURCE,
     reversal.MOMENTUM_NAME: reversal.MOMENTUM_SOURCE,
 }
@@ -62,6 +64,7 @@ XSUMMARIES: Final = {
     **dict.fromkeys(xsection.XCATALOGUE, "weekly long/short on the 50 most traded Binance perps"),
     listings.NAME: "short every new Binance perp from its 7th day for 60 days; 5% each, stop at 2x",
     intraday.NAME: "BTC 30m breakout of the intraday noise area; VWAP trailing stop; flat daily",
+    intraday.SOL_NAME: "SOL 30m breakout of the intraday noise area; VWAP trail; flat daily",
     reversal.NAME: "fade 4-sigma hours on 3x volume in the ten coins; out after 24h or at 10%",
     reversal.MOMENTUM_NAME: "follow 4-sigma hours on 3x volume in the ten coins; 24h or 10% stop",
 }
@@ -345,8 +348,9 @@ def _holdout_x(name: str) -> int:
 
 
 def cmd_btc_fetch(_: argparse.Namespace) -> int:
-    print("Downloading BTCUSDT 30-minute candles since 2020.")
-    print(f"{intraday.fetch()} candles cached.")
+    for symbol in (intraday.SYMBOL, "SOLUSDT"):
+        print(f"Downloading {symbol} 30-minute candles since 2020.")
+        print(f"{intraday.fetch(symbol=symbol)} candles cached.")
     return 0
 
 
@@ -433,7 +437,9 @@ def build_parser() -> argparse.ArgumentParser:
     commands.add_parser("binance-fetch", help="cache Binance perpetuals").set_defaults(
         fn=cmd_binance_fetch
     )
-    commands.add_parser("btc-fetch", help="cache BTC 30m candles").set_defaults(fn=cmd_btc_fetch)
+    commands.add_parser("btc-fetch", help="cache BTC and SOL 30m candles").set_defaults(
+        fn=cmd_btc_fetch
+    )
     commands.add_parser("hourly-fetch", help="cache hourly candles").set_defaults(
         fn=cmd_hourly_fetch
     )

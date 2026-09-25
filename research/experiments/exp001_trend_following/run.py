@@ -42,7 +42,7 @@ def fetch(url: str, name: str) -> Path:
     CACHE.mkdir(parents=True, exist_ok=True)
     path = CACHE / name
     if not path.exists():
-        urllib.request.urlretrieve(url, path)
+        urllib.request.urlretrieve(url, path)  # noqa: S310 - fixed https URLs
     return path
 
 
@@ -119,11 +119,16 @@ def main() -> None:
     r = r[start:]
     btc = px["BTC"].pct_change()[start:]
     print("== Recommended config: long-only, lookbacks (20,60,120), max 2x ==")
-    for label, sl in [("full 2018+", slice(None)), ("in-sample 2018-21", slice(None, "2021")),
-                      ("OUT-OF-SAMPLE 2022+", slice(SPLIT, None))]:
+    for label, sl in [
+        ("full 2018+", slice(None)),
+        ("in-sample 2018-21", slice(None, "2021")),
+        ("OUT-OF-SAMPLE 2022+", slice(SPLIT, None)),
+    ]:
         print(f"{label:22s} strategy {stats(r[sl])}   BTC buy&hold {stats(btc[sl])}")
     g = pos[start:].abs().sum(axis=1)
-    print(f"gross exposure: mean {g.mean():.2f}x, max {g.max():.2f}x; worst day {r.min() * 100:.1f}%")
+    print(
+        f"gross exposure: mean {g.mean():.2f}x, max {g.max():.2f}x; worst day {r.min() * 100:.1f}%"
+    )
     yearly = r.groupby(r.index.year).apply(lambda x: (1 + x).prod() - 1) * 100
     print("calendar years %:", yearly.round(1).to_dict())
 
@@ -131,22 +136,31 @@ def main() -> None:
     rows = []
     for lbs in [(10, 20, 40), (20, 60, 120), (30, 90, 180), (50, 100, 200), (20,), (60,), (120,)]:
         for lo in (True, False):
-            rr, _ = backtest(px, funding, lookbacks=lbs, long_only=lo, target_vol=0.4, max_gross=1.0)
+            rr, _ = backtest(
+                px, funding, lookbacks=lbs, long_only=lo, target_vol=0.4, max_gross=1.0
+            )
             rr = rr[start:]
-            rows.append({"lookbacks": lbs, "long_only": lo,
-                         "Sharpe_all": stats(rr)["Sharpe"],
-                         "Sharpe_IS": stats(rr[:"2021"])["Sharpe"],
-                         "Sharpe_OOS": stats(rr[SPLIT:])["Sharpe"],
-                         "CAGR_OOS%": stats(rr[SPLIT:])["CAGR%"],
-                         "MaxDD%": stats(rr)["MaxDD%"]})
+            rows.append(
+                {
+                    "lookbacks": lbs,
+                    "long_only": lo,
+                    "Sharpe_all": stats(rr)["Sharpe"],
+                    "Sharpe_IS": stats(rr[:"2021"])["Sharpe"],
+                    "Sharpe_OOS": stats(rr[SPLIT:])["Sharpe"],
+                    "CAGR_OOS%": stats(rr[SPLIT:])["CAGR%"],
+                    "MaxDD%": stats(rr)["MaxDD%"],
+                }
+            )
     print(pd.DataFrame(rows).to_string(index=False))
 
     print("\n== Leverage: same signal, larger risk budget ==")
     for tv, cap in [(0.4, 1.0), (0.6, 2.0), (0.8, 2.0), (1.2, 3.0)]:
         rr, p = backtest(px, funding, target_vol=tv, max_gross=cap)
         rr = rr[start:]
-        print(f"max {cap:.0f}x  full {stats(rr)}  OOS {stats(rr[SPLIT:])}  "
-              f"peak exposure {p[start:].abs().sum(axis=1).max():.2f}x")
+        print(
+            f"max {cap:.0f}x  full {stats(rr)}  OOS {stats(rr[SPLIT:])}  "
+            f"peak exposure {p[start:].abs().sum(axis=1).max():.2f}x"
+        )
 
     print("\n== Stress: double costs (0.30%) and 3x funding ==")
     rr, _ = backtest(px, funding, cost=0.003, funding_mult=3.0)

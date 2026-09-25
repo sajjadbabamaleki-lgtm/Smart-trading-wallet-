@@ -76,6 +76,10 @@ ignore = [
     "T201",      # these are CLIs; printing is the output
     "PLR0915",   # an orchestrator is a linear sequence; splitting it hides the order of operations
 ]
+"research/experiments/**" = [
+    "T201",      # experiment scripts report results to stdout
+    "PLR0913",   # a backtest's parameters are the experiment's knobs, kept explicit
+]
 "services/*/cli.py" = [
     "T201",      # likewise — a CLI's report goes to stdout
 ]

@@ -76,6 +76,12 @@ ignore = [
     "T201",      # these are CLIs; printing is the output
     "PLR0915",   # an orchestrator is a linear sequence; splitting it hides the order of operations
 ]
+"research/paper_trading/**" = [
+    "T201",      # the trader's daily report goes to stdout
+    "S101",      # asserts narrow JSON payload types from the public API
+    "SLF001",    # the trader reuses the data client's POST helper
+    "PLR0913",   # a strategy's parameters are its research-fixed knobs, kept explicit
+]
 "research/experiments/**" = [
     "T201",      # experiment scripts report results to stdout
     "PLR0913",   # a backtest's parameters are the experiment's knobs, kept explicit

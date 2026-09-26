@@ -1,0 +1,40 @@
+tf,indicator,trades,win_rate,CAGR_2020_23,CAGR_2024_26,MaxDD_2024_26
+1d,Supertrend L/S,51,45.1,-15.8,28.1,-43.2
+1d,Ichimoku long,892,32.2,71.5,14.0,-30.7
+1d,Bollinger breakout,855,27.4,73.4,11.8,-34.5
+1d,Stochastic 20/80,716,69.1,7.3,6.9,-47.0
+1d,Bollinger bounce,721,74.9,5.9,6.8,-38.7
+1d,RSI 30/70 (buy oversold),192,81.8,21.8,3.5,-43.0
+1d,EMA50/200 golden cross,137,43.1,85.8,1.0,-44.3
+1d,MACD cross long,1576,31.9,96.9,-0.6,-62.8
+1d,Bullish engulfing (hold 5 bars),1298,46.6,11.9,-2.3,-25.5
+1d,Hammer (hold 5 bars),1097,49.9,11.8,-6.0,-23.3
+1d,EMA50/200 L/S,139,34.5,39.1,-9.4,-55.7
+1d,Donchian 20 breakout L/S,459,39.9,72.8,-10.5,-58.8
+1d,MACD cross L/S,1636,37.8,36.0,-15.5,-75.1
+1h,Supertrend L/S,1420,39.1,46.6,6.7,-46.9
+1h,Bollinger breakout,19980,26.2,20.1,1.0,-37.3
+1h,Ichimoku long,24913,32.9,41.4,-2.8,-50.2
+1h,EMA50/200 golden cross,3362,32.1,103.5,-3.6,-63.8
+1h,RSI 30/70 (buy oversold),3993,77.2,2.0,-13.3,-53.9
+1h,Bollinger bounce,20484,73.4,-20.6,-16.2,-53.9
+1h,Hammer (hold 5 bars),26539,49.2,-24.5,-21.5,-50.1
+1h,Stochastic 20/80,17597,62.5,-4.2,-24.0,-59.2
+1h,EMA50/200 L/S,3378,29.2,53.8,-24.7,-74.9
+1h,Bullish engulfing (hold 5 bars),31560,46.1,-21.4,-27.1,-57.3
+1h,MACD cross long,41907,29.9,28.1,-32.7,-72.8
+1h,Donchian 20 breakout L/S,12124,33.7,-45.5,-33.8,-71.8
+1h,MACD cross L/S,43803,34.2,-40.1,-62.5,-93.7
+4h,Ichimoku long,5901,33.3,66.1,10.6,-44.3
+4h,Bollinger breakout,4927,27.1,57.5,9.9,-41.5
+4h,EMA50/200 golden cross,787,35.7,103.3,9.4,-40.2
+4h,Bullish engulfing (hold 5 bars),8085,47.8,6.9,3.9,-18.3
+4h,MACD cross long,10509,31.5,51.8,1.7,-55.0
+4h,RSI 30/70 (buy oversold),1109,79.2,4.2,1.1,-49.6
+4h,EMA50/200 L/S,791,32.1,67.5,0.2,-43.6
+4h,Supertrend L/S,318,45.3,86.5,-3.6,-43.5
+4h,Stochastic 20/80,4446,64.3,18.8,-8.4,-50.7
+4h,Bollinger bounce,4825,73.0,-5.3,-9.8,-44.1
+4h,Hammer (hold 5 bars),6600,50.6,-11.1,-12.9,-38.7
+4h,MACD cross L/S,11007,35.6,-9.7,-13.7,-60.0
+4h,Donchian 20 breakout L/S,2872,36.9,22.7,-20.0,-63.4

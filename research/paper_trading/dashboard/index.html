@@ -1,0 +1,192 @@
+<title>دفتر معامله‌ی آزمایشی</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#F2F5F4; --surface:#FFFFFF; --ink:#14221F; --muted:#5B6B67; --line:#D7E0DD;
+  --accent:#0E6B5C; --accent-soft:#DDEEEA; --gain:#16794A; --loss:#B3261E; --warn:#A15C00;
+  --gain-soft:#E1F2E8; --loss-soft:#F9E3E1; --warn-soft:#FBEBD2;
+  --num:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --fa:"Vazirmatn",Tahoma,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1614; --surface:#14201D; --ink:#E4ECE9; --muted:#93A5A0; --line:#26342F;
+    --accent:#4FD1B5; --accent-soft:#16332C; --gain:#5CCB8F; --loss:#F2837A; --warn:#E8B35A;
+    --gain-soft:#15301F; --loss-soft:#3A1B18; --warn-soft:#352812; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1614; --surface:#14201D; --ink:#E4ECE9; --muted:#93A5A0; --line:#26342F;
+  --accent:#4FD1B5; --accent-soft:#16332C; --gain:#5CCB8F; --loss:#F2837A; --warn:#E8B35A;
+  --gain-soft:#15301F; --loss-soft:#3A1B18; --warn-soft:#352812; color-scheme:dark;
+}
+body{background:var(--bg);color:var(--ink);font-family:var(--fa);font-size:15px;line-height:1.7}
+.wrap{max-width:760px;margin:0 auto;padding-inline:16px;padding-block:20px 40px;display:grid;gap:20px}
+header{display:grid;gap:4px}
+h1{font-size:22px;font-weight:800;margin:0;text-wrap:balance}
+h2{font-size:16px;font-weight:700;margin:0 0 10px}
+.sub{color:var(--muted);font-size:13px}
+.num{font-family:var(--num);font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+.hero{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:grid;gap:14px}
+.equity{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 16px}
+.equity .big{font-size:34px;font-weight:500}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:13px;font-weight:500}
+.up{color:var(--gain);background:var(--gain-soft)} .down{color:var(--loss);background:var(--loss-soft)}
+.flat{color:var(--muted);background:var(--accent-soft)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.stat{display:grid;gap:2px}
+.stat .k{color:var(--muted);font-size:12px;letter-spacing:.02em}
+.stat .v{font-size:17px;font-weight:500;justify-self:start}
+@media (max-width:520px){.stats{grid-template-columns:repeat(2,1fr)}}
+.gate{border-radius:12px;padding:12px 14px;display:grid;gap:6px;border:1px solid var(--line)}
+.gate.collecting{background:var(--accent-soft)} .gate.pass{background:var(--gain-soft)}
+.gate.fail{background:var(--warn-soft)} .gate.stop{background:var(--loss-soft)}
+.gate b{font-size:15px}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+section{display:grid;gap:4px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+svg text{fill:var(--muted);font-family:var(--num);font-size:10px}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{color:var(--muted);font-weight:500;font-size:12px;text-align:start;padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:7px 8px;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:0}
+.pos{display:grid;grid-template-columns:70px 1fr 64px;align-items:center;gap:10px;font-size:14px}
+.pos + .pos{margin-top:8px}
+.pbar{height:10px;border-radius:5px;background:var(--line);position:relative;overflow:hidden}
+.pbar i{position:absolute;top:0;bottom:0;border-radius:5px}
+.note{color:var(--muted);font-size:13px}
+.err{background:var(--loss-soft);color:var(--loss);border-radius:12px;padding:14px}
+</style>
+
+<div class="wrap" dir="rtl">
+  <header>
+    <h1>دفتر معامله‌ی آزمایشی</h1>
+    <div class="sub">سبد EXP-007 روی Hyperliquid · پول مجازی، بدون سفارش واقعی · <span id="asof">در حال بارگذاری…</span></div>
+  </header>
+
+  <div id="error" class="err" hidden>داده بارگذاری نشد. صفحه را دوباره باز کنید؛ اگر ادامه داشت، در گفتگو خبر بدهید.</div>
+
+  <div class="hero" id="hero">
+    <div class="equity">
+      <span class="big num" id="equity">$—</span>
+      <span class="chip flat num" id="total">—</span>
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="k">روزها</span><span class="v num" id="days">—</span></div>
+      <div class="stat"><span class="k">بیشترین افت</span><span class="v num" id="dd">—</span></div>
+      <div class="stat"><span class="k">شارپ (سالانه)</span><span class="v num" id="sharpe">—</span></div>
+      <div class="stat"><span class="k">اهرم</span><span class="v num" id="lev">—</span></div>
+    </div>
+    <div class="gate collecting" id="gate">
+      <b id="gateTitle">در حال جمع‌آوری نتیجه</b>
+      <span class="note" id="gateText"></span>
+      <div class="bar"><i id="gateBar" style="width:0%"></i></div>
+    </div>
+  </div>
+
+  <section class="card">
+    <h2>موجودی از شروع</h2>
+    <div id="chartLive"></div>
+  </section>
+
+  <section class="card">
+    <h2>روزهای اخیر</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>روز</th><th>سود/ضرر روز</th><th>موجودی</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table></div>
+  </section>
+
+  <section class="card">
+    <h2>پوزیشن‌های فعلی</h2>
+    <div class="note" style="margin-bottom:10px">سهم از موجودی · سبز = خرید (لانگ)، قرمز = فروش (شورت)</div>
+    <div id="positions"></div>
+  </section>
+
+  <section class="card">
+    <h2>تست روی گذشته‌ی Hyperliquid</h2>
+    <div class="note" id="bfText"></div>
+    <div id="chartBackfill"></div>
+  </section>
+
+  <p class="note">هر روز حدود ساعت ۳:۵۰ صبح به وقت تهران به‌روز می‌شود. این صفحه توصیه‌ی سرمایه‌گذاری نیست.</p>
+</div>
+
+<script>
+const fa = n => String(n).replace(/\d/g, d => "۰۱۲۳۴۵۶۷۸۹"[d]);
+const pct = (v, sign=true) => (v == null ? "—" : (sign && v > 0 ? "+" : "") + v.toFixed(2) + "%");
+const money = v => "$" + v.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+function chart(el, pts, base){
+  const W = 700, H = 200, L = 52, R = 8, T = 10, B = 24;
+  if (pts.length < 2){
+    el.innerHTML = '<p class="note">نمودار از روز دوم به بعد رسم می‌شود.</p>'; return;
+  }
+  const ys = pts.map(p => p.equity).concat([base]);
+  let lo = Math.min(...ys), hi = Math.max(...ys);
+  const pad = (hi - lo) * 0.08 || hi * 0.01; lo -= pad; hi += pad;
+  const x = i => L + (W - L - R) * i / (pts.length - 1);
+  const y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+  const ticks = [lo + (hi-lo)*0.1, (lo+hi)/2, hi - (hi-lo)*0.1];
+  const line = pts.map((p,i) => (i ? "L" : "M") + x(i).toFixed(1) + "," + y(p.equity).toFixed(1)).join("");
+  const area = line + `L${x(pts.length-1).toFixed(1)},${H-B}L${L},${H-B}Z`;
+  const last = pts[pts.length-1];
+  const color = last.equity >= base ? "var(--gain)" : "var(--loss)";
+  const labelIdx = [0, Math.floor((pts.length-1)/2), pts.length-1];
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="نمودار موجودی" direction="ltr" style="direction:ltr">
+    ${ticks.map(t => `<line x1="${L}" x2="${W-R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line)" stroke-width="1"/>
+      <text x="${L-6}" y="${y(t)+3}" text-anchor="end">${Math.round(t).toLocaleString("en-US")}</text>`).join("")}
+    <line x1="${L}" x2="${W-R}" y1="${y(base)}" y2="${y(base)}" stroke="var(--muted)" stroke-dasharray="4 4" stroke-width="1"/>
+    <path d="${area}" fill="${color}" fill-opacity="0.10"/>
+    <path d="${line}" fill="none" stroke="${color}" stroke-width="2"/>
+    <circle cx="${x(pts.length-1)}" cy="${y(last.equity)}" r="4" fill="${color}"/>
+    ${labelIdx.map(i => `<text x="${x(i)}" y="${H-6}" text-anchor="${i===0?"start":i===pts.length-1?"end":"middle"}">${pts[i].day}</text>`).join("")}
+  </svg>`;
+}
+
+function render(d){
+  document.getElementById("asof").textContent = "آخرین روز: " + fa(d.as_of);
+  document.getElementById("equity").textContent = money(d.equity);
+  const t = d.stats.total_pct, tot = document.getElementById("total");
+  tot.textContent = pct(t); tot.className = "chip num " + (t > 0 ? "up" : t < 0 ? "down" : "flat");
+  document.getElementById("days").textContent = d.stats.days;
+  document.getElementById("dd").textContent = pct(d.stats.max_dd_pct, false);
+  document.getElementById("sharpe").textContent = d.stats.sharpe == null ? "—" : d.stats.sharpe.toFixed(2);
+  document.getElementById("lev").textContent = d.leverage + "x";
+
+  const g = d.gate, gate = document.getElementById("gate");
+  gate.className = "gate " + g.status;
+  const titles = {collecting:"در حال جمع‌آوری نتیجه", pass:"شرط ورود به پول واقعی برقرار است", fail:"شرط ورود برقرار نیست", stop:"توقف: افت از حد مجاز گذشت"};
+  document.getElementById("gateTitle").textContent = titles[g.status];
+  document.getElementById("gateText").textContent =
+    `شرط: حداقل ${fa(g.days_needed)} روز، شارپ بالای ${fa(g.sharpe_min)} و افت کمتر از ${fa(-g.max_dd_limit)}٪. توقف اگر افت از ${fa(-g.stop_dd)}٪ بگذرد. ` +
+    `تا الان ${fa(d.stats.days)} روز از ${fa(g.days_needed)} روز.`;
+  document.getElementById("gateBar").style.width = Math.min(100, d.stats.days / g.days_needed * 100) + "%";
+
+  chart(document.getElementById("chartLive"), d.live, d.start_equity);
+
+  document.getElementById("rows").innerHTML = d.live.slice(-14).reverse().map(r =>
+    `<tr><td class="num">${r.day}</td><td><span class="chip num ${r.return_pct>0?"up":r.return_pct<0?"down":"flat"}">${pct(r.return_pct)}</span></td><td class="num">${money(r.equity)}</td></tr>`).join("");
+
+  const maxW = Math.max(0.05, ...d.positions.map(p => Math.abs(p.weight)));
+  document.getElementById("positions").innerHTML = d.positions.slice(0, 15).map(p => {
+    const w = Math.abs(p.weight) / maxW * 50, long = p.weight > 0;
+    return `<div class="pos"><span class="num" style="font-weight:500">${p.coin}</span>
+      <div class="pbar" style="direction:ltr"><i style="${long?`left:50%;width:${w}%`:`right:50%;width:${w}%`};background:${long?"var(--gain)":"var(--loss)"}"></i></div>
+      <span class="num" style="color:${long?"var(--gain)":"var(--loss)"}">${(p.weight*100).toFixed(1)}%</span></div>`;
+  }).join("") || '<p class="note">پوزیشنی باز نیست.</p>';
+
+  const b = d.backfill.stats;
+  document.getElementById("bfText").textContent =
+    `شبیه‌سازی از ${fa(d.backfill.equity[0]?.day || "")}: کل ${pct(b.total_pct)} · بیشترین افت ${pct(b.max_dd_pct,false)}. ` +
+    `مدل یادگیری ماشین این دوره را دیده، پس این نمودار فقط درست کار کردن ربات را نشان می‌دهد. انتظار بک‌تست با اهرم ۱٫۵: حدود ${fa(d.backtest.cagr_1_5x_2022_26)}٪ در سال با افت تا ${fa(-d.backtest.max_dd_1_5x)}٪.`;
+  chart(document.getElementById("chartBackfill"), d.backfill.equity, d.start_equity);
+}
+
+fetch("data.json", {cache: "no-store"}).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(render).catch(() => { document.getElementById("error").hidden = false; });
+</script>

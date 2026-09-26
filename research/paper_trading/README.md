@@ -51,3 +51,13 @@ After at least 60 trading days, compare paper results with the backtest:
 - **Stop and revisit** if drawdown exceeds 30%, or if any sleeve's
   realised results fall outside its backtest range for two consecutive
   months.
+
+## Dashboard
+
+A Persian dashboard page opens in the Claude app:
+
+https://claude.ai/artifact/Jd7iywb77RL4AeMBsDuDdh
+
+`dashboard/index.html` is the page and `dashboard/data.json` its data,
+written by `python -m research.paper_trading.export_dashboard`. The daily
+run republishes both to the same URL.

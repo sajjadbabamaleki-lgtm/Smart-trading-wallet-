@@ -107,9 +107,12 @@ def step_days(
     else:
         state = {"equity": START_EQUITY, "last_day": None, "positions": {}, "leverage": LEVERAGE}
     ret = close.pct_change(fill_method=None).fillna(0.0)
-    days = [d for d in close.index if d >= pd.Timestamp(start, tz="UTC")]
+    # `start` only seeds a new ledger. Once one exists, every completed day after
+    # its last day is processed, so a run that comes late catches up day by day.
     if state["last_day"]:
-        days = [d for d in days if d > pd.Timestamp(state["last_day"])]
+        days = [d for d in close.index if d > pd.Timestamp(state["last_day"])]
+    else:
+        days = [d for d in close.index if d >= pd.Timestamp(start, tz="UTC")]
     rows: list[dict[str, object]] = []
     trades: list[dict[str, object]] = []
     for day in days:

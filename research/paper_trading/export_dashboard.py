@@ -84,6 +84,27 @@ def build() -> dict[str, object]:
             "equity": backfill[["day", "equity"]].to_dict(orient="records"),
         },
         "backtest": {"cagr_1_5x_2022_26": 32.2, "max_dd_1_5x": -36.5},
+        "gold": _gold(start_equity),
+    }
+
+
+def _gold(start_equity: float) -> dict[str, object] | None:
+    ledger = HERE / "ledger_gold"
+    if not (ledger / "state.json").exists():
+        return None
+    state = json.loads((ledger / "state.json").read_text())
+    live = _series(ledger)
+    backfill = _series(HERE / "ledger_gold_backfill")
+    return {
+        "as_of": state["last_day"][:10],
+        "equity": round(float(state["equity"]), 2),
+        "position": round(float(state["positions"].get("PAXG", 0.0)), 3),
+        "stats": _stats(live, start_equity),
+        "live": live[["day", "equity", "return_pct"]].to_dict(orient="records"),
+        "backfill": {
+            "stats": _stats(backfill, start_equity),
+            "equity": backfill[["day", "equity"]].to_dict(orient="records"),
+        },
     }
 
 

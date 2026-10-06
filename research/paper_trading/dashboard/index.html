@@ -107,6 +107,18 @@ tr:last-child td{border-bottom:0}
     <div id="positions"></div>
   </section>
 
+  <section class="card" id="goldCard" hidden>
+    <h2>ربات طلا (ایچیموکو، اهرم ۲)</h2>
+    <div class="equity" style="margin-bottom:6px">
+      <span class="big num" id="gEquity" style="font-size:26px">$—</span>
+      <span class="chip flat num" id="gTotal">—</span>
+    </div>
+    <div class="note" id="gText"></div>
+    <div id="chartGold"></div>
+    <div class="note" id="gBfText" style="margin-top:10px"></div>
+    <div id="chartGoldBf"></div>
+  </section>
+
   <section class="card">
     <h2>تست روی گذشته‌ی Hyperliquid</h2>
     <div class="note" id="bfText"></div>
@@ -185,6 +197,22 @@ function render(d){
     `شبیه‌سازی از ${fa(d.backfill.equity[0]?.day || "")}: کل ${pct(b.total_pct)} · بیشترین افت ${pct(b.max_dd_pct,false)}. ` +
     `مدل یادگیری ماشین این دوره را دیده، پس این نمودار فقط درست کار کردن ربات را نشان می‌دهد. انتظار بک‌تست با اهرم ۱٫۵: حدود ${fa(d.backtest.cagr_1_5x_2022_26)}٪ در سال با افت تا ${fa(-d.backtest.max_dd_1_5x)}٪.`;
   chart(document.getElementById("chartBackfill"), d.backfill.equity, d.start_equity);
+
+  const gd = d.gold;
+  if (gd){
+    document.getElementById("goldCard").hidden = false;
+    document.getElementById("gEquity").textContent = money(gd.equity);
+    const gt = document.getElementById("gTotal");
+    gt.textContent = pct(gd.stats.total_pct); gt.className = "chip num " + (gd.stats.total_pct > 0 ? "up" : gd.stats.total_pct < 0 ? "down" : "flat");
+    document.getElementById("gText").textContent =
+      `${fa(gd.stats.days)} روز · بیشترین افت ${pct(gd.stats.max_dd_pct,false)} · ` +
+      (gd.position > 0 ? `الان در خرید طلا با ${fa(gd.position)} برابر موجودی` : "الان بدون پوزیشن (سیگنال خرید نیست)");
+    chart(document.getElementById("chartGold"), gd.live, d.start_equity);
+    const gb = gd.backfill.stats;
+    document.getElementById("gBfText").textContent =
+      `تست همین ربات روی گذشته از ${fa(gd.backfill.equity[0]?.day || "")}: کل ${pct(gb.total_pct)} · بیشترین افت ${pct(gb.max_dd_pct,false)}`;
+    chart(document.getElementById("chartGoldBf"), gd.backfill.equity, d.start_equity);
+  }
 }
 
 fetch("data.json", {cache: "no-store"}).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })

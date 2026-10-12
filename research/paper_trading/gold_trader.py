@@ -1,4 +1,4 @@
-"""Daily paper trader for gold: Ichimoku long-only on Hyperliquid PAXG at 2x.
+"""Daily paper trader for gold: Ichimoku long/short on Hyperliquid PAXG at 2x.
 
 Paper only, like trader.py: public market data in, a ledger out, no orders.
 Rule and leverage were chosen by the owner after EXP-010, which found that
@@ -18,12 +18,28 @@ from pathlib import Path
 import pandas as pd
 
 from research.paper_trading import hl_data
-from research.paper_trading.strategies import _rsi_free_trend_signals
 from research.paper_trading.trader import report, step_days
 
 HERE = Path(__file__).resolve().parent
 COIN = "PAXG"
 LEVERAGE = 2.0
+
+
+def ichimoku_long_short(bars: pd.DataFrame) -> pd.Series:
+    """+1 above the cloud with Tenkan over Kijun, -1 for the mirror image, else 0.
+
+    The owner asked for both directions on 2026-10-12. On Binance PAXG at 2x
+    this was worse than long-only in 2020-23 (-13% vs -2%) and 2024-25
+    (+32% vs +107%) and better in 2026 YTD (+30% vs +21%).
+    """
+    h, lo, c = bars["high"], bars["low"], bars["close"]
+    tenkan = (h.rolling(9).max() + lo.rolling(9).min()) / 2
+    kijun = (h.rolling(26).max() + lo.rolling(26).min()) / 2
+    span_a = ((tenkan + kijun) / 2).shift(26)
+    span_b = ((h.rolling(52).max() + lo.rolling(52).min()) / 2).shift(26)
+    up = (c > span_a) & (c > span_b) & (tenkan > kijun)
+    down = (c < span_a) & (c < span_b) & (tenkan < kijun)
+    return up.astype(float) - down.astype(float)
 
 
 def main() -> None:
@@ -41,11 +57,15 @@ def main() -> None:
         else now_ms - 90 * hl_data.DAY_MS
     )
     funding = hl_data.daily_funding(COIN, since).reindex(close.index).fillna(0.0).to_frame(COIN)
-    signal = _rsi_free_trend_signals(bars)["ichimoku"]
+    signal = ichimoku_long_short(bars)
     weights = (signal * LEVERAGE).to_frame(COIN)
     start = args.backfill_from or f"{close.index[-1]:%Y-%m-%d}"
     rows = step_days(ledger, close, funding, weights, start)
-    print(report(ledger, rows).replace("leverage 1.5x", f"gold, Ichimoku, leverage {LEVERAGE}x"))
+    print(
+        report(ledger, rows).replace(
+            "leverage 1.5x", f"gold, Ichimoku long/short, leverage {LEVERAGE}x"
+        )
+    )
 
 
 if __name__ == "__main__":

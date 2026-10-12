@@ -1,6 +1,8 @@
 {
- "equity": 10000.0,
+ "equity": 9980.0,
  "last_day": "2026-10-11T00:00:00+00:00",
  "leverage": 1.5,
- "positions": {}
+ "positions": {
+  "PAXG": -2.0
+ }
 }

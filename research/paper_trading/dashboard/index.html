@@ -108,7 +108,7 @@ tr:last-child td{border-bottom:0}
   </section>
 
   <section class="card" id="goldCard" hidden>
-    <h2>ربات طلا (ایچیموکو، اهرم ۲)</h2>
+    <h2>ربات طلا (ایچیموکو خرید و فروش، اهرم ۲)</h2>
     <div class="equity" style="margin-bottom:6px">
       <span class="big num" id="gEquity" style="font-size:26px">$—</span>
       <span class="chip flat num" id="gTotal">—</span>
@@ -206,7 +206,7 @@ function render(d){
     gt.textContent = pct(gd.stats.total_pct); gt.className = "chip num " + (gd.stats.total_pct > 0 ? "up" : gd.stats.total_pct < 0 ? "down" : "flat");
     document.getElementById("gText").textContent =
       `${fa(gd.stats.days)} روز · بیشترین افت ${pct(gd.stats.max_dd_pct,false)} · ` +
-      (gd.position > 0 ? `الان در خرید طلا با ${fa(gd.position)} برابر موجودی` : "الان بدون پوزیشن (سیگنال خرید نیست)");
+      (gd.position > 0 ? `الان در خرید (لانگ) طلا با ${fa(gd.position)} برابر موجودی` : gd.position < 0 ? `الان در فروش (شورت) طلا با ${fa(-gd.position)} برابر موجودی` : "الان بدون پوزیشن");
     chart(document.getElementById("chartGold"), gd.live, d.start_equity);
     const gb = gd.backfill.stats;
     document.getElementById("gBfText").textContent =
